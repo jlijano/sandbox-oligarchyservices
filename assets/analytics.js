@@ -10,11 +10,7 @@
       display: grid;
       place-items: center;
       overflow: hidden;
-      background:
-        radial-gradient(circle at 50% 48%, rgba(87, 204, 255, 0.14), transparent 18rem),
-        radial-gradient(circle at 50% 52%, rgba(164, 7, 18, 0.16), transparent 24rem),
-        #020607;
-      color: #eaf8ff;
+      background: radial-gradient(circle at 50% 50%, rgba(91, 213, 255, 0.14), transparent 22rem), #020607;
       opacity: 1;
       visibility: visible;
       transition: opacity 520ms ease, visibility 520ms ease;
@@ -24,22 +20,20 @@
       content: "";
       position: absolute;
       inset: -20%;
-      background-image:
-        linear-gradient(rgba(91, 213, 255, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(91, 213, 255, 0.08) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(91, 213, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(91, 213, 255, 0.08) 1px, transparent 1px);
       background-size: 42px 42px;
       transform: perspective(700px) rotateX(58deg) translateY(8%);
       transform-origin: center;
       animation: board-drift 2600ms linear infinite;
-      opacity: 0.76;
+      opacity: 0.74;
     }
 
     .brand-loader::after {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(105, 225, 255, 0.12), transparent);
-      animation: wide-scan 1600ms ease-in-out infinite;
+      background: linear-gradient(90deg, transparent, rgba(105, 225, 255, 0.14), transparent);
+      animation: wide-scan 1500ms ease-in-out infinite;
       mix-blend-mode: screen;
     }
 
@@ -51,41 +45,21 @@
 
     .loader-board {
       position: relative;
-      width: min(640px, 88vw);
-      min-height: 260px;
+      width: min(1180px, 94vw);
+      min-height: 360px;
       display: grid;
       place-items: center;
       isolation: isolate;
     }
 
-    .logo-frame {
+    .brand-loader img {
       position: relative;
       z-index: 2;
-      display: grid;
-      place-items: center;
-      padding: 34px 44px;
-      border: 1px solid rgba(104, 222, 255, 0.24);
-      border-radius: 8px;
-      background: rgba(2, 10, 13, 0.42);
-      box-shadow: 0 0 34px rgba(87, 204, 255, 0.16), inset 0 0 26px rgba(87, 204, 255, 0.08);
-      overflow: hidden;
-    }
-
-    .logo-frame::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(117, 234, 255, 0.56), transparent);
-      transform: translateX(-120%);
-      animation: laser-pass 1300ms ease-in-out 180ms infinite;
-    }
-
-    .brand-loader img {
-      width: min(250px, 62vw);
+      width: min(1120px, 92vw);
       height: auto;
-      filter: drop-shadow(0 0 12px rgba(170, 240, 255, 0.74));
+      filter: drop-shadow(0 0 18px rgba(170, 240, 255, 0.86));
       clip-path: inset(0 100% 0 0);
-      animation: logo-print 1650ms cubic-bezier(0.22, 1, 0.36, 1) 180ms forwards, logo-glow 1200ms ease-in-out 1800ms infinite alternate;
+      animation: logo-print 1500ms cubic-bezier(0.22, 1, 0.36, 1) 160ms forwards, logo-glow 1000ms ease-in-out 1700ms infinite alternate;
     }
 
     .circuit-line {
@@ -99,16 +73,7 @@
       box-shadow: 0 0 10px rgba(91, 213, 255, 0.75);
       transform-origin: var(--origin);
       transform: scaleX(0) rotate(var(--r));
-      animation: trace-in 1150ms ease-out var(--d) infinite;
-    }
-
-    .circuit-line.vertical {
-      width: 2px;
-      height: var(--w);
-      background: linear-gradient(180deg, transparent, rgba(91, 213, 255, 0.92), rgba(255, 255, 255, 0.76));
-      transform: scaleY(0) rotate(var(--r));
-      transform-origin: top;
-      animation-name: trace-in-y;
+      animation: trace-in 1100ms ease-out var(--d) infinite;
     }
 
     .node {
@@ -124,43 +89,20 @@
       animation: node-pulse 950ms ease-in-out var(--d) infinite alternate;
     }
 
-    .data-status {
-      position: absolute;
-      z-index: 2;
-      bottom: 8px;
-      color: rgba(218, 248, 255, 0.72);
-      font-size: 0.72rem;
-      font-weight: 500;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      animation: status-flicker 900ms steps(2, end) infinite;
-    }
-
     @keyframes board-drift { to { background-position: 42px 42px; } }
     @keyframes wide-scan { 0%, 100% { transform: translateX(-95%); opacity: 0; } 45%, 55% { opacity: 1; } 100% { transform: translateX(95%); } }
-    @keyframes laser-pass { 0% { transform: translateX(-130%); } 55%, 100% { transform: translateX(130%); } }
     @keyframes logo-print { to { clip-path: inset(0 0 0 0); } }
-    @keyframes logo-glow { from { filter: drop-shadow(0 0 8px rgba(170, 240, 255, 0.56)); } to { filter: drop-shadow(0 0 18px rgba(170, 240, 255, 0.95)); } }
+    @keyframes logo-glow { from { filter: drop-shadow(0 0 12px rgba(170, 240, 255, 0.62)); } to { filter: drop-shadow(0 0 28px rgba(170, 240, 255, 1)); } }
     @keyframes trace-in { 0% { transform: scaleX(0) rotate(var(--r)); opacity: 0; } 20%, 70% { opacity: 1; } 100% { transform: scaleX(1) rotate(var(--r)); opacity: 0; } }
-    @keyframes trace-in-y { 0% { transform: scaleY(0) rotate(var(--r)); opacity: 0; } 20%, 70% { opacity: 1; } 100% { transform: scaleY(1) rotate(var(--r)); opacity: 0; } }
     @keyframes node-pulse { from { transform: scale(0.7); opacity: 0.42; } to { transform: scale(1.22); opacity: 1; } }
-    @keyframes status-flicker { 50% { opacity: 0.48; } }
 
     @media (max-width: 620px) {
-      .loader-board { min-height: 220px; }
-      .logo-frame { padding: 28px 26px; }
-      .data-status { font-size: 0.62rem; letter-spacing: 0.12em; }
+      .loader-board { min-height: 260px; }
+      .brand-loader img { width: 94vw; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .brand-loader,
-      .brand-loader::before,
-      .brand-loader::after,
-      .logo-frame::before,
-      .brand-loader img,
-      .circuit-line,
-      .node,
-      .data-status {
+      .brand-loader, .brand-loader::before, .brand-loader::after, .brand-loader img, .circuit-line, .node {
         transition: none;
         animation: none;
       }
@@ -175,18 +117,15 @@
   loader.setAttribute("aria-label", "Loading Oligarchy Services");
   loader.innerHTML = `
     <div class="loader-board">
-      <span class="circuit-line" style="--x:3%;--y:24%;--w:42%;--r:0deg;--origin:left;--d:80ms"></span>
-      <span class="circuit-line" style="--x:58%;--y:24%;--w:38%;--r:180deg;--origin:left;--d:180ms"></span>
-      <span class="circuit-line" style="--x:8%;--y:72%;--w:34%;--r:0deg;--origin:left;--d:280ms"></span>
-      <span class="circuit-line" style="--x:58%;--y:72%;--w:34%;--r:180deg;--origin:left;--d:380ms"></span>
-      <span class="circuit-line vertical" style="--x:20%;--y:24%;--w:48%;--r:0deg;--d:180ms"></span>
-      <span class="circuit-line vertical" style="--x:80%;--y:24%;--w:48%;--r:0deg;--d:260ms"></span>
-      <span class="node" style="--x:2%;--y:22%;--d:80ms"></span>
-      <span class="node" style="--x:94%;--y:22%;--d:180ms"></span>
-      <span class="node" style="--x:7%;--y:70%;--d:280ms"></span>
-      <span class="node" style="--x:91%;--y:70%;--d:380ms"></span>
-      <div class="logo-frame"><img src="${logoDataUri}" alt="Oligarchy"></div>
-      <div class="data-status">Network paths forming logo</div>
+      <span class="circuit-line" style="--x:2%;--y:28%;--w:34%;--r:0deg;--origin:left;--d:80ms"></span>
+      <span class="circuit-line" style="--x:64%;--y:28%;--w:34%;--r:180deg;--origin:left;--d:180ms"></span>
+      <span class="circuit-line" style="--x:4%;--y:72%;--w:32%;--r:0deg;--origin:left;--d:280ms"></span>
+      <span class="circuit-line" style="--x:64%;--y:72%;--w:32%;--r:180deg;--origin:left;--d:380ms"></span>
+      <span class="node" style="--x:2%;--y:26%;--d:80ms"></span>
+      <span class="node" style="--x:96%;--y:26%;--d:180ms"></span>
+      <span class="node" style="--x:4%;--y:70%;--d:280ms"></span>
+      <span class="node" style="--x:94%;--y:70%;--d:380ms"></span>
+      <img src="${logoDataUri}" alt="Oligarchy">
     </div>`;
   document.body.prepend(loader);
 
@@ -194,7 +133,7 @@
     window.setTimeout(() => {
       loader.classList.add("is-hidden");
       window.setTimeout(() => loader.remove(), 560);
-    }, 1700);
+    }, 1600);
   };
 
   if (document.readyState === "complete") {
@@ -267,10 +206,7 @@
       return link;
     };
 
-    navLinks.append(
-      makeLink("Home", "/"),
-      makeLink("About Us", "/about.html")
-    );
+    navLinks.append(makeLink("Home", "/"), makeLink("About Us", "/about.html"));
 
     const dropdown = document.createElement("div");
     dropdown.className = "nav-dropdown";
@@ -296,11 +232,7 @@
     });
 
     dropdown.append(trigger, menu);
-    navLinks.append(
-      dropdown,
-      makeLink("Contact Us", "/contact.html"),
-      makeLink("Get Quote", "/contact.html", "nav-cta")
-    );
+    navLinks.append(dropdown, makeLink("Contact Us", "/contact.html"), makeLink("Get Quote", "/contact.html", "nav-cta"));
 
     trigger.addEventListener("click", () => {
       const isOpen = dropdown.classList.toggle("is-open");
@@ -346,10 +278,7 @@
 
   const config = window.OLIGARCHY_ANALYTICS || {};
   const optedOut = window.localStorage.getItem("oligarchy_analytics_opt_out") === "true";
-  const doNotTrack =
-    navigator.doNotTrack === "1" ||
-    window.doNotTrack === "1" ||
-    navigator.msDoNotTrack === "1";
+  const doNotTrack = navigator.doNotTrack === "1" || window.doNotTrack === "1" || navigator.msDoNotTrack === "1";
 
   if (!config.enabled || optedOut || (config.respectDoNotTrack && doNotTrack)) {
     return;
@@ -362,11 +291,9 @@
     script.src = config.scriptUrl || "https://plausible.io/js/script.js";
     document.head.appendChild(script);
 
-    window.plausible =
-      window.plausible ||
-      function () {
-        (window.plausible.q = window.plausible.q || []).push(arguments);
-      };
+    window.plausible = window.plausible || function () {
+      (window.plausible.q = window.plausible.q || []).push(arguments);
+    };
 
     document.querySelectorAll("[data-track]").forEach((element) => {
       element.addEventListener("click", () => {

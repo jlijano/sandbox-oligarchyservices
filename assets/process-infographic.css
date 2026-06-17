@@ -2,15 +2,13 @@
   position:relative;
   max-width:none;
   overflow:hidden;
-  padding-block:clamp(46px,6vw,76px);
-  background:
-    radial-gradient(circle at 18% 18%,rgba(176,7,20,0.14),transparent 24rem),
-    linear-gradient(180deg,rgba(15,15,17,0) 0%,rgba(17,17,20,0.92) 44%,rgba(10,10,11,0) 100%);
+  padding-block:clamp(34px,4.8vw,58px);
+  background:linear-gradient(180deg,rgba(15,15,17,0) 0%,rgba(13,13,15,0.9) 46%,rgba(10,10,11,0) 100%);
 }
 
 .process > div:first-child,
 .process-workflow{
-  width:min(1180px,100%);
+  width:min(1120px,100%);
   margin-inline:auto;
   padding-inline:clamp(18px,4vw,44px);
 }
@@ -20,32 +18,38 @@
   flex-wrap:wrap;
   align-items:end;
   justify-content:space-between;
-  gap:14px 28px;
-  margin-bottom:clamp(22px,3vw,34px);
+  gap:12px 24px;
+  margin-bottom:clamp(18px,2.4vw,26px);
 }
 
 .process > div:first-child::after{
   content:"Operational path";
-  border:1px solid rgba(176,7,20,0.46);
+  border:1px solid rgba(176,7,20,0.42);
   border-radius:999px;
-  padding:7px 11px;
-  background:rgba(176,7,20,0.12);
-  color:#f1d7da;
-  font-size:0.76rem;
+  padding:6px 10px;
+  background:rgba(176,7,20,0.1);
+  color:#f0d6d8;
+  font-size:0.72rem;
   font-weight:800;
   white-space:nowrap;
 }
 
+.process .eyebrow{
+  margin-bottom:8px;
+  color:#8f949c;
+}
+
 .process h2{
-  max-width:680px;
-  font-size:clamp(1.65rem,3vw,2.65rem);
-  line-height:1.08;
+  max-width:620px;
+  font-size:clamp(1.32rem,2.25vw,2rem);
+  line-height:1.12;
+  font-weight:850;
 }
 
 .process-workflow{
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(290px,0.62fr);
-  gap:clamp(18px,3vw,30px);
+  grid-template-columns:minmax(0,1fr) minmax(260px,0.52fr);
+  gap:clamp(14px,2.4vw,24px);
   align-items:stretch;
 }
 
@@ -54,7 +58,7 @@
   counter-reset:process-step;
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:10px;
+  gap:8px;
   margin:0;
   padding:0;
   list-style:none;
@@ -63,11 +67,11 @@
 .process-steps::before{
   content:"";
   position:absolute;
-  inset:34px 11% auto;
-  height:2px;
+  inset:29px 11% auto;
+  height:1px;
   border-radius:999px;
-  background:linear-gradient(90deg,#5a5d63,#b00714,#5a5d63);
-  opacity:0.36;
+  background:linear-gradient(90deg,#4c4f55,#b00714,#4c4f55);
+  opacity:0.34;
 }
 
 .process-steps li{
@@ -79,13 +83,13 @@
   position:relative;
   z-index:1;
   width:100%;
-  min-height:126px;
+  min-height:104px;
   display:grid;
   grid-template-rows:auto 1fr auto;
-  gap:9px;
-  border:1px solid rgba(90,93,99,0.58);
+  gap:7px;
+  border:1px solid rgba(90,93,99,0.5);
   border-radius:8px;
-  padding:13px;
+  padding:11px;
   background:rgba(13,13,15,0.92);
   color:var(--ink);
   font:inherit;
@@ -97,36 +101,36 @@
 .process-step:hover,
 .process-step:focus-visible,
 .process-step.is-active{
-  transform:translateY(-2px);
-  border-color:rgba(176,7,20,0.86);
+  transform:translateY(-1px);
+  border-color:rgba(176,7,20,0.78);
   background:rgba(20,20,23,0.98);
-  box-shadow:0 16px 34px rgba(0,0,0,0.22);
+  box-shadow:0 12px 26px rgba(0,0,0,0.2);
 }
 
 .process-step.is-active{
-  border-color:rgba(176,7,20,0.96);
+  border-color:rgba(176,7,20,0.94);
 }
 
 .process-icon{
   display:grid;
-  width:42px;
-  height:42px;
+  width:34px;
+  height:34px;
   place-items:center;
-  border:1px solid rgba(255,255,255,0.14);
+  border:1px solid rgba(255,255,255,0.12);
   border-radius:8px;
-  background:linear-gradient(145deg,#282a2e,#111214);
+  background:linear-gradient(145deg,#24262a,#111214);
   color:#d9dce1;
 }
 
 .process-step.is-active .process-icon{
   color:#ffffff;
-  border-color:rgba(176,7,20,0.78);
-  background:linear-gradient(145deg,#b00714,#3a0b10);
+  border-color:rgba(176,7,20,0.75);
+  background:linear-gradient(145deg,#b00714,#32090d);
 }
 
 .process-icon svg{
-  width:21px;
-  height:21px;
+  width:18px;
+  height:18px;
   stroke:currentColor;
   stroke-width:1.8;
   fill:none;
@@ -137,13 +141,13 @@
 .process-step-title{
   display:block;
   color:#ffffff;
-  font-size:0.98rem;
-  font-weight:850;
+  font-size:0.92rem;
+  font-weight:800;
 }
 
 .process-step-number{
   color:#858a93;
-  font-size:0.72rem;
+  font-size:0.68rem;
   font-weight:900;
   letter-spacing:0.08em;
 }
@@ -152,17 +156,17 @@
   min-height:100%;
   display:grid;
   align-content:start;
-  border:1px solid rgba(176,7,20,0.5);
+  border:1px solid rgba(176,7,20,0.42);
   border-radius:8px;
-  padding:clamp(18px,2.4vw,24px);
-  background:linear-gradient(180deg,rgba(28,18,20,0.97),rgba(13,13,15,0.97));
-  box-shadow:0 18px 44px rgba(0,0,0,0.26);
+  padding:clamp(15px,2vw,20px);
+  background:linear-gradient(180deg,rgba(24,17,18,0.97),rgba(13,13,15,0.97));
+  box-shadow:0 14px 34px rgba(0,0,0,0.24);
 }
 
 .process-detail-kicker{
-  margin:0 0 10px;
-  color:#e6b9be;
-  font-size:0.72rem;
+  margin:0 0 8px;
+  color:#e2b5b9;
+  font-size:0.68rem;
   font-weight:900;
   letter-spacing:0.12em;
   text-transform:uppercase;
@@ -171,33 +175,33 @@
 .process-detail h3{
   margin:0;
   color:#ffffff;
-  font-size:clamp(1.45rem,2.4vw,2.15rem);
-  line-height:1.08;
+  font-size:clamp(1.25rem,2vw,1.72rem);
+  line-height:1.1;
 }
 
 .process-detail p{
-  margin:14px 0 0;
-  color:#d0d3d9;
-  font-size:0.96rem;
-  line-height:1.56;
+  margin:12px 0 0;
+  color:#c8cbd1;
+  font-size:0.9rem;
+  line-height:1.48;
 }
 
 .process-tags{
   display:flex;
   flex-wrap:wrap;
-  gap:7px;
-  margin:20px 0 0;
+  gap:6px;
+  margin:16px 0 0;
   padding:0;
   list-style:none;
 }
 
 .process-tags li{
-  border:1px solid rgba(176,7,20,0.34);
+  border:1px solid rgba(176,7,20,0.3);
   border-radius:999px;
-  padding:7px 9px;
-  background:rgba(176,7,20,0.1);
+  padding:6px 8px;
+  background:rgba(176,7,20,0.09);
   color:#f1f2f4;
-  font-size:0.8rem;
+  font-size:0.76rem;
   font-weight:750;
 }
 
@@ -229,7 +233,7 @@
 
 @media (max-width:620px){
   .process{
-    padding-block:42px 58px;
+    padding-block:34px 48px;
   }
 
   .process > div:first-child,
@@ -242,7 +246,7 @@
   }
 
   .process h2{
-    font-size:clamp(1.52rem,8vw,2.18rem);
+    font-size:clamp(1.25rem,6.5vw,1.82rem);
   }
 
   .process-steps{
@@ -250,7 +254,7 @@
   }
 
   .process-step{
-    min-height:92px;
+    min-height:76px;
     grid-template-columns:auto 1fr auto;
     grid-template-rows:auto;
     align-items:center;

@@ -1,0 +1,131 @@
+.site-footer-refined{
+  display:block;
+  padding:0 clamp(24px,4vw,38px) 40px;
+  background:#020202;
+  color:#f5f5f5;
+}
+
+.footer-main{
+  display:grid;
+  grid-template-columns:minmax(280px,1.15fr) minmax(160px,.7fr) minmax(240px,.85fr);
+  gap:clamp(36px,8vw,120px);
+  align-items:start;
+  padding:42px 0 34px;
+}
+
+.footer-brand-lockup{
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) 48px;
+  gap:clamp(24px,6vw,86px);
+  align-items:start;
+  max-width:420px;
+}
+
+.footer-brand-name{
+  margin-top:31px;
+  color:#f5f5f5;
+  font-weight:600;
+  line-height:1.25;
+  text-decoration:none;
+}
+
+.footer-brand-name:hover,
+.footer-brand-name:focus-visible,
+.footer-column a:hover,
+.footer-column a:focus-visible,
+.footer-bottom a:hover,
+.footer-bottom a:focus-visible{
+  color:#ffffff;
+}
+
+.footer-red-orbit{
+  display:grid;
+  width:22px;
+  height:22px;
+  place-items:center;
+  margin-top:6px;
+  border-radius:999px;
+  background:#c90018;
+  color:#050506;
+  font-size:0;
+  font-weight:900;
+  line-height:1;
+  box-shadow:0 0 0 8px rgba(201,0,24,.1),0 0 26px rgba(201,0,24,.32);
+}
+
+.footer-red-orbit::before{
+  content:"O";
+  color:#050506;
+  font-size:1.05rem;
+  line-height:1;
+}
+
+.footer-column h2{
+  margin:0 0 10px;
+  color:#ffffff;
+  font-size:1rem;
+  font-weight:800;
+  line-height:1.25;
+}
+
+.footer-column a,
+.footer-column span{
+  display:block;
+  width:max-content;
+  max-width:100%;
+  color:#f0f0f0;
+  font-size:1rem;
+  line-height:1.55;
+  text-decoration:none;
+}
+
+.footer-column address{
+  display:grid;
+  gap:2px;
+  font-style:normal;
+}
+
+.footer-bottom{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:18px;
+  border-top:1px solid rgba(255,255,255,.18);
+  padding-top:22px;
+  color:#f5f5f5;
+}
+
+.footer-bottom span,
+.footer-bottom a{
+  color:#f5f5f5;
+  font-size:1rem;
+  line-height:1.4;
+  text-decoration:none;
+}
+
+@media(max-width:780px){
+  .site-footer-refined{
+    padding-inline:18px;
+  }
+
+  .footer-main{
+    grid-template-columns:1fr;
+    gap:30px;
+    padding-top:34px;
+  }
+
+  .footer-brand-lockup{
+    grid-template-columns:1fr auto;
+    gap:18px;
+    max-width:none;
+  }
+
+  .footer-brand-name,
+  .footer-red-orbit{
+    margin-top:0;
+  }
+
+  .footer-bottom{
+    flex-direction:column;
+  }
+}

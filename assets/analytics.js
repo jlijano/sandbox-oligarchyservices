@@ -1,6 +1,90 @@
 (function () {
-  const navToggle = document.querySelector(".nav-toggle");
+  const services = [
+    ["ITAD", "/itad.html"],
+    ["ITAM", "/itam.html"],
+    ["Help Desk", "/help-desk.html"],
+    ["Business Systems", "/business-systems.html"],
+    ["AI & Automation", "/ai-automation.html"],
+    ["Projects", "/projects.html"]
+  ];
+
   const navLinks = document.getElementById("primary-navigation");
+  if (navLinks) {
+    const currentPath = window.location.pathname || "/";
+    const isCurrent = (href) => href === currentPath || (href === "/" && currentPath === "/index.html");
+    const serviceIsCurrent = services.some(([, href]) => isCurrent(href));
+
+    navLinks.innerHTML = "";
+
+    const makeLink = (label, href, className) => {
+      const link = document.createElement("a");
+      link.href = href;
+      link.textContent = label;
+      if (className) {
+        link.className = className;
+      }
+      if (isCurrent(href)) {
+        link.setAttribute("aria-current", "page");
+      }
+      return link;
+    };
+
+    navLinks.append(
+      makeLink("Home", "/"),
+      makeLink("About Us", "/about.html")
+    );
+
+    const dropdown = document.createElement("div");
+    dropdown.className = "nav-dropdown";
+
+    const trigger = document.createElement("button");
+    trigger.className = "nav-dropdown-trigger";
+    trigger.type = "button";
+    trigger.textContent = "Services";
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-haspopup", "true");
+    if (serviceIsCurrent) {
+      trigger.setAttribute("aria-current", "page");
+    }
+
+    const menu = document.createElement("div");
+    menu.className = "nav-dropdown-menu";
+    menu.setAttribute("role", "menu");
+
+    services.forEach(([label, href]) => {
+      const item = makeLink(label, href);
+      item.setAttribute("role", "menuitem");
+      menu.appendChild(item);
+    });
+
+    dropdown.append(trigger, menu);
+    navLinks.append(
+      dropdown,
+      makeLink("Contact Us", "/contact.html"),
+      makeLink("Get Quote", "/contact.html", "nav-cta")
+    );
+
+    trigger.addEventListener("click", () => {
+      const isOpen = dropdown.classList.toggle("is-open");
+      trigger.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!dropdown.contains(event.target)) {
+        dropdown.classList.remove("is-open");
+        trigger.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        dropdown.classList.remove("is-open");
+        trigger.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
+  const navToggle = document.querySelector(".nav-toggle");
   if (navToggle && navLinks) {
     navToggle.addEventListener("click", () => {
       const isOpen = navLinks.classList.toggle("is-open");

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Privacy notes for Oligarchy Services analytics and visitor measurement."
+    >
+    <title>Privacy | Oligarchy Services</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script>
+      window.OLIGARCHY_ANALYTICS = {
+        enabled: false,
+        provider: "plausible",
+        domain: "",
+        respectDoNotTrack: true
+      };
+    </script>
+    <script defer src="assets/analytics.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Oligarchy Services home">
+        <span class="brand-mark" aria-hidden="true">OS</span>
+        <span>Oligarchy Services</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="index.html#services">Services</a>
+        <a href="index.html#approach">Approach</a>
+        <a href="privacy.html" aria-current="page">Privacy</a>
+      </nav>
+    </header>
+
+    <main class="privacy-page">
+      <section class="privacy-hero">
+        <p class="eyebrow">Privacy</p>
+        <h1>Analytics should be useful without being invasive.</h1>
+        <p>
+          Analytics are currently disabled in this project. When enabled, the
+          preferred approach is privacy-friendly aggregate measurement rather
+          than individual visitor profiling.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h2>What may be measured</h2>
+        <p>
+          A privacy-friendly analytics provider can report page views, referrers,
+          device category, browser, operating system, and approximate location.
+          Approximate location is typically inferred from network information by
+          the analytics provider or hosting platform.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h2>What should be avoided</h2>
+        <p>
+          The site should avoid cross-site tracking, fingerprinting, precise
+          location tracking, unnecessary cookies, and collecting personal data
+          that is not needed for site improvement.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h2>Consent and disclosure</h2>
+        <p>
+          If analytics remains cookie-free and aggregate-only, a notice may be
+          enough in some jurisdictions. If cookies, advertising features, user
+          identifiers, or Google Analytics are added, a consent banner and legal
+          review may be required depending on visitors' locations.
+        </p>
+      </section>
+
+      <section class="policy-section">
+        <h2>Local opt-out</h2>
+        <p>
+          Visitors can opt out of the optional analytics loader on this device.
+          This setting is stored locally in the browser.
+        </p>
+        <button class="button primary" type="button" id="analytics-opt-out">
+          Opt out of analytics
+        </button>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>&copy; <span id="year"></span> Oligarchy Services</span>
+      <a href="index.html">Home</a>
+    </footer>
+  </body>
+</html>

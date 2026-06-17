@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+  <title id="title">How Oligarchy Services works</title>
+  <desc id="desc">A six-step operating path from discovery to measurable control: Assess, Plan, Implement, Support, Optimize, and Report.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#111114"/>
+      <stop offset="0.54" stop-color="#0b0b0d"/>
+      <stop offset="1" stop-color="#151518"/>
+    </linearGradient>
+    <linearGradient id="rail" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#5a5d63"/>
+      <stop offset="0.28" stop-color="#c7a15a"/>
+      <stop offset="0.62" stop-color="#3a8f68"/>
+      <stop offset="1" stop-color="#5a5d63"/>
+    </linearGradient>
+    <linearGradient id="node" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#3a3c41"/>
+      <stop offset="1" stop-color="#151619"/>
+    </linearGradient>
+    <linearGradient id="nodeGreen" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#314d42"/>
+      <stop offset="1" stop-color="#111815"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="760" rx="36" fill="url(#bg)"/>
+  <rect x="40" y="40" width="1360" height="680" rx="28" fill="none" stroke="#343238" stroke-width="2"/>
+  <text x="84" y="103" fill="#7f858f" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="3">HOW WE WORK</text>
+  <text x="84" y="166" fill="#f4f4f5" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="850">
+    <tspan x="84" dy="0">A practical path from discovery</tspan>
+    <tspan x="84" dy="70">to measurable control.</tspan>
+  </text>
+  <rect x="1134" y="88" width="214" height="46" rx="23" fill="#211d14" stroke="#6d5830"/>
+  <text x="1241" y="118" text-anchor="middle" fill="#f2ddae" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">6-step operating path</text>
+  <rect x="138" y="338" width="1164" height="8" rx="4" fill="url(#rail)" opacity="0.85"/>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <g transform="translate(66 292)">
+      <circle cx="98" cy="50" r="50" fill="url(#node)" stroke="#5a5d63" stroke-width="2"/>
+      <text x="98" y="58" text-anchor="middle" fill="#ffffff" font-size="22" font-weight="900">01</text>
+      <rect x="0" y="130" width="196" height="286" rx="18" fill="#111214" stroke="#343238" stroke-width="2"/>
+      <text x="98" y="177" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="850">Assess</text>
+      <rect x="74" y="196" width="48" height="4" rx="2" fill="#c7a15a"/>
+      <text x="24" y="238" fill="#d0d3d9" font-size="18">
+        <tspan x="24" dy="0">Clarify assets,</tspan>
+        <tspan x="24" dy="27">systems, workflows,</tspan>
+        <tspan x="24" dy="27">risks, stakeholders,</tspan>
+        <tspan x="24" dy="27">and success</tspan>
+        <tspan x="24" dy="27">measures.</tspan>
+      </text>
+    </g>
+
+    <g transform="translate(282 292)">
+      <circle cx="98" cy="50" r="50" fill="url(#node)" stroke="#6d5830" stroke-width="2"/>
+      <text x="98" y="58" text-anchor="middle" fill="#ffffff" font-size="22" font-weight="900">02</text>
+      <rect x="0" y="130" width="196" height="286" rx="18" fill="#111214" stroke="#343238" stroke-width="2"/>
+      <text x="98" y="177" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="850">Plan</text>
+      <rect x="74" y="196" width="48" height="4" rx="2" fill="#c7a15a"/>
+      <text x="24" y="238" fill="#d0d3d9" font-size="18">
+        <tspan x="24" dy="0">Define scope,</tspan>
+        <tspan x="24" dy="27">responsibilities,</tspan>
+        <tspan x="24" dy="27">milestones, controls,</tspan>
+        <tspan x="24" dy="27">reporting, and</tspan>
+        <tspan x="24" dy="27">service expectations.</tspan>
+      </text>
+    </g>
+
+    <g transform="translate(498 292)">
+      <circle cx="98" cy="50" r="50" fill="url(#nodeGreen)" stroke="#3a8f68" stroke-width="2"/>
+      <text x="98" y="58" text-anchor="middle" fill="#ffffff" font-size="22" font-weight="900">03</text>
+      <rect x="0" y="130" width="196" height="286" rx="18" fill="#111214" stroke="#343238" stroke-width="2"/>
+      <text x="98" y="177" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="850">Implement</text>
+      <rect x="74" y="196" width="48" height="4" rx="2" fill="#3a8f68"/>
+      <text x="24" y="238" fill="#d0d3d9" font-size="18">
+        <tspan x="24" dy="0">Execute asset,</tspan>
+        <tspan x="24" dy="27">platform,</tspan>
+        <tspan x="24" dy="27">automation, support,</tspan>
+        <tspan x="24" dy="27">or delivery</tspan>
+        <tspan x="24" dy="27">work with clear</tspan>
+        <tspan x="24" dy="27">ownership.</tspan>
+      </text>
+    </g>
+
+    <g transform="translate(714 292)">
+      <circle cx="98" cy="50" r="50" fill="url(#nodeGreen)" stroke="#3a8f68" stroke-width="2"/>
+      <text x="98" y="58" text-anchor="middle" fill="#ffffff" font-size="22" font-weight="900">04</text>
+      <rect x="0" y="130" width="196" height="286" rx="18" fill="#111214" stroke="#343238" stroke-width="2"/>
+      <text x="98" y="177" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="850">Support</text>
+      <rect x="74" y="196" width="48" height="4" rx="2" fill="#3a8f68"/>
+      <text x="24" y="238" fill="#d0d3d9" font-size="18">
+        <tspan x="24" dy="0">Provide user</tspan>
+        <tspan x="24" dy="27">assistance, ticket</tspan>
+        <tspan x="24" dy="27">handling,</tspan>
+        <tspan x="24" dy="27">documentation,</tspan>
+        <tspan x="24" dy="27">escalation, and</tspan>
+        <tspan x="24" dy="27">handover.</tspan>
+      </text>
+    </g>
+
+    <g transform="translate(930 292)">
+      <circle cx="98" cy="50" r="50" fill="url(#node)" stroke="#6d5830" stroke-width="2"/>
+      <text x="98" y="58" text-anchor="middle" fill="#ffffff" font-size="22" font-weight="900">05</text>
+      <rect x="0" y="130" width="196" height="286" rx="18" fill="#111214" stroke="#343238" stroke-width="2"/>
+      <text x="98" y="177" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="850">Optimize</text>
+      <rect x="74" y="196" width="48" height="4" rx="2" fill="#c7a15a"/>
+      <text x="24" y="238" fill="#d0d3d9" font-size="18">
+        <tspan x="24" dy="0">Improve workflows,</tspan>
+        <tspan x="24" dy="27">adoption, visibility,</tspan>
+        <tspan x="24" dy="27">and repeatable</tspan>
+        <tspan x="24" dy="27">operating habits.</tspan>
+      </text>
+    </g>
+
+    <g transform="translate(1146 292)">
+      <circle cx="98" cy="50" r="50" fill="url(#node)" stroke="#5a5d63" stroke-width="2"/>
+      <text x="98" y="58" text-anchor="middle" fill="#ffffff" font-size="22" font-weight="900">06</text>
+      <rect x="0" y="130" width="196" height="286" rx="18" fill="#111214" stroke="#343238" stroke-width="2"/>
+      <text x="98" y="177" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="850">Report</text>
+      <rect x="74" y="196" width="48" height="4" rx="2" fill="#c7a15a"/>
+      <text x="24" y="238" fill="#d0d3d9" font-size="18">
+        <tspan x="24" dy="0">Track outcomes,</tspan>
+        <tspan x="24" dy="27">risks, KPIs, SLA</tspan>
+        <tspan x="24" dy="27">performance, and</tspan>
+        <tspan x="24" dy="27">audit readiness.</tspan>
+      </text>
+    </g>
+  </g>
+</svg>

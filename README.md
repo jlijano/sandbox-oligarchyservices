@@ -10,6 +10,25 @@ Static site foundation for `jlijano/sandbox-oligarchyservices`.
 - No database.
 - No build step required.
 - Analytics loader exists, but analytics are disabled by default.
+- Hostinger-compatible Apache configuration is included in `.htaccess`.
+
+## Hostinger deployment
+
+This project can be uploaded directly to Hostinger shared web hosting. Place the
+repository contents in the domain's `public_html` directory. No Node.js runtime,
+package installation, database, or build command is required.
+
+Before going live:
+
+1. Replace `https://example.com/` in `robots.txt` and `sitemap.xml` with the
+   production domain.
+2. Confirm SSL is active in Hostinger.
+3. Upload `.htaccess` along with the visible files. It is a hidden file, but it
+   controls the default index page, 404 page, security headers, caching, and
+   HTTPS redirect.
+4. Test `index.html`, `privacy.html`, and one missing URL after upload.
+
+See `HOSTINGER.md` for the full checklist.
 
 ## Analytics approach
 

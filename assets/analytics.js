@@ -1,4 +1,38 @@
 (function () {
+  const headerStyle = document.createElement("style");
+  headerStyle.textContent = `
+    .nav-links .nav-cta {
+      display: inline-flex;
+      min-width: 98px;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 0 24px !important;
+      background: #a40712;
+      color: #ffffff !important;
+      font-weight: 500 !important;
+      line-height: 1;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+
+    .nav-links .nav-cta:hover,
+    .nav-links .nav-cta:focus-visible {
+      background: #b70a17;
+      color: #ffffff !important;
+    }
+
+    @media (max-width: 1120px) {
+      .nav-links .nav-cta {
+        width: auto;
+        align-self: flex-start;
+        padding: 0 24px !important;
+        text-align: center;
+      }
+    }
+  `;
+  document.head.appendChild(headerStyle);
+
   const services = [
     ["ITAD", "/itad.html"],
     ["ITAM", "/itam.html"],

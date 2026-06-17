@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Oligarchy Services is a focused static site foundation with privacy-conscious analytics wiring."
+    >
+    <title>Oligarchy Services</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script>
+      window.OLIGARCHY_ANALYTICS = {
+        enabled: false,
+        provider: "plausible",
+        domain: "",
+        respectDoNotTrack: true
+      };
+    </script>
+    <script defer src="assets/analytics.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Oligarchy Services home">
+        <span class="brand-mark" aria-hidden="true">OS</span>
+        <span>Oligarchy Services</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#services">Services</a>
+        <a href="#approach">Approach</a>
+        <a href="privacy.html">Privacy</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <p class="eyebrow">Static-first launch foundation</p>
+          <h1>Focused service pages with privacy-conscious measurement.</h1>
+          <p class="hero-copy">
+            A clean starting point for Oligarchy Services: fast static pages,
+            clear calls to action, and analytics wiring that stays off until a
+            provider and consent posture are confirmed.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#services" data-track="hero_services_click">View services</a>
+            <a class="button secondary" href="privacy.html" data-track="hero_privacy_click">Privacy details</a>
+          </div>
+        </div>
+        <div class="signal-panel" aria-label="Site readiness summary">
+          <div>
+            <span class="metric">Static</span>
+            <span class="label">No backend required</span>
+          </div>
+          <div>
+            <span class="metric">Off</span>
+            <span class="label">Analytics default</span>
+          </div>
+          <div>
+            <span class="metric">Ready</span>
+            <span class="label">Provider hook</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="services">
+        <div class="section-heading">
+          <p class="eyebrow">Services</p>
+          <h2>A lean public site that can grow carefully.</h2>
+        </div>
+        <div class="service-grid">
+          <article class="service-card">
+            <h3>Public Presence</h3>
+            <p>
+              A fast homepage structure for explaining the offer, establishing
+              trust, and giving visitors a clear next step.
+            </p>
+          </article>
+          <article class="service-card">
+            <h3>Measurement</h3>
+            <p>
+              Analytics hooks can measure page views and selected button clicks
+              once a privacy-friendly provider is configured.
+            </p>
+          </article>
+          <article class="service-card">
+            <h3>Static Deployment</h3>
+            <p>
+              The project is ready for GitHub Pages, Netlify, Vercel, Cloudflare
+              Pages, or another static hosting provider.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section split" id="approach">
+        <div>
+          <p class="eyebrow">Approach</p>
+          <h2>Track only what earns its keep.</h2>
+        </div>
+        <div class="checklist">
+          <p>Visitor counts can be measured by a privacy-friendly analytics provider.</p>
+          <p>Device type, browser, referrer, and approximate location depend on the provider and host logs.</p>
+          <p>No database, API routes, or custom backend are included in this static foundation.</p>
+          <p>Consent and disclosure should be reviewed before analytics is enabled.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>&copy; <span id="year"></span> Oligarchy Services</span>
+      <a href="privacy.html">Privacy</a>
+    </footer>
+  </body>
+</html>

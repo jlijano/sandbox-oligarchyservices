@@ -89,3 +89,7 @@ python3 -m http.server 8000
 ```
 
 Then visit `http://localhost:8000`.
+
+## Change notes
+
+- 2026-06-18: Removed the duplicate homepage hero tagline and visible homepage header brand text so the hero and navigation match the requested layout.

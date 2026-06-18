@@ -92,5 +92,6 @@ Then visit `http://localhost:8000`.
 
 ## Change notes
 
+- 2026-06-18: Removed the homepage Positioning intro section so the page moves from the hero directly into the services section.
 - 2026-06-18: Updated the homepage hero consultation button to use the same red as the top navigation Get Quote button.
 - 2026-06-18: Removed the duplicate homepage hero tagline and visible homepage header brand text so the hero and navigation match the requested layout.

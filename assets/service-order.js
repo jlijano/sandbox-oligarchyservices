@@ -63,7 +63,7 @@
       margin: 0;
       color: #eeeeef;
       font-size: clamp(1rem, 1.45vw, 1.35rem);
-      font-weight: 700;
+      font-weight: 400;
       line-height: 1.48;
     }
 
@@ -116,7 +116,7 @@
 
       .about-preview__copy p {
         font-size: 1rem;
-        font-weight: 650;
+        font-weight: 400;
       }
 
       .about-preview__actions .button {

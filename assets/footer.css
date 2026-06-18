@@ -20,18 +20,7 @@
 }
 
 .site-footer-refined .footer-center-brand{
-  display:inline-flex;
-  align-items:center;
-  gap:10px;
-  width:max-content;
-  max-width:100%;
-  margin:0 0 30px;
-  color:#183f7a;
-  font-size:clamp(2.4rem,4vw,4.1rem);
-  font-weight:900;
-  line-height:.95;
-  text-decoration:none;
-  white-space:normal;
+  display:none !important;
 }
 
 .site-footer-refined .footer-center-brand > span{

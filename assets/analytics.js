@@ -23,7 +23,7 @@
   if (document.readyState === "complete") hideLoader();
   else window.addEventListener("load", hideLoader, { once: true });
 
-  const services = [["ITAD","/itad.html"],["ITAM","/itam.html"],["Help Desk","/help-desk.html"],["Business Systems","/business-systems.html"],["AI & Automation","/ai-automation.html"],["Projects","/projects.html"]];
+  const services = [["AI & Automation","/ai-automation.html"],["Help Desk","/help-desk.html"],["Business Systems","/business-systems.html"],["ITAD","/itad.html"],["ITAM","/itam.html"],["Projects","/projects.html"]];
   const navLinks = document.getElementById("primary-navigation");
   if (navLinks) {
     const currentPath = window.location.pathname || "/";
@@ -64,6 +64,10 @@
     trigger.addEventListener("click", () => {
       const isOpen = dropdown.classList.toggle("is-open");
       trigger.setAttribute("aria-expanded", String(isOpen));
+    });
+    menu.addEventListener("click", () => {
+      dropdown.classList.remove("is-open");
+      trigger.setAttribute("aria-expanded", "false");
     });
     document.addEventListener("click", (event) => {
       if (!dropdown.contains(event.target)) {

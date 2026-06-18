@@ -4,7 +4,8 @@
     ["Help Desk", "/help-desk.html"],
     ["Business Systems", "/business-systems.html"],
     ["ITAD", "/itad.html"],
-    ["ITAM", "/itam.html"]
+    ["ITAM", "/itam.html"],
+    ["Projects", "/projects.html"]
   ];
 
   const syncServiceMenu = () => {

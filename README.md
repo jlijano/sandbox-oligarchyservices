@@ -12,6 +12,24 @@ Static site foundation for `jlijano/sandbox-oligarchyservices`.
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
 
+## Project structure
+
+The site keeps public HTML files at the repository root so existing Hostinger URLs continue to work without rewrite changes. The new folders provide a cleaner structure for future maintenance while preserving the current live look.
+
+```text
+/
+├── index.html, about.html, contact.html, privacy.html, 404.html
+├── itad.html, itam.html, help-desk.html, business-systems.html, ai-automation.html, projects.html
+├── pages/                  # planned page source organization and page-level notes
+└── assets/
+    ├── css/                # structured CSS entry points for future migration
+    ├── js/                 # structured JavaScript entry points for future migration
+    ├── img/                # image, logo, icon, screenshot, and graphic assets
+    └── *.css, *.js, *.mp4  # current compatibility assets used by the live pages
+```
+
+For now, do not move the root HTML files unless deployment/routing is updated and tested. New CSS should be staged in `assets/css/`, new browser scripts in `assets/js/`, and new image files in `assets/img/`.
+
 ## Hostinger deployment
 
 This project can be uploaded directly to Hostinger shared web hosting. Place the
@@ -92,5 +110,6 @@ Then visit `http://localhost:8000`.
 
 ## Change notes
 
+- 2026-06-19: Added organized `pages/`, `assets/css/`, `assets/js/`, and `assets/img/` folders for cleaner future site maintenance while preserving existing public page URLs and current flat asset compatibility.
 - 2026-06-18: Updated the homepage hero consultation button to use the same red as the top navigation Get Quote button.
 - 2026-06-18: Removed the duplicate homepage hero tagline and visible homepage header brand text so the hero and navigation match the requested layout.

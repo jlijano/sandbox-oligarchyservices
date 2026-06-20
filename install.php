@@ -17,6 +17,30 @@ function post_value(string $key, string $default = ''): string
     return trim((string) ($_POST[$key] ?? $default));
 }
 
+function install_error_message(Throwable $exception, string $dbHost): string
+{
+    $message = $exception->getMessage();
+
+    if (str_contains($message, 'SQLSTATE[HY000] [1045]')) {
+        $hint = 'Access denied. Check the database username and password.';
+        if ($dbHost !== 'localhost') {
+            $hint .= ' On Hostinger shared hosting, the database host is usually localhost, not your website domain.';
+        }
+
+        return $hint;
+    }
+
+    if (str_contains($message, 'SQLSTATE[HY000] [2002]')) {
+        return 'Could not reach the database host. On Hostinger shared hosting, try localhost unless hPanel shows a different MySQL host.';
+    }
+
+    if (str_contains($message, 'Unknown database')) {
+        return 'Database not found. Check the full database name from Hostinger hPanel, including the u-number prefix.';
+    }
+
+    return 'Install failed. Check the database details and try again.';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dbHost = post_value('db_host', 'localhost');
     $dbName = post_value('db_name');
@@ -108,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             file_put_contents($lockPath, 'Installed at ' . gmdate('c') . PHP_EOL, LOCK_EX);
             $success = true;
         } catch (Throwable $exception) {
-            $errors[] = 'Install failed: ' . $exception->getMessage();
+            $errors[] = install_error_message($exception, $dbHost);
         }
     }
 }
@@ -145,6 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <label class="field">
             <span>Database host</span>
             <input name="db_host" value="<?= htmlspecialchars(post_value('db_host', 'localhost'), ENT_QUOTES, 'UTF-8') ?>" required>
+            <small class="field-error">For Hostinger, use localhost unless hPanel shows a separate MySQL host. Do not use the website domain here.</small>
           </label>
           <label class="field">
             <span>Database name</span>

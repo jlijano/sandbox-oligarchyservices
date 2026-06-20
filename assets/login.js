@@ -87,6 +87,11 @@
     if (rememberEmail.checked) window.localStorage.setItem(storageKey, email.value.trim());
     else window.localStorage.removeItem(storageKey);
 
-    setMessage("Login details accepted. Connect this form action to your authentication endpoint to complete sign-in.", "success");
+    if (form.dataset.staticLogin === "true") {
+      setMessage("Portal authentication is not active on this static preview. Request access and Oligarchy Services will connect your workspace.", "error");
+      return;
+    }
+
+    form.submit();
   });
 })();

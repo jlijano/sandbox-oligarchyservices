@@ -8,51 +8,19 @@
     <meta name="description" content="Client access portal for Oligarchy Services technology operations, support, and reporting.">
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/footer.css?v=20260618-crawford-layout">
-    <link rel="stylesheet" href="/assets/login.css?v=20260620-client-login-polish">
+    <link rel="stylesheet" href="/assets/login.css?v=20260620-centered-login">
     <script>window.OLIGARCHY_ANALYTICS={enabled:false,provider:"plausible",domain:"",respectDoNotTrack:true};</script>
-    <script defer src="/assets/analytics.js?v=20260620-client-login-nav"></script>
-    <script defer src="/assets/login.js?v=20260620-client-login-polish"></script>
+    <script defer src="/assets/analytics.js?v=20260620-centered-login"></script>
+    <script defer src="/assets/login.js?v=20260620-centered-login"></script>
   </head>
   <body>
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="Oligarchy Services home"><span class="brand-mark" aria-hidden="true">OS</span><span>Oligarchy Services</span></a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">Menu</button>
-      <nav id="primary-navigation" class="nav-links" aria-label="Primary navigation">
-        <a href="/">Home</a>
-        <a href="/about.html">About Us</a>
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-trigger" type="button" aria-expanded="false">Services</button>
-          <div class="nav-dropdown-menu">
-            <a href="/ai-automation.html">AI &amp; Automation</a>
-            <a href="/help-desk.html">Help Desk</a>
-            <a href="/business-systems.html">Business Systems</a>
-            <a href="/itad.html">ITAD</a>
-            <a href="/itam.html">ITAM</a>
-          </div>
-        </div>
-        <a href="/contact.html">Contact Us</a>
-        <a href="/login.html" aria-current="page">Login</a>
-        <a class="nav-cta" href="/contact.html">Get Quote</a>
-      </nav>
-    </header>
-
     <main class="login-page">
       <section class="login-hero" aria-labelledby="login-heading">
-        <div class="login-copy">
-          <p class="eyebrow">Secure client access</p>
-          <h1 id="login-heading">Client portal access for technology operations.</h1>
-          <p class="login-lead">Continue to support requests, implementation handoffs, asset records, and reporting workspaces.</p>
-          <div class="login-proof" aria-label="Client portal coverage">
-            <span>Support requests</span>
-            <span>Project handoff</span>
-            <span>Asset reporting</span>
-          </div>
-        </div>
-
+        <a class="login-brand-logo" href="/" aria-label="Oligarchy Services home">OLIGARCHY</a>
         <form class="login-panel" id="client-login-form" action="/client-portal/" method="post" data-static-login="true" novalidate>
           <div class="login-panel-heading">
             <p class="eyebrow">Client portal</p>
-            <h2>Log in</h2>
+            <h1 id="login-heading">Log in</h1>
             <p>Use the email assigned to your organization workspace.</p>
           </div>
 

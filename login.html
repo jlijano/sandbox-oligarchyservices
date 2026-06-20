@@ -8,10 +8,10 @@
     <meta name="description" content="Client access portal for Oligarchy Services technology operations, support, and reporting.">
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/footer.css?v=20260618-crawford-layout">
-    <link rel="stylesheet" href="/assets/login.css?v=20260620-client-login">
+    <link rel="stylesheet" href="/assets/login.css?v=20260620-client-login-polish">
     <script>window.OLIGARCHY_ANALYTICS={enabled:false,provider:"plausible",domain:"",respectDoNotTrack:true};</script>
     <script defer src="/assets/analytics.js?v=20260620-client-login-nav"></script>
-    <script defer src="/assets/login.js?v=20260620-client-login"></script>
+    <script defer src="/assets/login.js?v=20260620-client-login-polish"></script>
   </head>
   <body>
     <header class="site-header">
@@ -40,8 +40,8 @@
       <section class="login-hero" aria-labelledby="login-heading">
         <div class="login-copy">
           <p class="eyebrow">Secure client access</p>
-          <h1 id="login-heading">Technology control starts with a clear point of entry.</h1>
-          <p class="login-lead">Sign in to continue to Oligarchy Services support, implementation, asset, and reporting workspaces.</p>
+          <h1 id="login-heading">Client portal access for technology operations.</h1>
+          <p class="login-lead">Continue to support requests, implementation handoffs, asset records, and reporting workspaces.</p>
           <div class="login-proof" aria-label="Client portal coverage">
             <span>Support requests</span>
             <span>Project handoff</span>
@@ -49,7 +49,7 @@
           </div>
         </div>
 
-        <form class="login-panel" id="client-login-form" action="/client-portal/" method="post" novalidate>
+        <form class="login-panel" id="client-login-form" action="/client-portal/" method="post" data-static-login="true" novalidate>
           <div class="login-panel-heading">
             <p class="eyebrow">Client portal</p>
             <h2>Log in</h2>
@@ -78,11 +78,11 @@
               <input id="remember-email" name="rememberEmail" type="checkbox">
               <span>Remember email</span>
             </label>
-            <a href="/contact.html">Need access?</a>
+            <a href="/contact.html">Request access</a>
           </div>
 
-          <button class="button primary login-submit" type="submit">Continue securely</button>
-          <p class="login-note">For Hostinger static hosting, this page is ready to connect to a real authentication endpoint. It does not save passwords in the browser.</p>
+          <button class="button primary login-submit" type="submit">Sign in</button>
+          <p class="login-note">Access is managed by Oligarchy Services. Contact your workspace lead if your account is not active yet.</p>
         </form>
       </section>
     </main>

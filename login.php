@@ -20,7 +20,7 @@ unset($_SESSION['login_error']);
     <link rel="stylesheet" href="/assets/login.css?v=20260620-php-login">
     <script>window.OLIGARCHY_ANALYTICS={enabled:false,provider:"plausible",domain:"",respectDoNotTrack:true};</script>
     <script defer src="/assets/analytics.js?v=20260620-centered-login"></script>
-    <script defer src="/assets/login.js?v=20260621-ajax-login"></script>
+    <script defer src="/assets/login.js?v=20260621-json-login"></script>
   </head>
   <body>
     <main class="login-page">

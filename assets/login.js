@@ -1,92 +1,98 @@
 (function () {
-  const navLinks = document.getElementById("primary-navigation");
-  if (navLinks && !navLinks.querySelector('a[href="/login.html"]')) {
-    const loginLink = document.createElement("a");
-    loginLink.href = "/login.html";
-    loginLink.textContent = "Login";
-    loginLink.setAttribute("aria-current", "page");
-    const quoteLink = navLinks.querySelector(".nav-cta");
-    navLinks.insertBefore(loginLink, quoteLink || null);
-  }
-
-  const form = document.getElementById("client-login-form");
+  const form = document.getElementById("login-form");
   if (!form) return;
 
-  const email = form.querySelector("#email");
-  const password = form.querySelector("#password");
-  const rememberEmail = form.querySelector("#remember-email");
-  const message = form.querySelector("#login-message");
-  const emailError = form.querySelector("#email-error");
-  const passwordError = form.querySelector("#password-error");
+  const identifier = document.getElementById("login-identifier");
+  const password = document.getElementById("login-password");
+  const submitButton = form.querySelector(".login-submit");
+  const submitLabel = submitButton.querySelector(".button-label");
+  const errorAlert = document.getElementById("login-error");
   const passwordToggle = form.querySelector(".password-toggle");
-  const storageKey = "oligarchy_client_email";
 
-  const savedEmail = window.localStorage.getItem(storageKey);
-  if (savedEmail) {
-    email.value = savedEmail;
-    rememberEmail.checked = true;
-  }
-
-  const setFieldError = (field, errorElement, text) => {
-    field.setAttribute("aria-invalid", text ? "true" : "false");
-    if (text) field.setAttribute("aria-describedby", errorElement.id);
-    else field.removeAttribute("aria-describedby");
-    errorElement.textContent = text;
+  const fieldErrors = {
+    identifier: document.getElementById("identifier-error"),
+    password: document.getElementById("password-error")
   };
 
-  const setMessage = (text, type) => {
-    message.textContent = text;
-    message.className = "form-alert";
-    if (text) message.classList.add("is-visible", type === "success" ? "is-success" : "is-error");
+  const showFormError = (message) => {
+    errorAlert.textContent = message;
+    errorAlert.hidden = false;
+  };
+
+  const clearFormError = () => {
+    errorAlert.textContent = "";
+    errorAlert.hidden = true;
+  };
+
+  const setFieldError = (field, message) => {
+    const error = fieldErrors[field.name];
+    if (!error) return;
+    error.textContent = message;
+    field.setAttribute("aria-invalid", message ? "true" : "false");
+    field.setAttribute("aria-describedby", message ? error.id : "");
   };
 
   const validate = () => {
-    const emailValue = email.value.trim();
-    const passwordValue = password.value;
     let isValid = true;
+    const identifierValue = identifier.value.trim();
+    const passwordValue = password.value;
 
-    if (!emailValue) {
-      setFieldError(email, emailError, "Enter your email address.");
+    setFieldError(identifier, "");
+    setFieldError(password, "");
+    clearFormError();
+
+    if (!identifierValue) {
+      setFieldError(identifier, "Enter your email or username.");
       isValid = false;
-    } else if (!email.validity.valid) {
-      setFieldError(email, emailError, "Enter a valid email address.");
+    } else if (identifierValue.includes("@") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifierValue)) {
+      setFieldError(identifier, "Enter a valid email address, or use your username.");
       isValid = false;
-    } else {
-      setFieldError(email, emailError, "");
     }
 
     if (!passwordValue) {
-      setFieldError(password, passwordError, "Enter your password.");
+      setFieldError(password, "Enter your password.");
       isValid = false;
     } else if (passwordValue.length < 8) {
-      setFieldError(password, passwordError, "Password must be at least 8 characters.");
+      setFieldError(password, "Password must be at least 8 characters.");
       isValid = false;
-    } else {
-      setFieldError(password, passwordError, "");
     }
 
     return isValid;
   };
 
+  const setLoading = (isLoading) => {
+    submitButton.disabled = isLoading;
+    submitButton.setAttribute("aria-busy", isLoading ? "true" : "false");
+    submitLabel.textContent = isLoading ? "Checking access..." : submitButton.dataset.defaultLabel;
+    identifier.disabled = isLoading;
+    password.disabled = isLoading;
+    passwordToggle.disabled = isLoading;
+  };
+
   passwordToggle.addEventListener("click", () => {
-    const shouldShow = password.type === "password";
-    password.type = shouldShow ? "text" : "password";
-    passwordToggle.textContent = shouldShow ? "Hide" : "Show";
-    passwordToggle.setAttribute("aria-pressed", String(shouldShow));
+    const isPasswordVisible = password.type === "text";
+    password.type = isPasswordVisible ? "password" : "text";
+    passwordToggle.textContent = isPasswordVisible ? "Show" : "Hide";
+    passwordToggle.setAttribute("aria-label", isPasswordVisible ? "Show password" : "Hide password");
+    password.focus();
+  });
+
+  [identifier, password].forEach((field) => {
+    field.addEventListener("input", () => {
+      if (field.getAttribute("aria-invalid") === "true") validate();
+      if (!errorAlert.hidden) clearFormError();
+    });
   });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    setMessage("", "error");
+    if (!validate()) return;
 
-    if (!validate()) {
-      setMessage("Check the highlighted fields before continuing.", "error");
-      return;
-    }
+    setLoading(true);
 
-    if (rememberEmail.checked) window.localStorage.setItem(storageKey, email.value.trim());
-    else window.localStorage.removeItem(storageKey);
-
-    setMessage("Login details accepted. Connect this form action to your authentication endpoint to complete sign-in.", "success");
+    window.setTimeout(() => {
+      setLoading(false);
+      showFormError("Login is ready for your authentication service. Connect this form to the approved sign-in endpoint before accepting real credentials.");
+    }, 700);
   });
 })();

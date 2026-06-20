@@ -8,6 +8,7 @@ web hosting limits.
 Upload these repository files into the domain's `public_html` directory:
 
 - `index.html`
+- `login.html`
 - `privacy.html`
 - `404.html`
 - `.htaccess`
@@ -27,7 +28,9 @@ PHP, MySQL, cron jobs, or a long-running Node.js process.
    `.htaccess`.
 3. If the domain uses a subdirectory install, update absolute paths in
    `.htaccess` and the sitemap.
-4. Test `index.html`, `privacy.html`, and a fake missing URL after upload.
+4. Test `index.html`, `login.html`, `privacy.html`, and a fake missing URL after upload.
+5. Connect `login.html` to the approved authentication provider before accepting
+   real credentials. The current login page is a front-end placeholder only.
 
 ## Analytics
 

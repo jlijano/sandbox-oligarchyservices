@@ -21,7 +21,7 @@ function install_error_message(Throwable $exception, string $dbHost): string
 {
     $message = $exception->getMessage();
 
-    if (str_contains($message, 'SQLSTATE[HY000] [1045]')) {
+    if (strpos($message, 'SQLSTATE[HY000] [1045]') !== false) {
         $hint = 'Access denied. Check the database username and password.';
         if ($dbHost !== 'localhost') {
             $hint .= ' On Hostinger shared hosting, the database host is usually localhost, not your website domain.';
@@ -30,11 +30,11 @@ function install_error_message(Throwable $exception, string $dbHost): string
         return $hint;
     }
 
-    if (str_contains($message, 'SQLSTATE[HY000] [2002]')) {
+    if (strpos($message, 'SQLSTATE[HY000] [2002]') !== false) {
         return 'Could not reach the database host. On Hostinger shared hosting, try localhost unless hPanel shows a different MySQL host.';
     }
 
-    if (str_contains($message, 'Unknown database')) {
+    if (strpos($message, 'Unknown database') !== false) {
         return 'Database not found. Check the full database name from Hostinger hPanel, including the u-number prefix.';
     }
 

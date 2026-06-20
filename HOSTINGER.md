@@ -23,12 +23,12 @@ PHP, MySQL, cron jobs, or a long-running Node.js process.
 ## Login page
 
 `login.html` is a static client login screen with browser-side validation,
-password visibility controls, and optional remembered email support. It does not
-store passwords in the browser.
+password visibility controls, loading state, and a clear placeholder error state.
+It does not store credentials in the browser.
 
-Before using it for real client access, connect the form to a real
-authentication endpoint or portal service. Basic Hostinger static hosting alone
-cannot validate credentials securely.
+Before using it for real client access, connect the submit handler in
+`assets/login.js` to a real authentication endpoint or portal service. Basic
+Hostinger static hosting alone cannot validate credentials securely.
 
 ## Before going live
 

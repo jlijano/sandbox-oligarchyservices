@@ -10,6 +10,12 @@ ErrorDocument 404 /404.html
   # Keep production traffic on HTTPS when SSL is enabled for the domain.
   RewriteCond %{HTTPS} !=on
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Keep the public login URL stable while serving the PHP login form.
+  RewriteRule ^login\.html$ /login.php [L]
+
+  # Protect server-side helpers and generated credentials from browser access.
+  RewriteRule ^includes/ - [F,L]
 </IfModule>
 
 <IfModule mod_headers.c>

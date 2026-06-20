@@ -33,13 +33,14 @@ See `HOSTINGER.md` for the full checklist.
 ## Login page
 
 The client login page is available at `/login.html`. It includes responsive
-layout, form validation, password visibility controls, optional remembered email
-support, and accessible field errors.
+layout, email-or-username and password fields, form validation, password
+visibility controls, remember-me UI, loading state, placeholder error state, and
+accessible field errors.
 
 Because this is a static Hostinger site, the page does not verify credentials by
-itself and does not store passwords in the browser. Connect the form action to a
-secure authentication endpoint or hosted portal before using it for real client
-access.
+itself and does not store credentials in the browser. Connect the submit handler
+in `assets/login.js` to a secure authentication endpoint or hosted portal before
+using it for real client access.
 
 ## Analytics approach
 
@@ -103,7 +104,7 @@ Then visit `http://localhost:8000`.
 
 ## Change notes
 
-- 2026-06-20: Added a Hostinger-compatible static client login page at `/login.html` with responsive styling and browser-side validation.
+- 2026-06-20: Refined the Hostinger-compatible static client login page at `/login.html` with live-site-aligned styling, browser-side validation, loading and error states, and an isolated placeholder submit handler.
 - 2026-06-20: Updated `robots.txt` and `sitemap.xml` to use the live Hostinger sandbox domain.
 - 2026-06-18: Updated the homepage hero consultation button to use the same red as the top navigation Get Quote button.
 - 2026-06-18: Removed the duplicate homepage hero tagline and visible homepage header brand text so the hero and navigation match the requested layout.

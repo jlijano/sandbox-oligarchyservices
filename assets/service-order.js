@@ -55,7 +55,7 @@
   `;
 
   const carouselStyles = `
-    .services-carousel{max-width:none;margin:0;padding:clamp(66px,8vw,106px) 0;overflow:hidden;background:radial-gradient(circle at 16% 0%,rgba(176,7,20,.26),transparent 28rem),linear-gradient(180deg,#09090a 0%,#171719 100%)}.services-carousel__inner{max-width:1240px;margin:0 auto;padding:0 clamp(18px,4vw,44px)}.services-carousel__header{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:28px}.services-carousel__controls{display:flex;gap:10px;margin-left:auto}.services-carousel__control{width:46px;height:46px;min-height:46px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:1.5rem;line-height:1;cursor:pointer;transition:background 160ms ease,border-color 160ms ease,transform 160ms ease}.services-carousel__control:hover,.services-carousel__control:focus-visible{border-color:rgba(176,7,20,.78);background:rgba(176,7,20,.5)}.services-carousel__viewport{overflow:hidden;border-radius:8px}.services-carousel__track{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(300px,38%);gap:18px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:2px;padding:2px 2px 16px;scrollbar-width:none}.services-carousel__track::-webkit-scrollbar{display:none}.services-carousel__card{position:relative;min-height:430px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;scroll-snap-align:start;border:1px solid rgba(255,255,255,.13);border-radius:8px;padding:24px;isolation:isolate;text-decoration:none;background:#121214;box-shadow:0 24px 58px rgba(0,0,0,.34);transform:translateZ(0);transition:transform 180ms ease,border-color 180ms ease,box-shadow 180ms ease}.services-carousel__card::before{content:"";position:absolute;inset:-4%;z-index:-2;background-image:var(--service-card-bg);background-size:cover;background-position:center;filter:saturate(.82) contrast(1.04) brightness(.7);transform:scale(1.06);transition:transform 500ms ease,filter 500ms ease}.services-carousel__card::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,.16),rgba(0,0,0,.56) 44%,rgba(7,7,8,.9))}.services-carousel__card:hover,.services-carousel__card:focus-visible{border-color:rgba(176,7,20,.9);box-shadow:0 26px 68px rgba(0,0,0,.46),0 0 0 1px rgba(176,7,20,.18) inset;transform:translateY(-4px);outline:none}.services-carousel__card:hover::before,.services-carousel__card:focus-visible::before{filter:saturate(.95) contrast(1.08) brightness(.82);transform:scale(1.1)}.services-carousel__number{position:absolute;top:22px;left:22px;display:inline-flex;align-items:center;justify-content:center;width:48px;height:34px;border-radius:999px;background:#a90707;color:#fff;font-size:.84rem;font-weight:850}.services-carousel__card h3{max-width:12ch;margin:0 0 12px;color:#fff;font-size:clamp(1.55rem,2.5vw,2.35rem);line-height:1.02}.services-carousel__card p{max-width:46ch;margin:0;color:#e4e4e7;font-size:1rem;line-height:1.5}.services-carousel__cta{width:max-content;margin-top:22px;border-bottom:2px solid #b00714;color:#fff;font-size:.92rem;font-weight:850}.services-carousel__pagination{display:flex;justify-content:center;gap:8px;margin-top:18px}.services-carousel__dot{width:10px;height:10px;border:0;border-radius:999px;background:rgba(255,255,255,.28);cursor:pointer;transition:width 160ms ease,background 160ms ease}.services-carousel__dot[aria-selected="true"]{width:28px;background:#b00714}@media(max-width:940px){.services-carousel__header{justify-content:flex-end}.services-carousel__track{grid-auto-columns:minmax(280px,72%)}}@media(max-width:620px){.services-carousel__inner{padding-inline:16px}.services-carousel__track{grid-auto-columns:minmax(260px,88%);gap:14px}.services-carousel__card{min-height:390px;padding:20px}.services-carousel__card h3{max-width:14ch}}
+    .services-carousel{max-width:none;margin:0;padding:clamp(66px,8vw,106px) 0;overflow:hidden;background:radial-gradient(circle at 16% 0%,rgba(176,7,20,.26),transparent 28rem),linear-gradient(180deg,#09090a 0%,#171719 100%)}.services-carousel__inner{max-width:1240px;margin:0 auto;padding:0 clamp(18px,4vw,44px)}.services-carousel__header{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:28px}.services-carousel__controls{display:flex;gap:10px;margin-left:auto}.services-carousel__control{width:46px;height:46px;min-height:46px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;font-size:1.5rem;line-height:1;cursor:pointer;transition:background 160ms ease,border-color 160ms ease,transform 160ms ease}.services-carousel__control:hover,.services-carousel__control:focus-visible{border-color:rgba(176,7,20,.78);background:rgba(176,7,20,.5)}.services-carousel__viewport{overflow:hidden;border-radius:8px}.services-carousel__track{display:flex;gap:18px;transform:translate3d(0,0,0);transition:transform 620ms cubic-bezier(.2,.7,0,1);will-change:transform}.services-carousel__card{position:relative;min-height:430px;display:flex;flex:0 0 calc((100% - 36px)/3);flex-direction:column;justify-content:flex-end;overflow:hidden;border:1px solid rgba(255,255,255,.13);border-radius:8px;padding:24px;isolation:isolate;text-decoration:none;background:#121214;box-shadow:0 24px 58px rgba(0,0,0,.34);transform:scale(.94);opacity:.62;transition:transform 420ms ease,opacity 420ms ease,border-color 180ms ease,box-shadow 180ms ease}.services-carousel__card.is-active{transform:scale(1);opacity:1}.services-carousel__card::before{content:"";position:absolute;inset:-4%;z-index:-2;background-image:var(--service-card-bg);background-size:cover;background-position:center;filter:saturate(.82) contrast(1.04) brightness(.7);transform:scale(1.06);transition:transform 500ms ease,filter 500ms ease}.services-carousel__card::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,.16),rgba(0,0,0,.56) 44%,rgba(7,7,8,.9))}.services-carousel__card:hover,.services-carousel__card:focus-visible{border-color:rgba(176,7,20,.9);box-shadow:0 26px 68px rgba(0,0,0,.46),0 0 0 1px rgba(176,7,20,.18) inset;outline:none}.services-carousel__card:hover::before,.services-carousel__card:focus-visible::before{filter:saturate(.95) contrast(1.08) brightness(.82);transform:scale(1.1)}.services-carousel__number{position:absolute;top:22px;left:22px;display:inline-flex;align-items:center;justify-content:center;width:48px;height:34px;border-radius:999px;background:#a90707;color:#fff;font-size:.84rem;font-weight:850}.services-carousel__card h3{max-width:12ch;margin:0 0 12px;color:#fff;font-size:clamp(1.55rem,2.5vw,2.35rem);line-height:1.02}.services-carousel__card p{max-width:46ch;margin:0;color:#e4e4e7;font-size:1rem;line-height:1.5}.services-carousel__cta{width:max-content;margin-top:22px;border-bottom:2px solid #b00714;color:#fff;font-size:.92rem;font-weight:850}.services-carousel__pagination{display:flex;justify-content:center;gap:8px;margin-top:18px}.services-carousel__dot{width:10px;height:10px;border:0;border-radius:999px;background:rgba(255,255,255,.28);cursor:pointer;transition:width 160ms ease,background 160ms ease}.services-carousel__dot[aria-selected="true"]{width:28px;background:#b00714}@media(max-width:940px){.services-carousel__header{justify-content:flex-end}.services-carousel__card{flex-basis:calc((100% - 18px)/2)}}@media(max-width:620px){.services-carousel__inner{padding-inline:16px}.services-carousel__track{gap:14px}.services-carousel__card{min-height:390px;flex-basis:100%;padding:20px}.services-carousel__card h3{max-width:14ch}}
   `;
 
   const addStyle = (id, css) => {
@@ -105,22 +105,11 @@
     return true;
   };
 
-  const updateCarouselDots = (section) => {
-    const track = section.querySelector(".services-carousel__track");
-    const cards = Array.from(section.querySelectorAll(".services-carousel__card"));
-    const dots = Array.from(section.querySelectorAll(".services-carousel__dot"));
-    if (!track || !cards.length || !dots.length) return;
-    const activeIndex = cards.reduce((closestIndex, card, index) => {
-      const currentDistance = Math.abs(card.offsetLeft - track.scrollLeft);
-      const closestDistance = Math.abs(cards[closestIndex].offsetLeft - track.scrollLeft);
-      return currentDistance < closestDistance ? index : closestIndex;
-    }, 0);
-    dots.forEach((dot, index) => dot.setAttribute("aria-selected", index === activeIndex ? "true" : "false"));
-  };
-
   const initializeServicesCarousel = (section) => {
     if (section.dataset.carouselReady === "true") return;
     section.dataset.carouselReady = "true";
+    section.dataset.autoplayReady = "true";
+
     const track = section.querySelector(".services-carousel__track");
     const cards = Array.from(section.querySelectorAll(".services-carousel__card"));
     const prev = section.querySelector("[data-services-prev]");
@@ -128,21 +117,65 @@
     const dots = Array.from(section.querySelectorAll(".services-carousel__dot"));
     if (!track || !cards.length) return;
 
-    const activeIndex = () => cards.reduce((closestIndex, card, index) => {
-      const currentDistance = Math.abs(card.offsetLeft - track.scrollLeft);
-      const closestDistance = Math.abs(cards[closestIndex].offsetLeft - track.scrollLeft);
-      return currentDistance < closestDistance ? index : closestIndex;
-    }, 0);
-    const scrollToCard = (index) => {
-      const target = cards[((index % cards.length) + cards.length) % cards.length];
-      track.scrollTo({ left: target.offsetLeft, behavior: "smooth" });
+    let index = 0;
+    let timer = null;
+
+    const visibleCount = () => {
+      if (window.matchMedia("(max-width: 620px)").matches) return 1;
+      if (window.matchMedia("(max-width: 940px)").matches) return 2;
+      return 3;
     };
 
-    prev?.addEventListener("click", () => scrollToCard(activeIndex() - 1));
-    next?.addEventListener("click", () => scrollToCard(activeIndex() + 1));
-    dots.forEach((dot, index) => dot.addEventListener("click", () => scrollToCard(index)));
-    track.addEventListener("scroll", () => window.requestAnimationFrame(() => updateCarouselDots(section)), { passive: true });
-    updateCarouselDots(section);
+    const maxIndex = () => Math.max(0, cards.length - visibleCount());
+    const clampIndex = (value) => Math.min(Math.max(value, 0), maxIndex());
+
+    const render = () => {
+      index = clampIndex(index);
+      const gap = parseFloat(window.getComputedStyle(track).columnGap || window.getComputedStyle(track).gap || 0) || 0;
+      const cardWidth = cards[0].getBoundingClientRect().width;
+      track.style.transform = `translate3d(${-index * (cardWidth + gap)}px,0,0)`;
+      cards.forEach((card, cardIndex) => {
+        card.classList.toggle("is-active", cardIndex === index);
+        card.setAttribute("aria-hidden", cardIndex < index || cardIndex >= index + visibleCount() ? "true" : "false");
+      });
+      dots.forEach((dot, dotIndex) => dot.setAttribute("aria-selected", dotIndex === index ? "true" : "false"));
+    };
+
+    const goTo = (nextIndex) => {
+      index = clampIndex(nextIndex);
+      render();
+    };
+
+    const stop = () => {
+      if (timer) window.clearInterval(timer);
+      timer = null;
+    };
+
+    const start = () => {
+      stop();
+      timer = window.setInterval(() => goTo(index >= maxIndex() ? 0 : index + 1), 3600);
+    };
+
+    prev?.addEventListener("click", () => {
+      goTo(index <= 0 ? maxIndex() : index - 1);
+      start();
+    });
+    next?.addEventListener("click", () => {
+      goTo(index >= maxIndex() ? 0 : index + 1);
+      start();
+    });
+    dots.forEach((dot, dotIndex) => dot.addEventListener("click", () => {
+      goTo(dotIndex);
+      start();
+    }));
+    section.addEventListener("mouseenter", stop);
+    section.addEventListener("mouseleave", start);
+    section.addEventListener("focusin", stop);
+    section.addEventListener("focusout", start);
+    window.addEventListener("resize", render);
+
+    render();
+    start();
   };
 
   const installServicesCarousel = () => {
@@ -168,9 +201,9 @@
           </div>
         </div>
         <div class="services-carousel__viewport">
-          <div class="services-carousel__track" tabindex="0" aria-roledescription="carousel" aria-label="Oligarchy Services service cards">
-            ${serviceCards.map((card, index) => `
-              <a class="services-carousel__card" href="${card.href}" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${serviceCards.length}: ${card.title}" style="--service-card-bg: url('${card.image}')">
+          <div class="services-carousel__track" aria-roledescription="carousel" aria-label="Oligarchy Services service cards">
+            ${serviceCards.map((card, cardIndex) => `
+              <a class="services-carousel__card" href="${card.href}" role="group" aria-roledescription="slide" aria-label="${cardIndex + 1} of ${serviceCards.length}: ${card.title}" style="--service-card-bg: url('${card.image}')">
                 <span class="services-carousel__number">${card.number}</span>
                 <h3>${card.title}</h3>
                 <p>${card.body}</p>
@@ -180,7 +213,7 @@
           </div>
         </div>
         <div class="services-carousel__pagination" role="tablist" aria-label="Choose a service card">
-          ${serviceCards.map((card, index) => `<button class="services-carousel__dot" type="button" role="tab" aria-label="Go to ${card.title}" aria-selected="${index === 0 ? "true" : "false"}"></button>`).join("")}
+          ${serviceCards.map((card, cardIndex) => `<button class="services-carousel__dot" type="button" role="tab" aria-label="Go to ${card.title}" aria-selected="${cardIndex === 0 ? "true" : "false"}"></button>`).join("")}
         </div>
       </div>
     `;
@@ -189,7 +222,13 @@
     return true;
   };
 
-  const syncPage = () => syncServiceMenu() && installAboutSection() && installServicesCarousel();
+  const syncPage = () => {
+    const menuReady = syncServiceMenu();
+    const aboutReady = installAboutSection();
+    const carouselReady = installServicesCarousel();
+    return menuReady && aboutReady && carouselReady;
+  };
+
   if (syncPage()) return;
 
   const observer = new MutationObserver(() => {

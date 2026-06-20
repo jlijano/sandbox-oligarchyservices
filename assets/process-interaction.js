@@ -44,62 +44,76 @@
     });
   }
 
-  const carousel = document.querySelector(".services-carousel");
-  if (!carousel || carousel.dataset.autoplayReady === "true") return;
+  const initializeServicesAutoplay = () => {
+    const carousel = document.querySelector(".services-carousel");
+    if (!carousel || carousel.dataset.autoplayReady === "true") return false;
 
-  const track = carousel.querySelector(".services-carousel__track");
-  const cards = Array.from(carousel.querySelectorAll(".services-carousel__card"));
-  if (!track || cards.length < 2) return;
+    const track = carousel.querySelector(".services-carousel__track");
+    const cards = Array.from(carousel.querySelectorAll(".services-carousel__card"));
+    if (!track || cards.length < 2) return false;
 
-  carousel.dataset.autoplayReady = "true";
+    carousel.dataset.autoplayReady = "true";
 
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  let autoplayTimer = null;
+    let autoplayTimer = null;
+    let restartTimer = null;
 
-  const activeIndex = () => cards.reduce((closestIndex, card, index) => {
-    const currentDistance = Math.abs(card.offsetLeft - track.scrollLeft);
-    const closestDistance = Math.abs(cards[closestIndex].offsetLeft - track.scrollLeft);
-    return currentDistance < closestDistance ? index : closestIndex;
-  }, 0);
+    const activeIndex = () => cards.reduce((closestIndex, card, index) => {
+      const currentDistance = Math.abs(card.offsetLeft - track.scrollLeft);
+      const closestDistance = Math.abs(cards[closestIndex].offsetLeft - track.scrollLeft);
+      return currentDistance < closestDistance ? index : closestIndex;
+    }, 0);
 
-  const scrollToCard = (index) => {
-    const target = cards[((index % cards.length) + cards.length) % cards.length];
-    track.scrollTo({ left: target.offsetLeft, behavior: "smooth" });
-  };
+    const scrollToCard = (index, behavior = "smooth") => {
+      const target = cards[((index % cards.length) + cards.length) % cards.length];
+      track.scrollTo({ left: target.offsetLeft, behavior });
+    };
 
-  const stopAutoplay = () => {
-    if (!autoplayTimer) return;
-    window.clearInterval(autoplayTimer);
-    autoplayTimer = null;
-  };
+    const stopAutoplay = () => {
+      if (autoplayTimer) window.clearInterval(autoplayTimer);
+      if (restartTimer) window.clearTimeout(restartTimer);
+      autoplayTimer = null;
+      restartTimer = null;
+    };
 
-  const startAutoplay = () => {
-    if (autoplayTimer || reducedMotion.matches || document.hidden) return;
-    autoplayTimer = window.setInterval(() => scrollToCard(activeIndex() + 1), 4200);
-  };
+    const startAutoplay = () => {
+      if (autoplayTimer || document.hidden) return;
+      autoplayTimer = window.setInterval(() => scrollToCard(activeIndex() + 1), 3600);
+    };
 
-  carousel.addEventListener("pointerenter", stopAutoplay);
-  carousel.addEventListener("pointerleave", startAutoplay);
-  carousel.addEventListener("focusin", stopAutoplay);
-  carousel.addEventListener("focusout", startAutoplay);
-  carousel.addEventListener("click", (event) => {
-    if (!event.target.closest(".services-carousel__control, .services-carousel__dot")) return;
-    stopAutoplay();
-    window.setTimeout(startAutoplay, 4200);
-  });
-
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
+    const restartAutoplay = () => {
       stopAutoplay();
-      return;
-    }
-    startAutoplay();
+      restartTimer = window.setTimeout(startAutoplay, 3600);
+    };
+
+    carousel.addEventListener("click", (event) => {
+      if (!event.target.closest(".services-carousel__control, .services-carousel__dot")) return;
+      restartAutoplay();
+    });
+
+    carousel.addEventListener("focusin", stopAutoplay);
+    carousel.addEventListener("focusout", restartAutoplay);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        stopAutoplay();
+        return;
+      }
+      startAutoplay();
+    });
+
+    window.setTimeout(() => {
+      scrollToCard(activeIndex() + 1);
+      startAutoplay();
+    }, 700);
+
+    return true;
+  };
+
+  if (initializeServicesAutoplay()) return;
+
+  const carouselObserver = new MutationObserver(() => {
+    if (initializeServicesAutoplay()) carouselObserver.disconnect();
   });
 
-  reducedMotion.addEventListener("change", () => {
-    stopAutoplay();
-    startAutoplay();
-  });
-
-  startAutoplay();
+  carouselObserver.observe(document.documentElement, { childList: true, subtree: true });
 })();

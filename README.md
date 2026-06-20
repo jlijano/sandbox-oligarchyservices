@@ -26,7 +26,9 @@ Before going live:
 3. Upload `.htaccess` along with the visible files. It is a hidden file, but it
    controls the default index page, 404 page, security headers, caching, and
    HTTPS redirect.
-4. Test `index.html`, `privacy.html`, and one missing URL after upload.
+4. Test `index.html`, `login.html`, `privacy.html`, and one missing URL after upload.
+5. Connect `login.html` to an approved authentication endpoint before accepting
+   real credentials. The current page is a static front-end placeholder.
 
 See `HOSTINGER.md` for the full checklist.
 
@@ -92,5 +94,6 @@ Then visit `http://localhost:8000`.
 
 ## Change notes
 
+- 2026-06-20: Added a static, Hostinger-compatible login page at `login.html` with client-side validation, loading and error states, and an isolated placeholder submit handler for future authentication wiring.
 - 2026-06-18: Updated the homepage hero consultation button to use the same red as the top navigation Get Quote button.
 - 2026-06-18: Removed the duplicate homepage hero tagline and visible homepage header brand text so the hero and navigation match the requested layout.

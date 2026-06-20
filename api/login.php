@@ -32,6 +32,44 @@ function login_success_response(string $redirect = '/dashboard.php'): void
     redirect_to($redirect);
 }
 
+function ensure_login_schema(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(190) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        full_name VARCHAR(190) NOT NULL DEFAULT '',
+        role VARCHAR(50) NOT NULL DEFAULT 'client',
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        last_login_at DATETIME NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(190) NOT NULL,
+        ip_address VARCHAR(45) NOT NULL DEFAULT '',
+        success TINYINT(1) NOT NULL DEFAULT 0,
+        attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_login_attempts_email_time (email, attempted_at),
+        INDEX idx_login_attempts_ip_time (ip_address, attempted_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS activity_log (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id INT UNSIGNED NULL,
+        action VARCHAR(120) NOT NULL,
+        target_type VARCHAR(80) NOT NULL DEFAULT '',
+        target_id INT UNSIGNED NULL,
+        details TEXT NULL,
+        ip_address VARCHAR(45) NOT NULL DEFAULT '',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_activity_created (created_at),
+        INDEX idx_activity_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
+
 function audit_login(PDO $pdo, ?int $userId, string $action, string $email, string $ipAddress): void
 {
     try {
@@ -53,6 +91,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') login_respon
 
 try {
     $pdo = db();
+    ensure_login_schema($pdo);
+
     $recentFailures = $pdo->prepare('SELECT COUNT(*) FROM login_attempts WHERE email = ? AND success = 0 AND attempted_at > (NOW() - INTERVAL 15 MINUTE)');
     $recentFailures->execute([$email]);
     if ((int) $recentFailures->fetchColumn() >= 5) login_response('Too many failed attempts. Try again in 15 minutes.', 429);
@@ -75,7 +115,10 @@ try {
     audit_login($pdo, (int) $user['id'], 'login', $email, $ipAddress);
     login_user((int) $user['id']);
     login_success_response('/dashboard.php');
+} catch (RuntimeException $error) {
+    error_log('Login configuration error: ' . $error->getMessage());
+    login_response('Database configuration is missing on the server. Restore includes/config.php or run the installer once with the Hostinger database settings.', 503);
 } catch (Throwable $error) {
     error_log('Login error: ' . $error->getMessage());
-    login_response('Login is not connected to the database yet. Please finish the installer or check the Hostinger database settings.', 503);
+    login_response('Login could not reach the database. Check the Hostinger database settings or PHP error log for the exact cause.', 503);
 }

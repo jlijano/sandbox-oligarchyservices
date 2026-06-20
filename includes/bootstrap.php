@@ -26,7 +26,7 @@ function app_base_path(string $path = ''): string
     return dirname(__DIR__) . ($path !== '' ? '/' . ltrim($path, '/') : '');
 }
 
-function redirect_to(string $path): never
+function redirect_to(string $path): void
 {
     header('Location: ' . $path, true, 302);
     exit;

@@ -1,4 +1,14 @@
 (function () {
+  const navLinks = document.getElementById("primary-navigation");
+  if (navLinks && !navLinks.querySelector('a[href="/login.html"]')) {
+    const loginLink = document.createElement("a");
+    loginLink.href = "/login.html";
+    loginLink.textContent = "Login";
+    loginLink.setAttribute("aria-current", "page");
+    const quoteLink = navLinks.querySelector(".nav-cta");
+    navLinks.insertBefore(loginLink, quoteLink || null);
+  }
+
   const form = document.getElementById("client-login-form");
   if (!form) return;
 

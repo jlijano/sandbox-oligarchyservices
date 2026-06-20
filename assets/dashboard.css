@@ -137,3 +137,36 @@ td form { display: inline-flex; margin: 0; }
 @media (max-width: 980px) {
   .filter-panel { grid-template-columns: 1fr; }
 }
+
+.table-heading,
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.table-heading span,
+.pagination span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.pagination {
+  margin-top: 14px;
+  justify-content: flex-end;
+}
+
+.secondary-action.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+@media (max-width: 680px) {
+  .table-heading,
+  .pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

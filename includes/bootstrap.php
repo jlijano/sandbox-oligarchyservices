@@ -1,0 +1,38 @@
+<?php
+declare(strict_types=1);
+
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => $isHttps,
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: camera=(), geolocation=(), microphone=()');
+
+function app_base_path(string $path = ''): string
+{
+    return dirname(__DIR__) . ($path !== '' ? '/' . ltrim($path, '/') : '');
+}
+
+function redirect_to(string $path): never
+{
+    header('Location: ' . $path, true, 302);
+    exit;
+}
+
+function e(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}

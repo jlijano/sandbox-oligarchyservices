@@ -101,12 +101,18 @@
         return;
       }
 
-      if (!response.ok) {
-        setMessage("Login service is unavailable. Please try again in a moment.", "error");
+      const contentType = response.headers.get("content-type") || "";
+      const result = contentType.includes("application/json") ? await response.json() : null;
+
+      if (!response.ok || !result?.ok) {
+        const fallback = response.status >= 500
+          ? "Login service is unavailable. Please try again in a moment."
+          : "Invalid email or password.";
+        setMessage(result?.message || fallback, "error");
         return;
       }
 
-      window.location.assign("/dashboard.php");
+      window.location.assign(result.redirect || "/dashboard.php");
     } catch (error) {
       setMessage("Could not reach the login service. Please try again.", "error");
     } finally {

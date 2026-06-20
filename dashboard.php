@@ -222,6 +222,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $users = $pages = $navItems = $activity = [];
 $settings = [];
+$userSearch = trim((string) ($_GET['user_search'] ?? ''));
+$userRoleFilter = strtolower(trim((string) ($_GET['user_role'] ?? '')));
+$userStatusFilter = strtolower(trim((string) ($_GET['user_status'] ?? '')));
+if (!in_array($userRoleFilter, ['', 'admin', 'editor', 'support', 'client'], true)) $userRoleFilter = '';
+if (!in_array($userStatusFilter, ['', 'active', 'inactive'], true)) $userStatusFilter = '';
 $counts = ['active_users' => 0, 'pages' => 0, 'published_pages' => 0, 'nav_items' => 0];
 try {
     $counts['active_users'] = (int) $pdo->query('SELECT COUNT(*) FROM users WHERE is_active = 1')->fetchColumn();
@@ -234,7 +239,30 @@ try {
         $counts['nav_items'] = (int) $pdo->query('SELECT COUNT(*) FROM navigation_items')->fetchColumn();
         $navItems = $pdo->query('SELECT * FROM navigation_items ORDER BY sort_order ASC, label ASC')->fetchAll();
     }
-    if ($canManageUsers) $users = $pdo->query('SELECT id, email, full_name, role, is_active, last_login_at, created_at FROM users ORDER BY created_at DESC, id DESC')->fetchAll();
+    if ($canManageUsers) {
+        $userWhere = [];
+        $userParams = [];
+        if ($userSearch !== '') {
+            $userWhere[] = '(full_name LIKE ? OR email LIKE ?)';
+            $searchLike = '%' . $userSearch . '%';
+            $userParams[] = $searchLike;
+            $userParams[] = $searchLike;
+        }
+        if ($userRoleFilter !== '') {
+            $userWhere[] = 'role = ?';
+            $userParams[] = $userRoleFilter;
+        }
+        if ($userStatusFilter !== '') {
+            $userWhere[] = 'is_active = ?';
+            $userParams[] = $userStatusFilter === 'active' ? 1 : 0;
+        }
+        $userSql = 'SELECT id, email, full_name, role, is_active, last_login_at, created_at FROM users';
+        if ($userWhere) $userSql .= ' WHERE ' . implode(' AND ', $userWhere);
+        $userSql .= ' ORDER BY created_at DESC, id DESC';
+        $userStmt = $pdo->prepare($userSql);
+        $userStmt->execute($userParams);
+        $users = $userStmt->fetchAll();
+    }
     if (table_exists($pdo, 'settings')) {
         foreach ($pdo->query('SELECT setting_key, setting_value FROM settings')->fetchAll() as $row) $settings[$row['setting_key']] = $row['setting_value'];
     }
@@ -325,9 +353,15 @@ $csrf = csrf_token();
           <?php if ($canManageUsers): ?>
           <section class="dashboard-section" id="users" data-dashboard-section data-section-label="Users">
             <div class="section-heading-row"><div><p class="eyebrow">Access control</p><h2>Users</h2></div></div>
+            <form class="admin-panel filter-panel" method="get" action="/dashboard.php#users">
+              <label>Search users<input name="user_search" type="search" value="<?= e($userSearch) ?>" placeholder="Name or email"></label>
+              <label>Role<select name="user_role"><option value="">All roles</option><?php foreach ($allowedRoles as $r): ?><option value="<?= e($r) ?>" <?= $userRoleFilter === $r ? 'selected' : '' ?>><?= e(ucfirst($r)) ?></option><?php endforeach; ?></select></label>
+              <label>Status<select name="user_status"><option value="">All statuses</option><option value="active" <?= $userStatusFilter === 'active' ? 'selected' : '' ?>>Active</option><option value="inactive" <?= $userStatusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option></select></label>
+              <div class="filter-actions"><button class="button primary" type="submit">Apply filters</button><a class="secondary-action" href="/dashboard.php#users">Clear</a></div>
+            </form>
             <div class="panel-grid form-and-table">
               <form class="admin-panel" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="save_user"><input type="hidden" name="return_section" value="users"><input type="hidden" name="user_id" data-user-id value="0"><h3 data-user-form-title>Create user</h3><label>Full name<input name="full_name" data-user-name required></label><label>Email<input name="email" type="email" data-user-email required></label><label>Role<select name="role" data-user-role><?php foreach ($allowedRoles as $r): ?><option value="<?= e($r) ?>"><?= e(ucfirst($r)) ?></option><?php endforeach; ?></select></label><label class="check-row"><input name="is_active" type="checkbox" value="1" data-user-active checked><span>Active</span></label><label>Password<input name="password" type="password" autocomplete="new-password" minlength="10" placeholder="Set or reset password"></label><div class="form-actions"><button class="button primary" type="submit">Save user</button><button class="button secondary" type="button" data-reset-user-form>Clear</button></div></form>
-              <div class="admin-panel table-panel"><h3>User accounts</h3><?php if (!$users): ?><p class="empty-state">No users found.</p><?php else: ?><div class="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead><tbody><?php foreach ($users as $row): ?><tr><td><?= e($row['full_name']) ?></td><td><?= e($row['email']) ?></td><td><?= e($row['role']) ?></td><td><?= (int) $row['is_active'] === 1 ? 'Active' : 'Inactive' ?></td><td><?= e((string) ($row['last_login_at'] ?? 'Never')) ?></td><td class="row-actions"><button class="table-action" type="button" data-edit-user data-id="<?= e((string) $row['id']) ?>" data-name="<?= e($row['full_name']) ?>" data-email="<?= e($row['email']) ?>" data-role="<?= e($row['role']) ?>" data-active="<?= e((string) $row['is_active']) ?>">Edit</button><?php if ((int) $row['id'] !== (int) $user['id']): ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="deactivate_user"><input type="hidden" name="return_section" value="users"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Deactivate</button></form><form method="post" data-confirm="Delete this user permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_user"><input type="hidden" name="return_section" value="users"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form><?php endif; ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></div>
+              <div class="admin-panel table-panel"><h3>User accounts</h3><?php if (!$users): ?><p class="empty-state">No users match the current filters.</p><?php else: ?><div class="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead><tbody><?php foreach ($users as $row): ?><tr><td><?= e($row['full_name']) ?></td><td><?= e($row['email']) ?></td><td><?= e($row['role']) ?></td><td><?= (int) $row['is_active'] === 1 ? 'Active' : 'Inactive' ?></td><td><?= e((string) ($row['last_login_at'] ?? 'Never')) ?></td><td class="row-actions"><button class="table-action" type="button" data-edit-user data-id="<?= e((string) $row['id']) ?>" data-name="<?= e($row['full_name']) ?>" data-email="<?= e($row['email']) ?>" data-role="<?= e($row['role']) ?>" data-active="<?= e((string) $row['is_active']) ?>">Edit</button><?php if ((int) $row['id'] !== (int) $user['id']): ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="deactivate_user"><input type="hidden" name="return_section" value="users"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Deactivate</button></form><form method="post" data-confirm="Delete this user permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_user"><input type="hidden" name="return_section" value="users"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form><?php endif; ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></div>
             </div>
           </section>
           <?php endif; ?>

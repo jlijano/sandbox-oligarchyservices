@@ -11,6 +11,7 @@ Static site foundation for `jlijano/sandbox-oligarchyservices`.
 - No build step required.
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
+- `login.html` provides a static client login screen that can be connected to a real authentication endpoint.
 
 ## Hostinger deployment
 
@@ -20,15 +21,25 @@ package installation, database, or build command is required.
 
 Before going live:
 
-1. Replace `https://example.com/` in `robots.txt` and `sitemap.xml` with the
-   production domain.
+1. Confirm `robots.txt` and `sitemap.xml` use the production domain.
 2. Confirm SSL is active in Hostinger.
 3. Upload `.htaccess` along with the visible files. It is a hidden file, but it
    controls the default index page, 404 page, security headers, caching, and
    HTTPS redirect.
-4. Test `index.html`, `privacy.html`, and one missing URL after upload.
+4. Test `index.html`, `login.html`, `privacy.html`, and one missing URL after upload.
 
 See `HOSTINGER.md` for the full checklist.
+
+## Login page
+
+The client login page is available at `/login.html`. It includes responsive
+layout, form validation, password visibility controls, optional remembered email
+support, and accessible field errors.
+
+Because this is a static Hostinger site, the page does not verify credentials by
+itself and does not store passwords in the browser. Connect the form action to a
+secure authentication endpoint or hosted portal before using it for real client
+access.
 
 ## Analytics approach
 
@@ -92,5 +103,7 @@ Then visit `http://localhost:8000`.
 
 ## Change notes
 
+- 2026-06-20: Added a Hostinger-compatible static client login page at `/login.html` with responsive styling and browser-side validation.
+- 2026-06-20: Updated `robots.txt` and `sitemap.xml` to use the live Hostinger sandbox domain.
 - 2026-06-18: Updated the homepage hero consultation button to use the same red as the top navigation Get Quote button.
 - 2026-06-18: Removed the duplicate homepage hero tagline and visible homepage header brand text so the hero and navigation match the requested layout.

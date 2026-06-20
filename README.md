@@ -1,45 +1,56 @@
 # Oligarchy Services
 
-Static site foundation for `jlijano/sandbox-oligarchyservices`.
+Static website and optional PHP/MySQL client portal foundation for `jlijano/sandbox-oligarchyservices`.
 
 ## Current architecture
 
-- Static-only HTML, CSS, and JavaScript.
+- Static HTML, CSS, and JavaScript public marketing pages.
+- Optional PHP/MySQL client portal for real login support.
 - No backend framework.
-- No API routes.
-- No database.
+- No API routes beyond the lightweight PHP portal endpoints.
 - No build step required.
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
-- `login.html` provides a static client login screen that can be connected to a real authentication endpoint.
+- `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
+- The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
 
 ## Hostinger deployment
 
 This project can be uploaded directly to Hostinger shared web hosting. Place the
 repository contents in the domain's `public_html` directory. No Node.js runtime,
-package installation, database, or build command is required.
+package installation, or build command is required.
+
+For static-only preview use, `login.html` can show the login UI without checking
+credentials. For real client access, upload the PHP portal files and run the
+one-time installer described in `HOSTINGER.md`.
 
 Before going live:
 
 1. Confirm `robots.txt` and `sitemap.xml` use the production domain.
 2. Confirm SSL is active in Hostinger.
 3. Upload `.htaccess` along with the visible files. It is a hidden file, but it
-   controls the default index page, 404 page, security headers, caching, and
-   HTTPS redirect.
-4. Test `index.html`, `login.html`, `privacy.html`, and one missing URL after upload.
+   controls the default index page, 404 page, security headers, caching, HTTPS
+   redirect, login rewrite, and protected helper paths.
+4. If enabling the client portal, create the Hostinger MySQL database, run
+   `/install.php`, confirm login works, and delete `install.php` from Hostinger
+   after installation.
+5. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
+   `privacy.html`, and one missing URL after upload.
 
 See `HOSTINGER.md` for the full checklist.
 
-## Login page
+## Login page and client portal
 
-The client login page is available at `/login.html`. It includes responsive
-layout, form validation, password visibility controls, optional remembered email
-support, and accessible field errors.
+The stable client login page is available at `/login.html`.
 
-Because this is a static Hostinger site, the page does not verify credentials by
-itself and does not store passwords in the browser. Connect the form action to a
-secure authentication endpoint or hosted portal before using it for real client
-access.
+In static preview mode, `login.html` includes responsive layout, browser-side
+validation, password visibility controls, optional remembered email support, and
+accessible field errors, but it does not verify credentials or store passwords.
+
+When deployed with PHP/MySQL, `.htaccess` rewrites `/login.html` to `login.php`.
+The PHP form includes a CSRF token and submits to `api/login.php`, which verifies
+users against the database, records login attempts, regenerates the session ID on
+successful login, and redirects authenticated users to `dashboard.php`.
 
 ## Analytics approach
 
@@ -101,8 +112,12 @@ python3 -m http.server 8000
 
 Then visit `http://localhost:8000`.
 
+For PHP portal testing, use a PHP-capable local server with a MySQL database and
+generated local `includes/config.php`. Do not commit generated credentials.
+
 ## Change notes
 
+- 2026-06-20: Aligned README architecture and deployment notes with the PHP/MySQL client portal documented in `HOSTINGER.md`.
 - 2026-06-20: Added a Hostinger-compatible static client login page at `/login.html` with responsive styling and browser-side validation.
 - 2026-06-20: Updated `robots.txt` and `sitemap.xml` to use the live Hostinger sandbox domain.
 - 2026-06-18: Updated the homepage hero consultation button to use the same red as the top navigation Get Quote button.

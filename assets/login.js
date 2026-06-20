@@ -65,7 +65,7 @@
     passwordToggle.setAttribute("aria-pressed", String(shouldShow));
   });
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     setMessage("", "error");
 
@@ -82,6 +82,38 @@
       return;
     }
 
-    form.submit();
+    const submitButton = form.querySelector("[type='submit']");
+    if (submitButton) {
+      submitButton.setAttribute("disabled", "disabled");
+      submitButton.textContent = "Signing in...";
+    }
+
+    try {
+      const response = await fetch(form.action, {
+        method: form.method || "POST",
+        body: new FormData(form),
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      });
+
+      if (response.redirected && response.url) {
+        window.location.assign(response.url);
+        return;
+      }
+
+      if (!response.ok) {
+        setMessage("Login service is unavailable. Please try again in a moment.", "error");
+        return;
+      }
+
+      window.location.assign("/dashboard.php");
+    } catch (error) {
+      setMessage("Could not reach the login service. Please try again.", "error");
+    } finally {
+      if (submitButton) {
+        submitButton.removeAttribute("disabled");
+        submitButton.textContent = "Sign in";
+      }
+    }
   });
 })();

@@ -12,7 +12,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
-- Authenticated clients can submit and view service requests at `/requests.php`; admin, editor, and support users can manage the full request queue.
+- Authenticated clients can submit and view service requests at `/requests.php`; admin, editor, and support users can manage the full request queue and timeline updates.
 - Admin-created portal users receive a generated temporary password by email, confirm their email address before signing in, then create their own password before opening the dashboard.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
 - The installer also writes persistent database config backups outside `public_html` when Hostinger file permissions allow it, so full file syncs do not force a database reinstall.
@@ -100,18 +100,19 @@ links must always use the production domain.
 ## Client requests
 
 `/requests.php` adds a lightweight authenticated service request module for the
-portal. Clients can submit requests and view only their own request history.
-Admin, editor, and support users can view all requests, update status, assign
-priority, choose an internal assignee, add internal notes, and write activity-log
-entries.
+portal. Clients can submit requests, add client-visible follow-up comments, and
+view only their own request history. Admin, editor, and support users can view
+all requests, update status, assign priority, choose an internal assignee, add
+client-visible updates, add internal-only notes, and write activity-log entries.
 
 Request statuses are `new`, `in_review`, `waiting_on_client`, `in_progress`,
 `resolved`, and `closed`. Request priorities are `low`, `normal`, `high`, and
 `urgent`.
 
 After deploying the request module to an existing Hostinger portal, log in as an
-admin and run `/update.php` once. The update creates the `client_requests` table
-without deleting existing users, pages, blogs, settings, or activity records.
+admin and run `/update.php` once. The update creates or updates the
+`client_requests` and `client_request_updates` tables without deleting existing
+users, pages, blogs, settings, or activity records.
 
 ## Sentinel mail orchestrator
 
@@ -196,6 +197,7 @@ the service host or a local uncommitted environment file.
 
 ## Change notes
 
+- 2026-06-22: Added request timeline updates with client-visible comments and internal-only staff notes.
 - 2026-06-21: Added a Client Requests portal module for authenticated client submissions and admin/support/editor queue management.
 - 2026-06-21: Added generated temporary passwords to account confirmation emails for new portal users.
 - 2026-06-21: Required newly confirmed portal users to create their own password before dashboard access.

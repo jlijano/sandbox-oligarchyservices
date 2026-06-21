@@ -36,3 +36,16 @@ function e($value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
+
+function request_path(): string
+{
+    $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+    if (is_string($path) && $path !== '') {
+        return $path;
+    }
+
+    return (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+}
+
+require_once __DIR__ . '/account-confirmation.php';
+account_confirmation_register_dashboard_hook();

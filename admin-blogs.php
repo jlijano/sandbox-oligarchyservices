@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $body = trim((string) ($_POST['body'] ?? ''));
             $status = blog_status(blog_post_string('status'));
             $category = blog_post_string('category');
+            $imageAlt = blog_post_string('featured_image_alt');
             $seoTitle = blog_post_string('seo_title');
             $seoDescription = blog_post_string('seo_description');
             $shareTitle = blog_post_string('social_share_title');
@@ -76,13 +77,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($blogId > 0) {
-                $stmt = $pdo->prepare("UPDATE blogs SET title = ?, slug = ?, excerpt = ?, body = ?, featured_image = ?, status = ?, author_id = ?, category = ?, published_at = CASE WHEN ? = 'published' AND published_at IS NULL THEN NOW() WHEN ? = 'published' THEN published_at ELSE NULL END, seo_title = ?, seo_description = ?, social_share_title = ?, social_share_description = ?, updated_at = NOW() WHERE id = ?");
-                $stmt->execute([$title, $slug, $excerpt, $body, $featuredImage, $status, (int) $user['id'], $category, $status, $status, $seoTitle, $seoDescription, $shareTitle, $shareDescription, $blogId]);
+                $stmt = $pdo->prepare("UPDATE blogs SET title = ?, slug = ?, excerpt = ?, body = ?, featured_image = ?, featured_image_alt = ?, status = ?, author_id = ?, category = ?, published_at = CASE WHEN ? = 'published' AND published_at IS NULL THEN NOW() WHEN ? = 'published' THEN published_at ELSE NULL END, seo_title = ?, seo_description = ?, social_share_title = ?, social_share_description = ?, updated_at = NOW() WHERE id = ?");
+                $stmt->execute([$title, $slug, $excerpt, $body, $featuredImage, $imageAlt, $status, (int) $user['id'], $category, $status, $status, $seoTitle, $seoDescription, $shareTitle, $shareDescription, $blogId]);
                 blog_log_activity($pdo, (int) $user['id'], $status === 'published' ? 'blog updated/published' : 'blog updated', $blogId, $slug);
                 blog_flash_success('Blog post updated.');
             } else {
-                $stmt = $pdo->prepare("INSERT INTO blogs (title, slug, excerpt, body, featured_image, status, author_id, category, published_at, seo_title, seo_description, social_share_title, social_share_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'published' THEN NOW() ELSE NULL END, ?, ?, ?, ?)");
-                $stmt->execute([$title, $slug, $excerpt, $body, $featuredImage, $status, (int) $user['id'], $category, $status, $seoTitle, $seoDescription, $shareTitle, $shareDescription]);
+                $stmt = $pdo->prepare("INSERT INTO blogs (title, slug, excerpt, body, featured_image, featured_image_alt, status, author_id, category, published_at, seo_title, seo_description, social_share_title, social_share_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'published' THEN NOW() ELSE NULL END, ?, ?, ?, ?)");
+                $stmt->execute([$title, $slug, $excerpt, $body, $featuredImage, $imageAlt, $status, (int) $user['id'], $category, $status, $seoTitle, $seoDescription, $shareTitle, $shareDescription]);
                 $newId = (int) $pdo->lastInsertId();
                 blog_log_activity($pdo, (int) $user['id'], $status === 'published' ? 'blog created/published' : 'blog created', $newId, $slug);
                 blog_flash_success('Blog post saved.');
@@ -171,7 +172,7 @@ $roleLabel = ucfirst($role);
     <title>Blogs Admin | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
-    <link rel="stylesheet" href="/assets/blogs.css?v=20260621-blogs">
+    <link rel="stylesheet" href="/assets/blogs.css?v=20260622-blogs-complete">
     <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
   </head>
   <body class="dashboard-body">
@@ -216,6 +217,8 @@ $roleLabel = ucfirst($role);
               <label>Body<textarea name="body" rows="14" required><?= e((string) ($editing['body'] ?? '')) ?></textarea></label>
               <label>Category or tag<input name="category" value="<?= e((string) ($editing['category'] ?? '')) ?>" placeholder="Operations"></label>
               <label>Featured image<input name="featured_image" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></label>
+              <label>Featured image alt text<input name="featured_image_alt" value="<?= e((string) ($editing['featured_image_alt'] ?? '')) ?>" placeholder="Brief description of the image"></label>
+              <?php if (!empty($editing['featured_image'])): ?><figure class="blog-image-preview"><img src="<?= e((string) $editing['featured_image']) ?>" alt="<?= e((string) ($editing['featured_image_alt'] ?: $editing['title'])) ?>"><figcaption>Current featured image</figcaption></figure><?php endif; ?>
               <label>Current image URL<input name="existing_featured_image" value="<?= e((string) ($editing['featured_image'] ?? '')) ?>" placeholder="/uploads/blog/example.webp"></label>
               <label>Status<select name="status"><option value="draft" <?= ($editing['status'] ?? '') !== 'published' ? 'selected' : '' ?>>Draft</option><option value="published" <?= ($editing['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published</option></select></label>
               <label>SEO title<input name="seo_title" value="<?= e((string) ($editing['seo_title'] ?? '')) ?>"></label>

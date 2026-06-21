@@ -10,7 +10,7 @@ if (!is_file($configPath)) {
     installer_restore_config_from_backup($configPath);
 }
 
-if (!is_file($configPath) && !is_file(installer_backup_config_path($configPath))) {
+if (installer_existing_config_path($configPath) === null) {
     header('Location: ' . (is_file($lockPath) ? '/repair.php' : '/install.php'), true, 302);
     exit;
 }

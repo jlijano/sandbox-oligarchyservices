@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/bootstrap.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/installer.php';
 
 function wants_json(): bool
 {
@@ -34,40 +35,7 @@ function login_success_response(string $redirect = '/dashboard.php'): void
 
 function ensure_login_schema(PDO $pdo): void
 {
-    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(190) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        full_name VARCHAR(190) NOT NULL DEFAULT '',
-        role VARCHAR(50) NOT NULL DEFAULT 'client',
-        is_active TINYINT(1) NOT NULL DEFAULT 1,
-        last_login_at DATETIME NULL,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(190) NOT NULL,
-        ip_address VARCHAR(45) NOT NULL DEFAULT '',
-        success TINYINT(1) NOT NULL DEFAULT 0,
-        attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_login_attempts_email_time (email, attempted_at),
-        INDEX idx_login_attempts_ip_time (ip_address, attempted_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
-    $pdo->exec("CREATE TABLE IF NOT EXISTS activity_log (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id INT UNSIGNED NULL,
-        action VARCHAR(120) NOT NULL,
-        target_type VARCHAR(80) NOT NULL DEFAULT '',
-        target_id INT UNSIGNED NULL,
-        details TEXT NULL,
-        ip_address VARCHAR(45) NOT NULL DEFAULT '',
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_activity_created (created_at),
-        INDEX idx_activity_user (user_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    create_or_update_schema($pdo);
 }
 
 function audit_login(PDO $pdo, ?int $userId, string $action, string $email, string $ipAddress): void

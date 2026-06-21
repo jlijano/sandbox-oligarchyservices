@@ -107,10 +107,12 @@ function account_confirmation_finalize_dashboard_create(): void
         if (account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token)) {
             $_SESSION['dashboard_notice'] = 'User created. Confirmation email sent to ' . $email . '.';
         } else {
+            unset($_SESSION['dashboard_notice']);
             $_SESSION['dashboard_error'] = 'User created, but the confirmation email could not be sent. Check Hostinger PHP mail settings.';
         }
     } catch (Throwable $error) {
         error_log('Account confirmation setup failed: ' . $error->getMessage());
+        unset($_SESSION['dashboard_notice']);
         $_SESSION['dashboard_error'] = 'User created, but account confirmation setup failed. Check the PHP error log.';
     }
 }

@@ -237,7 +237,7 @@ function access_sidebar(string $active, string $roleLabel, string $role = 'admin
         <a class="<?= $active === 'overview' ? 'is-active' : '' ?>" href="/dashboard.php#overview" data-section-link="overview" <?= $active === 'overview' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">O</span><span class="nav-label">Overview</span></a>
         <?php if ($isAdmin): ?>
         <div class="sidebar-group <?= in_array($active, ['companies', 'departments', 'users', 'roles'], true) ? 'is-open is-active' : '' ?>" data-valley-group>
-          <button class="sidebar-group-toggle" type="button" data-valley-toggle aria-expanded="true"><span class="nav-icon" aria-hidden="true">V</span><span class="nav-label">Valley</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
+          <button class="sidebar-group-toggle" type="button" data-valley-toggle aria-expanded="<?= in_array($active, ['companies', 'departments', 'users', 'roles'], true) ? 'true' : 'false' ?>"><span class="nav-icon" aria-hidden="true">V</span><span class="nav-label">Valley</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
           <div class="sidebar-subnav" data-valley-subnav>
             <?php foreach ($items as $item): ?>
               <a class="<?= $active === $item['key'] ? 'is-active' : '' ?>" href="<?= e($item['href']) ?>" <?= $active === $item['key'] ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span><span class="nav-label"><?= e($item['label']) ?></span></a>
@@ -528,7 +528,7 @@ function access_render_entity_page(string $entity): void
       body.access-modal-open { overflow: hidden; }
       @media (max-width: 680px) { .access-toolbar { align-items: stretch; } .access-toolbar .primary-action { width: 100%; } .module-grid { grid-template-columns: 1fr; } .access-modal { align-items: end; padding: 12px; } .access-modal-dialog { width: 100%; max-height: calc(100dvh - 24px); } }
     </style>
-    <script defer src="/assets/dashboard.js?v=20260621-access-management"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-sidebar-dropdowns"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

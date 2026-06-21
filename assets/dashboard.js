@@ -6,8 +6,6 @@
   const mobileButton = document.querySelector("[data-mobile-menu]");
   const backdrop = document.querySelector("[data-sidebar-backdrop]");
   const sectionTitle = document.querySelector("[data-section-title]");
-  const valleyGroup = document.querySelector("[data-valley-group]");
-  const valleyToggle = document.querySelector("[data-valley-toggle]");
   const storageKey = "oligarchy_sidebar_collapsed";
   const iconMap = {
     overview: "fa-tachometer",
@@ -49,25 +47,29 @@
 
   const ensureValleyLinks = () => {
     const subnav = document.querySelector("[data-valley-subnav]");
-    if (!subnav) return;
     const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
-    valleyLinks.forEach((item) => {
-      let link = Array.from(subnav.querySelectorAll("a")).find((candidate) => {
-        const label = candidate.querySelector(".nav-label")?.textContent?.trim().toLowerCase();
-        return label === item.label.toLowerCase();
-      });
-      if (!link) {
-        link = document.createElement("a");
-        link.innerHTML = `<span class="nav-icon" aria-hidden="true">${item.label.charAt(0)}</span><span class="nav-label">${item.label}</span>`;
+
+    if (subnav) {
+      valleyLinks.forEach((item) => {
+        let link = Array.from(subnav.querySelectorAll("a")).find((candidate) => {
+          const label = candidate.querySelector(".nav-label")?.textContent?.trim().toLowerCase();
+          return label === item.label.toLowerCase();
+        });
+        if (!link) {
+          link = document.createElement("a");
+          link.innerHTML = `<span class="nav-icon" aria-hidden="true">${item.label.charAt(0)}</span><span class="nav-label">${item.label}</span>`;
+          subnav.appendChild(link);
+        }
+        link.href = item.href;
+        link.removeAttribute("data-section-link");
         subnav.appendChild(link);
-      }
-      link.href = item.href;
-      link.removeAttribute("data-section-link");
-      subnav.appendChild(link);
-      const isActive = currentPath === item.href.replace(/\/+$/, "");
-      link.classList.toggle("is-active", isActive);
-      if (isActive) link.setAttribute("aria-current", "page");
-    });
+        const isActive = currentPath === item.href.replace(/\/+$/, "");
+        link.classList.toggle("is-active", isActive);
+        if (isActive) link.setAttribute("aria-current", "page");
+        if (!isActive) link.removeAttribute("aria-current");
+      });
+    }
+
     let playgroundGroup = document.querySelector("[data-playground-group]");
     if (!playgroundGroup) {
       playgroundGroup = document.createElement("div");
@@ -102,14 +104,18 @@
     const settingsLink = Array.from(document.querySelectorAll(".sidebar-nav > a")).find((link) => {
       return link.querySelector(".nav-label")?.textContent?.trim().toLowerCase() === "settings";
     });
-    if (valleyGroup?.parentNode) {
+    const valleyGroup = document.querySelector("[data-valley-group]");
+    const sidebarNav = document.querySelector(".sidebar-nav");
+    if (sidebarNav && !playgroundGroup.parentNode) {
+      sidebarNav.insertBefore(playgroundGroup, settingsLink || null);
+    } else if (valleyGroup?.parentNode && playgroundGroup.parentNode === valleyGroup.parentNode) {
       valleyGroup.parentNode.insertBefore(playgroundGroup, settingsLink || valleyGroup.nextSibling);
     }
     if (valleyGroup) {
       const isValleyPath = valleyLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
       valleyGroup.classList.toggle("is-active", isValleyPath || valleyGroup.classList.contains("is-active"));
       valleyGroup.classList.toggle("is-open", isValleyPath || valleyGroup.classList.contains("is-open"));
-      if (valleyToggle) valleyToggle.setAttribute("aria-expanded", String(valleyGroup.classList.contains("is-open")));
+      valleyGroup.querySelector("[data-valley-toggle]")?.setAttribute("aria-expanded", String(valleyGroup.classList.contains("is-open")));
     }
   };
 
@@ -126,19 +132,16 @@
   ensureValleyLinks();
   applySidebarIcons();
 
-  if (valleyGroup && valleyToggle) {
-    valleyToggle.addEventListener("click", () => {
-      const isOpen = !valleyGroup.classList.contains("is-open");
-      valleyGroup.classList.toggle("is-open", isOpen);
-      valleyToggle.setAttribute("aria-expanded", String(isOpen));
-    });
-  }
-
   document.addEventListener("click", (event) => {
-    const toggle = event.target.closest("[data-playground-toggle]");
+    const toggle = event.target.closest("[data-valley-toggle], [data-playground-toggle]");
     if (!toggle) return;
-    const group = toggle.closest("[data-playground-group]");
+    const group = toggle.closest("[data-valley-group], [data-playground-group]");
     if (!group) return;
+    if (shell.classList.contains("is-collapsed")) {
+      shell.classList.remove("is-collapsed");
+      if (collapseButton) collapseButton.setAttribute("aria-expanded", "true");
+      window.localStorage.setItem(storageKey, "false");
+    }
     const isOpen = !group.classList.contains("is-open");
     group.classList.toggle("is-open", isOpen);
     toggle.setAttribute("aria-expanded", String(isOpen));

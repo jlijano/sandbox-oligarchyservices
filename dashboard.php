@@ -327,7 +327,7 @@ $csrf = csrf_token();
     <title>Dashboard | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
-    <script defer src="/assets/dashboard.js?v=20260621-blogs-nav"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-sidebar-dropdowns"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

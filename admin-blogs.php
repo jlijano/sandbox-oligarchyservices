@@ -172,7 +172,7 @@ $roleLabel = ucfirst($role);
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
     <link rel="stylesheet" href="/assets/blogs.css?v=20260621-blogs">
-    <script defer src="/assets/dashboard.js?v=20260621-blogs-nav"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-sidebar-dropdowns"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

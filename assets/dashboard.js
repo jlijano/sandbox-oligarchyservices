@@ -93,6 +93,34 @@
     if (field) field.checked = value === "1" || value === 1 || value === true;
   };
 
+  const userIdField = document.querySelector("[data-user-id]");
+  const userForm = userIdField?.closest("form");
+  const userPassword = userForm?.querySelector("input[name='password']");
+  const userPasswordLabel = userPassword?.closest("label");
+
+  const clientPlaceholderPassword = () => {
+    const bytes = new Uint8Array(10);
+    if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
+    return `Temporary-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  };
+
+  const syncUserPasswordMode = () => {
+    if (!userForm || !userPassword || !userPasswordLabel || !userIdField) return;
+    const isCreate = userIdField.value === "0" || userIdField.value === "";
+    userPasswordLabel.hidden = isCreate;
+    userPassword.required = false;
+    userPassword.placeholder = isCreate ? "Generated and emailed automatically" : "Leave blank to keep current password";
+    if (isCreate) userPassword.value = "";
+  };
+
+  if (userForm && userPassword && userIdField) {
+    userForm.addEventListener("submit", () => {
+      const isCreate = userIdField.value === "0" || userIdField.value === "";
+      if (isCreate && userPassword.value.length < 10) userPassword.value = clientPlaceholderPassword();
+    });
+    syncUserPasswordMode();
+  }
+
   document.querySelectorAll("[data-edit-user]").forEach((button) => {
     button.addEventListener("click", () => {
       setValue("[data-user-id]", button.dataset.id);
@@ -102,6 +130,7 @@
       setChecked("[data-user-active]", button.dataset.active);
       const title = document.querySelector("[data-user-form-title]");
       if (title) title.textContent = "Edit user";
+      syncUserPasswordMode();
       document.querySelector("[data-user-name]")?.focus();
     });
   });
@@ -112,6 +141,7 @@
     setValue("[data-user-id]", "0");
     const title = document.querySelector("[data-user-form-title]");
     if (title) title.textContent = "Create user";
+    syncUserPasswordMode();
   });
 
   document.querySelectorAll("[data-edit-page]").forEach((button) => {

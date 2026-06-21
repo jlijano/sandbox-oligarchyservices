@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/installer.php';
 require_once __DIR__ . '/includes/access-management.php';
+require_once __DIR__ . '/includes/blogs.php';
 require_once __DIR__ . '/includes/requests.php';
 
 $lockPath = db_install_lock_path();
@@ -42,8 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         try {
             $pdo = installer_pdo_from_credentials($dbHost, $dbName, $dbUser, $dbPassword);
+            $pdo->exec('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
             create_or_update_schema($pdo);
             access_management_ensure_schema($pdo);
+            blog_ensure_schema($pdo);
             request_ensure_schema($pdo);
             installer_upsert_admin($pdo, $adminEmail, $adminPassword, $adminName);
             $warnings = installer_config_write_warnings(installer_write_config($configPath, $dbHost, $dbName, $dbUser, $dbPassword));

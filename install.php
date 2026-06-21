@@ -3,10 +3,13 @@ declare(strict_types=1);
 
 $lockPath = __DIR__ . '/includes/installed.lock';
 $configPath = __DIR__ . '/includes/config.php';
+$hasLock = is_file($lockPath);
+$hasConfig = is_file($configPath);
+$isRepairMode = $hasLock && !$hasConfig;
 $errors = [];
 $success = false;
 
-if (is_file($lockPath)) {
+if ($hasLock && $hasConfig) {
     http_response_code(403);
     echo 'Installer is locked. Delete includes/installed.lock only if you intentionally need to run installer updates.';
     exit;
@@ -161,8 +164,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons"><link rel="stylesheet" href="/assets/login.css?v=20260620-php-install">
   </head>
   <body>
-    <main class="login-page"><section class="login-hero" aria-labelledby="install-heading"><a class="login-brand-logo" href="/" aria-label="Oligarchy Services home">OLIGARCHY</a><form class="login-panel" method="post"><div class="login-panel-heading"><p class="eyebrow">Portal setup</p><h1 id="install-heading">Install backend</h1><p>Create or update the portal tables and first admin account inside the existing Hostinger database.</p></div>
-      <?php if ($success): ?><div class="form-alert is-visible is-success">Install complete. Delete install.php from Hostinger now, then open <a href="/login.html">login</a>.</div><?php endif; ?>
+    <main class="login-page"><section class="login-hero" aria-labelledby="install-heading"><a class="login-brand-logo" href="/" aria-label="Oligarchy Services home">OLIGARCHY</a><form class="login-panel" method="post"><div class="login-panel-heading"><p class="eyebrow">Portal setup</p><h1 id="install-heading"><?= $isRepairMode ? 'Repair database config' : 'Install backend' ?></h1><p><?= $isRepairMode ? 'The installer lock exists, but includes/config.php is missing. Re-enter the Hostinger database details to recreate it without deleting existing data.' : 'Create or update the portal tables and first admin account inside the existing Hostinger database.' ?></p></div>
+      <?php if ($isRepairMode && !$success): ?><div class="form-alert is-visible is-error">includes/config.php was not found, so login cannot connect. This repair will recreate the config file and keep existing tables/data.</div><?php endif; ?>
+      <?php if ($success): ?><div class="form-alert is-visible is-success">Setup complete. The database config was written and the installer is locked. Open <a href="/login.html">login</a>.</div><?php endif; ?>
       <?php foreach ($errors as $error): ?><div class="form-alert is-visible is-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endforeach; ?>
       <label class="field"><span>Database host</span><input name="db_host" value="<?= htmlspecialchars(post_value('db_host', 'localhost'), ENT_QUOTES, 'UTF-8') ?>" required><small class="field-error">For Hostinger, use localhost unless hPanel shows a separate MySQL host. Do not use the website domain here.</small></label>
       <label class="field"><span>Database name</span><input name="db_name" value="<?= htmlspecialchars(post_value('db_name'), ENT_QUOTES, 'UTF-8') ?>" required></label>
@@ -171,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <label class="field"><span>Admin full name</span><input name="admin_name" value="<?= htmlspecialchars(post_value('admin_name', 'Admin'), ENT_QUOTES, 'UTF-8') ?>" required></label>
       <label class="field"><span>Admin email</span><input name="admin_email" type="email" value="<?= htmlspecialchars(post_value('admin_email'), ENT_QUOTES, 'UTF-8') ?>" required></label>
       <label class="field"><span>Admin password</span><input name="admin_password" type="password" minlength="12" autocomplete="new-password" required></label>
-      <button class="button primary login-submit" type="submit">Install portal</button><p class="login-note">The installer creates missing tables safely and locks itself after setup. Delete install.php after a successful run.</p>
+      <button class="button primary login-submit" type="submit"><?= $isRepairMode ? 'Repair config' : 'Install portal' ?></button><p class="login-note">The installer creates missing tables safely and locks itself after setup. Keep includes/config.php on Hostinger; it is intentionally not stored in GitHub.</p>
     </form></section></main>
   </body>
 </html>

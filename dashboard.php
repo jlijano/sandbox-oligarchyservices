@@ -295,6 +295,7 @@ $nav = [
     ['id' => 'overview', 'label' => 'Overview', 'roles' => ['admin','editor','support','client']],
     ['id' => 'users', 'label' => 'Users', 'roles' => ['admin']],
     ['id' => 'pages', 'label' => 'Pages', 'roles' => ['admin','editor']],
+    ['id' => 'blogs', 'label' => 'Blogs', 'roles' => ['admin','editor'], 'href' => '/admin-blogs.php'],
     ['id' => 'navigation', 'label' => 'Navigation', 'roles' => ['admin','editor']],
     ['id' => 'settings', 'label' => 'Settings', 'roles' => ['admin','editor']],
     ['id' => 'activity', 'label' => 'Activity', 'roles' => ['admin','editor','support']],
@@ -324,8 +325,8 @@ $csrf = csrf_token();
     <meta name="robots" content="noindex">
     <title>Dashboard | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-valley-nav">
-    <script defer src="/assets/dashboard.js?v=20260621-valley-nav"></script>
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
+    <script defer src="/assets/dashboard.js?v=20260621-blogs-nav"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>
@@ -350,6 +351,11 @@ $csrf = csrf_token();
                   </a>
                 </div>
               </div>
+            <?php elseif (!empty($item['href'])): ?>
+              <a href="<?= e($item['href']) ?>">
+                <span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span>
+                <span class="nav-label"><?= e($item['label']) ?></span>
+              </a>
             <?php else: ?>
               <a class="<?= $index === 0 ? 'is-active' : '' ?>" href="#<?= e($item['id']) ?>" data-section-link="<?= e($item['id']) ?>">
                 <span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span>
@@ -385,7 +391,7 @@ $csrf = csrf_token();
               <div><p class="eyebrow">Portal health</p><h2>Welcome back, <?= e($displayName) ?></h2><p>Manage accounts, website content, navigation, settings, and operational activity from one control panel.</p></div>
               <div class="hero-actions">
                 <?php if ($canManageUsers): ?><a class="primary-action" href="#users" data-section-link="users">Create user</a><?php endif; ?>
-                <?php if ($canManageContent): ?><a class="secondary-action" href="#pages" data-section-link="pages">Create page</a><a class="secondary-action" href="#settings" data-section-link="settings">Settings</a><?php endif; ?>
+                <?php if ($canManageContent): ?><a class="secondary-action" href="#pages" data-section-link="pages">Create page</a><a class="secondary-action" href="/admin-blogs.php">Manage blogs</a><a class="secondary-action" href="#settings" data-section-link="settings">Settings</a><?php endif; ?>
               </div>
             </div>
             <section class="stat-grid" aria-label="Dashboard metrics">
@@ -395,7 +401,7 @@ $csrf = csrf_token();
             </section>
             <section class="workspace-grid two-up">
               <article class="workspace-card"><h3>Recent activity</h3><?php if (!$activity): ?><p>No audit activity has been recorded yet.</p><?php else: ?><ul class="mini-list"><?php foreach (array_slice($activity, 0, 5) as $item): ?><li><strong><?= e($item['action']) ?></strong><span><?= e($item['email'] ?? 'System') ?> · <?= e($item['created_at']) ?></span></li><?php endforeach; ?></ul><?php endif; ?></article>
-              <article class="workspace-card"><h3>Quick actions</h3><div class="quick-actions"><?php foreach ($visibleNav as $item): ?><a class="secondary-action" href="#<?= e($item['id']) ?>" data-section-link="<?= e($item['id']) ?>"><?= e($item['label']) ?></a><?php endforeach; ?></div></article>
+              <article class="workspace-card"><h3>Quick actions</h3><div class="quick-actions"><?php foreach ($visibleNav as $item): ?><?php if (!empty($item['href'])): ?><a class="secondary-action" href="<?= e($item['href']) ?>"><?= e($item['label']) ?></a><?php else: ?><a class="secondary-action" href="#<?= e($item['id']) ?>" data-section-link="<?= e($item['id']) ?>"><?= e($item['label']) ?></a><?php endif; ?><?php endforeach; ?></div></article>
             </section>
           </section>
 

@@ -25,10 +25,16 @@ function db_config_from_constants(): array
 
 function db_config_paths(): array
 {
-    return [
-        __DIR__ . '/config.php',
-        dirname(__DIR__, 2) . '/oligarchy-config.php',
-    ];
+    $paths = [__DIR__ . '/config.php'];
+
+    foreach ([4, 2] as $levels) {
+        $directory = dirname(__DIR__, $levels);
+        if ($directory !== '.' && $directory !== DIRECTORY_SEPARATOR) {
+            $paths[] = $directory . '/oligarchy-config.php';
+        }
+    }
+
+    return array_values(array_unique($paths));
 }
 
 function db_has_config(): bool

@@ -14,6 +14,7 @@ $role = strtolower((string) ($user['role'] ?? 'admin'));
 $displayName = trim((string) ($user['full_name'] ?: $user['email']));
 $initials = strtoupper(substr($displayName, 0, 1));
 $roleLabel = ucfirst($role);
+$agentUrl = 'https://chatgpt.com/agents/a/agt_6a2264db70cc819197eca97e19bf072b';
 ?>
 <!doctype html>
 <html lang="en">
@@ -38,9 +39,20 @@ $roleLabel = ucfirst($role);
         <main class="dashboard-content">
           <section class="dashboard-section is-active" data-dashboard-section data-section-label="Agents">
             <div class="dashboard-hero compact-hero">
-              <div><p class="eyebrow">Playground</p><h2>Agents</h2><p>Agent playground tools can be added here as they are defined.</p></div>
+              <div><p class="eyebrow">Playground</p><h2>Agents</h2><p>Open the configured ChatGPT agent from inside the portal, or launch it in a new browser tab.</p></div>
+              <div class="hero-actions"><a class="secondary-action" href="<?= e($agentUrl) ?>" target="_blank" rel="noopener">Open in ChatGPT</a></div>
             </div>
-            <div class="admin-panel"><h3>Agents</h3><p class="empty-state">No agent playground tools are configured yet.</p></div>
+            <div class="admin-panel">
+              <div class="panel-title-row"><h3>ChatGPT Agent</h3><span>Embedded workspace</span></div>
+              <iframe
+                title="ChatGPT Agent Playground"
+                src="<?= e($agentUrl) ?>"
+                loading="lazy"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allow="clipboard-read; clipboard-write; microphone; camera; fullscreen"
+                style="width: 100%; min-height: calc(100dvh - 240px); border: 1px solid rgba(90, 93, 99, 0.42); border-radius: 8px; background: #101013;"
+              ></iframe>
+            </div>
           </section>
         </main>
       </div>

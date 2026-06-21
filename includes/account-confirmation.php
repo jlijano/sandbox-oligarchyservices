@@ -88,9 +88,11 @@ function account_confirmation_finalize_dashboard_create(): void
 
     try {
         require_once __DIR__ . '/installer.php';
+        require_once __DIR__ . '/password-change.php';
 
         $pdo = db();
         create_or_update_schema($pdo);
+        password_change_ensure_schema($pdo);
 
         $stmt = $pdo->prepare('SELECT id, full_name, email_confirmed_at, email_confirmation_token_hash FROM users WHERE email = ? ORDER BY id DESC LIMIT 1');
         $stmt->execute([$email]);

@@ -237,6 +237,12 @@ function access_sidebar(string $active, string $roleLabel): void
             <?php foreach ($items as $item): ?>
               <a class="<?= $active === $item['key'] ? 'is-active' : '' ?>" href="<?= e($item['href']) ?>" <?= $active === $item['key'] ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span><span class="nav-label"><?= e($item['label']) ?></span></a>
             <?php endforeach; ?>
+            <div class="sidebar-group sidebar-nested-group <?= $active === 'agents' ? 'is-open is-active' : '' ?>" data-playground-group>
+              <button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="<?= $active === 'agents' ? 'true' : 'false' ?>"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
+              <div class="sidebar-subnav sidebar-nested-subnav" data-playground-subnav>
+                <a class="<?= $active === 'agents' ? 'is-active' : '' ?>" href="/agents.php" <?= $active === 'agents' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">A</span><span class="nav-label">Agents</span></a>
+              </div>
+            </div>
           </div>
         </div>
         <a href="/dashboard.php#pages"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Pages</span></a>

@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/installer.php';
 
 $lockPath = __DIR__ . '/includes/installed.lock';
 $configPath = __DIR__ . '/includes/config.php';
+installer_restore_config_from_backup($configPath);
 $hasLock = is_file($lockPath);
 $hasConfig = is_file($configPath);
 $errors = [];

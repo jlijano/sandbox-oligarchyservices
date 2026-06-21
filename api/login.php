@@ -65,7 +65,7 @@ try {
     $recentFailures->execute([$email]);
     if ((int) $recentFailures->fetchColumn() >= 5) login_response('Too many failed attempts. Try again in 15 minutes.', 429);
 
-    $stmt = $pdo->prepare('SELECT id, email, password_hash, is_active, email_confirmed_at FROM users WHERE email = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, email, password_hash, is_active, email_confirmed_at, password_change_required FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
     $passwordMatches = $user && password_verify($password, $user['password_hash']);
@@ -86,11 +86,13 @@ try {
         login_response('Invalid email or password.', 401);
     }
 
+    $passwordChangeRequired = (int) ($user['password_change_required'] ?? 0) === 1;
+    $redirect = $passwordChangeRequired ? '/change-password.php' : '/dashboard.php';
     $update = $pdo->prepare('UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = ?');
     $update->execute([(int) $user['id']]);
     audit_login($pdo, (int) $user['id'], 'login', $email, $ipAddress);
-    login_user((int) $user['id']);
-    login_success_response('/dashboard.php');
+    login_user((int) $user['id'], $passwordChangeRequired);
+    login_success_response($redirect);
 } catch (RuntimeException $error) {
     error_log('Login configuration error: ' . $error->getMessage());
     login_response('Database configuration is missing on the server. Open /repair.php to reconnect the existing Hostinger database; do not reinstall or drop the database. Server admins can also provide DB_HOST, DB_DATABASE, DB_USERNAME, and DB_PASSWORD environment variables.', 503, '/repair.php');

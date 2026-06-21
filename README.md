@@ -6,19 +6,24 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 
 - Static HTML, CSS, and JavaScript public marketing pages.
 - Optional PHP/MySQL client portal for real login support.
-- No backend framework.
+- No backend framework for the public website.
 - No API routes beyond the lightweight PHP portal endpoints.
-- No build step required.
+- No build step required for the public website.
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
+- `automation/sentinel-mail-orchestrator/` contains a separate Node.js automation service for Sentinel email sending. It is not part of the Hostinger public website upload.
 
 ## Hostinger deployment
 
 This project can be uploaded directly to Hostinger shared web hosting. Place the
-repository contents in the domain's `public_html` directory. No Node.js runtime,
-package installation, or build command is required.
+public website files in the domain's `public_html` directory. No Node.js runtime,
+package installation, or build command is required for the public website.
+
+Do not upload `automation/` to Hostinger `public_html`. The Sentinel mail
+orchestrator is a separate Node.js service that should run on a Node-capable host
+such as Render, Fly.io, Railway, or Cloud Run when email automation is needed.
 
 For static-only preview use, `login.html` can show the login UI without checking
 credentials. For real client access, upload the PHP portal files and run the
@@ -66,6 +71,20 @@ When deployed with PHP/MySQL, `.htaccess` rewrites `/login.html` to `login.php`.
 The PHP form includes a CSRF token and submits to `api/login.php`, which verifies
 users against the database, records login attempts, regenerates the session ID on
 successful login, and redirects authenticated users to `dashboard.php`.
+
+## Sentinel mail orchestrator
+
+`automation/sentinel-mail-orchestrator/` provides a small Node.js HTTP service
+for sending Sentinel automation emails through the Hostinger mailbox
+`sentinel@oligarchyservices.com`.
+
+The orchestrator currently supports SMTP sending through a protected
+`/send-email` endpoint and a `/health` endpoint. It defaults to `DRY_RUN=true`
+so first deployments cannot send real email accidentally.
+
+Required non-secret settings are documented in
+`automation/sentinel-mail-orchestrator/env.sample`. Store `MAIL_PASSWORD` and
+`ORCHESTRATOR_TOKEN` only in the deployment host's secret manager.
 
 ## Analytics approach
 
@@ -130,8 +149,13 @@ Then visit `http://localhost:8000`.
 For PHP portal testing, use a PHP-capable local server with a MySQL database and
 generated local `includes/config.php`. Do not commit generated credentials.
 
+For the Sentinel mail orchestrator, run commands inside
+`automation/sentinel-mail-orchestrator/` and keep real environment values only in
+the service host or a local uncommitted environment file.
+
 ## Change notes
 
+- 2026-06-21: Added a separate Sentinel mail orchestrator scaffold for sending automation emails through `sentinel@oligarchyservices.com`.
 - 2026-06-21: Split portal setup into `/install.php`, `/update.php`, and `/repair.php` so first setup, schema updates, and missing-config repair use separate flows.
 - 2026-06-20: Aligned README architecture and deployment notes with the PHP/MySQL client portal documented in `HOSTINGER.md`.
 - 2026-06-20: Added a Hostinger-compatible static client login page at `/login.html` with responsive styling and browser-side validation.

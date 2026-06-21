@@ -14,7 +14,7 @@ Upload these repository files into the domain's `public_html` directory:
 - `logout.php`
 - `install.php` for first setup
 - `update.php` for admin-run database updates after deployments
-- `repair.php` for recreating a missing `includes/config.php`
+- `repair.php` for reconnecting a missing database config
 - `privacy.html`
 - `404.html`
 - `.htaccess`
@@ -48,8 +48,8 @@ Use the setup page that matches the job:
   installed, this page stays locked.
 - `/update.php`: logged-in admin updates only. It applies safe, non-destructive
   table updates after new CMS code is deployed.
-- `/repair.php`: config repair only. It recreates `includes/config.php` when
-  `includes/installed.lock` exists but `includes/config.php` is missing.
+- `/repair.php`: config repair only. It reconnects the existing database when
+  `includes/config.php` is missing. Existing tables and data are kept.
 
 First install:
 
@@ -70,15 +70,22 @@ After deploying CMS changes:
 
 If login says the database config is missing:
 
-1. Open `/repair.php`.
-2. Re-enter the Hostinger database values.
-3. If no active admin exists, fill in the optional admin fields.
-4. Submit the form, then log in through `/login.html`.
+1. Do not reinstall, drop, empty, or recreate the database.
+2. Open `/repair.php`.
+3. Re-enter the Hostinger database values for the existing database.
+4. If no active admin exists, fill in the optional admin fields.
+5. Submit the form, then log in through `/login.html`.
 
 The installer writes `includes/config.php` and `includes/installed.lock` on the
-server. These files must not be committed to GitHub. Direct browser access to
-`/includes/config.php` is blocked on purpose because it contains the database
-password.
+server. It also tries to save persistent copies of the database config outside
+`public_html` so full file syncs do not break login. These generated files must
+not be committed to GitHub. Direct browser access to `/includes/config.php` is
+blocked on purpose because it contains the database password.
+
+If Hostinger file permissions prevent the persistent config copy from being
+saved, the installer or repair page will show a warning. Login can still work,
+but a future full file sync may require opening `/repair.php` once to reconnect
+the existing database.
 
 ## Sentinel mail orchestrator
 

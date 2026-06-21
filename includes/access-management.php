@@ -5,6 +5,7 @@ function access_modules(): array
 {
     return [
         'overview' => 'Dashboard / Overview',
+        'requests' => 'Requests',
         'users' => 'Users',
         'roles' => 'Roles',
         'companies' => 'Companies',
@@ -130,9 +131,9 @@ function access_management_ensure_schema(PDO $pdo): void
     $seed = $pdo->prepare('INSERT INTO roles (name, description, is_active, module_permissions) VALUES (?, ?, 1, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)');
     $all = array_keys(access_modules());
     $seed->execute(['admin', 'Full administrative access.', access_encode_modules($all)]);
-    $seed->execute(['editor', 'Content manager access.', access_encode_modules(['overview', 'pages', 'blogs', 'navigation', 'system_settings', 'activity', 'system_health', 'mail_trace'])]);
-    $seed->execute(['support', 'Support and activity review access.', access_encode_modules(['overview', 'users', 'activity', 'system_health', 'mail_trace'])]);
-    $seed->execute(['client', 'Client dashboard access.', access_encode_modules(['overview'])]);
+    $seed->execute(['editor', 'Content manager access.', access_encode_modules(['overview', 'requests', 'pages', 'blogs', 'navigation', 'system_settings', 'activity', 'system_health', 'mail_trace'])]);
+    $seed->execute(['support', 'Support and activity review access.', access_encode_modules(['overview', 'requests', 'users', 'activity', 'system_health', 'mail_trace'])]);
+    $seed->execute(['client', 'Client dashboard access.', access_encode_modules(['overview', 'requests'])]);
 }
 
 function access_admin_user(): array
@@ -247,6 +248,7 @@ function access_sidebar(string $active, string $roleLabel, string $role = 'admin
       <div class="sidebar-brand"><a href="/dashboard.php#overview" aria-label="Oligarchy Services dashboard">OLIGARCHY</a><button class="sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" aria-expanded="true">‹</button></div>
       <nav class="sidebar-nav">
         <a class="<?= $active === 'overview' ? 'is-active' : '' ?>" href="/dashboard.php#overview" data-section-link="overview" <?= $active === 'overview' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">O</span><span class="nav-label">Overview</span></a>
+        <a class="<?= $active === 'requests' ? 'is-active' : '' ?>" href="/requests.php" <?= $active === 'requests' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">R</span><span class="nav-label">Requests</span></a>
         <?php if ($isAdmin): ?>
         <div class="sidebar-group <?= in_array($active, ['companies', 'departments', 'users', 'roles'], true) ? 'is-open is-active' : '' ?>" data-valley-group>
           <button class="sidebar-group-toggle" type="button" data-valley-toggle aria-expanded="<?= in_array($active, ['companies', 'departments', 'users', 'roles'], true) ? 'true' : 'false' ?>"><span class="nav-icon" aria-hidden="true">V</span><span class="nav-label">Valley</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
@@ -403,198 +405,3 @@ function access_render_entity_page(string $entity): void
 
                 if (!empty($config['has_company']) && $companyId !== null) {
                     $company = $pdo->prepare('SELECT id FROM companies WHERE id = ? LIMIT 1');
-                    $company->execute([$companyId]);
-                    if (!$company->fetch()) {
-                        throw new RuntimeException('Choose a valid company.');
-                    }
-                }
-
-                if (!empty($config['has_company'])) {
-                    if ($companyId === null) {
-                        $dupe = $pdo->prepare('SELECT id FROM departments WHERE name = ? AND company_id IS NULL AND id <> ? LIMIT 1');
-                        $dupe->execute([$name, $id]);
-                    } else {
-                        $dupe = $pdo->prepare('SELECT id FROM departments WHERE name = ? AND company_id = ? AND id <> ? LIMIT 1');
-                        $dupe->execute([$name, $companyId, $id]);
-                    }
-                } else {
-                    $dupe = $pdo->prepare('SELECT id FROM ' . access_sql_name($config['table']) . ' WHERE name = ? AND id <> ? LIMIT 1');
-                    $dupe->execute([$name, $id]);
-                }
-                if ($dupe->fetch()) {
-                    throw new RuntimeException('That ' . $config['single'] . ' name is already in use.');
-                }
-
-                if ($id > 0) {
-                    if (!empty($config['has_company'])) {
-                        $stmt = $pdo->prepare('UPDATE departments SET company_id = ?, name = ?, notes = ?, is_active = ?, module_permissions = ?, updated_at = NOW() WHERE id = ?');
-                        $stmt->execute([$companyId, $name, $notes, $isActive, $modules, $id]);
-                    } else {
-                        $notesColumn = $config['table'] === 'roles' ? 'description' : 'notes';
-                        $stmt = $pdo->prepare('UPDATE ' . access_sql_name($config['table']) . ' SET name = ?, ' . access_sql_name($notesColumn) . ' = ?, is_active = ?, module_permissions = ?, updated_at = NOW() WHERE id = ?');
-                        $stmt->execute([$name, $notes, $isActive, $modules, $id]);
-                    }
-                    access_log_activity($pdo, (int) $user['id'], $config['single'] . ' updated', $config['target_type'], $id, $name);
-                    access_flash($scope, 'notice', ucfirst($config['single']) . ' updated.');
-                } else {
-                    if (!empty($config['has_company'])) {
-                        $stmt = $pdo->prepare('INSERT INTO departments (company_id, name, notes, is_active, module_permissions) VALUES (?, ?, ?, ?, ?)');
-                        $stmt->execute([$companyId, $name, $notes, $isActive, $modules]);
-                    } else {
-                        $notesColumn = $config['table'] === 'roles' ? 'description' : 'notes';
-                        $stmt = $pdo->prepare('INSERT INTO ' . access_sql_name($config['table']) . ' (name, ' . access_sql_name($notesColumn) . ', is_active, module_permissions) VALUES (?, ?, ?, ?)');
-                        $stmt->execute([$name, $notes, $isActive, $modules]);
-                    }
-                    $newId = (int) $pdo->lastInsertId();
-                    access_log_activity($pdo, (int) $user['id'], $config['single'] . ' created', $config['target_type'], $newId, $name);
-                    access_flash($scope, 'notice', ucfirst($config['single']) . ' created.');
-                }
-                access_redirect($config['path']);
-            }
-
-            if ($action === 'deactivate' || $action === 'delete') {
-                $lookup = $pdo->prepare('SELECT id, name FROM ' . access_sql_name($config['table']) . ' WHERE id = ? LIMIT 1');
-                $lookup->execute([$id]);
-                $row = $lookup->fetch();
-                if (!$row) {
-                    throw new RuntimeException('Choose a valid ' . $config['single'] . '.');
-                }
-                $references = access_entity_references($pdo, $entity, $id, (string) $row['name']);
-                if ($action === 'delete' && $references === 0) {
-                    $pdo->prepare('DELETE FROM ' . access_sql_name($config['table']) . ' WHERE id = ?')->execute([$id]);
-                    access_log_activity($pdo, (int) $user['id'], $config['single'] . ' deleted', $config['target_type'], $id, (string) $row['name']);
-                    access_flash($scope, 'notice', ucfirst($config['single']) . ' deleted.');
-                } else {
-                    $pdo->prepare('UPDATE ' . access_sql_name($config['table']) . ' SET is_active = 0, updated_at = NOW() WHERE id = ?')->execute([$id]);
-                    access_log_activity($pdo, (int) $user['id'], $config['single'] . ' deactivated', $config['target_type'], $id, (string) $row['name']);
-                    access_flash($scope, 'notice', ucfirst($config['single']) . ' deactivated.');
-                }
-                access_redirect($config['path']);
-            }
-        } catch (Throwable $postError) {
-            access_flash($scope, 'error', $postError->getMessage());
-            access_redirect($config['path']);
-        }
-    }
-
-    $search = trim((string) ($_GET['search'] ?? ''));
-    $statusFilter = strtolower(trim((string) ($_GET['status'] ?? '')));
-    if (!in_array($statusFilter, ['', 'active', 'inactive'], true)) {
-        $statusFilter = '';
-    }
-
-    $where = [];
-    $params = [];
-    if ($search !== '') {
-        $where[] = 'a.name LIKE ?';
-        $params[] = '%' . $search . '%';
-    }
-    if ($statusFilter !== '') {
-        $where[] = 'a.is_active = ?';
-        $params[] = $statusFilter === 'active' ? 1 : 0;
-    }
-    $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
-    $selectNotes = $config['table'] === 'roles' ? 'a.description AS notes' : 'a.notes';
-    $sql = 'SELECT a.*, ' . $selectNotes;
-    if (!empty($config['has_company'])) {
-        $sql .= ', c.name AS company_name';
-    }
-    $sql .= ' FROM ' . access_sql_name($config['table']) . ' a';
-    if (!empty($config['has_company'])) {
-        $sql .= ' LEFT JOIN companies c ON c.id = a.company_id';
-    }
-    $sql .= $whereSql . ' ORDER BY a.created_at DESC, a.id DESC';
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $rows = $stmt->fetchAll();
-
-    $counts = [
-        'total' => (int) $pdo->query('SELECT COUNT(*) FROM ' . access_sql_name($config['table']))->fetchColumn(),
-        'active' => (int) $pdo->query('SELECT COUNT(*) FROM ' . access_sql_name($config['table']) . ' WHERE is_active = 1')->fetchColumn(),
-        'inactive' => (int) $pdo->query('SELECT COUNT(*) FROM ' . access_sql_name($config['table']) . ' WHERE is_active = 0')->fetchColumn(),
-    ];
-    $companies = !empty($config['has_company']) ? access_fetch_options($pdo, 'companies') : [];
-    $csrf = csrf_token();
-    $modules = access_modules();
-    ?>
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex">
-    <title><?= e($config['title']) ?> | Oligarchy Services</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-access-management">
-    <style>
-      .access-toolbar { align-items: center; }
-      .icon-action { gap: 9px; }
-      .icon-action .plus-mark { display: inline-grid; width: 22px; height: 22px; place-items: center; border-radius: 999px; background: rgba(255,255,255,0.16); font-size: 1.15rem; line-height: 1; }
-      .module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-      .module-chip { display: flex !important; grid-template-columns: auto 1fr; align-items: center; gap: 9px !important; border: 1px solid rgba(90,93,99,0.42); border-radius: 8px; padding: 9px 10px; background: rgba(255,255,255,0.03); font-size: 0.82rem !important; }
-      .module-chip input { width: auto; }
-      .access-modal[hidden] { display: none; }
-      .access-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 18px; }
-      .access-modal-backdrop { position: absolute; inset: 0; border: 0; background: rgba(0,0,0,0.72); cursor: pointer; }
-      .access-modal-dialog { position: relative; width: min(680px, 100%); max-height: min(780px, calc(100dvh - 36px)); overflow: auto; border: 1px solid rgba(90,93,99,0.48); border-radius: 8px; background: linear-gradient(135deg, rgba(32,32,36,0.98), rgba(13,13,15,0.98)); box-shadow: 0 28px 80px rgba(0,0,0,0.46); }
-      .access-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 18px 0; }
-      .access-modal-header h3 { margin: 0; }
-      .access-modal-close { display: inline-grid; width: 38px; height: 38px; place-items: center; border: 1px solid rgba(90,93,99,0.5); border-radius: 8px; background: #17171a; color: #fff; cursor: pointer; font-size: 1.35rem; line-height: 1; }
-      .access-modal .admin-panel { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-      body.access-modal-open { overflow: hidden; }
-      @media (max-width: 680px) { .access-toolbar { align-items: stretch; } .access-toolbar .primary-action { width: 100%; } .module-grid { grid-template-columns: 1fr; } .access-modal { align-items: end; padding: 12px; } .access-modal-dialog { width: 100%; max-height: calc(100dvh - 24px); } }
-    </style>
-    <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
-  </head>
-  <body class="dashboard-body">
-    <div class="dashboard-shell" data-dashboard-shell>
-      <?php access_sidebar($config['active'], $roleLabel); ?>
-      <div class="sidebar-backdrop" data-sidebar-backdrop></div>
-      <div class="dashboard-main">
-        <header class="dashboard-topbar"><div class="topbar-left"><button class="mobile-menu" type="button" data-mobile-menu aria-controls="portal-sidebar" aria-expanded="false">☰</button><div><p class="eyebrow">Access control</p><h1 data-section-title><?= e($config['heading']) ?></h1></div></div><div class="topbar-actions"><span class="role-pill"><?= e($roleLabel) ?></span><div class="user-chip" title="<?= e($user['email']) ?>"><span><?= e($initials) ?></span><div><strong><?= e($displayName) ?></strong><small><?= e($user['email']) ?></small></div></div><a class="logout-link" href="/logout.php">Log out</a></div></header>
-        <main class="dashboard-content">
-          <?php if ($notice): ?><div class="dashboard-alert is-success" role="status"><?= e((string) $notice) ?></div><?php endif; ?>
-          <?php if ($error): ?><div class="dashboard-alert is-error" role="alert"><?= e((string) $error) ?></div><?php endif; ?>
-          <section class="dashboard-section is-active" data-dashboard-section data-section-label="<?= e($config['heading']) ?>">
-            <div class="section-heading-row access-toolbar"><div><p class="eyebrow">Access management</p><h2><?= e($config['heading']) ?></h2><p class="empty-state"><?= e($config['description']) ?></p></div><button class="primary-action icon-action" type="button" data-add-access aria-haspopup="dialog" aria-controls="access-modal"><span class="plus-mark" aria-hidden="true">+</span><span>Add <?= e($config['single']) ?></span></button></div>
-            <section class="section-summary-grid three-up" aria-label="<?= e($config['heading']) ?> summary"><article><span>Total</span><strong><?= e((string) $counts['total']) ?></strong></article><article><span>Active</span><strong><?= e((string) $counts['active']) ?></strong></article><article><span>Inactive</span><strong><?= e((string) $counts['inactive']) ?></strong></article></section>
-            <form class="admin-panel filter-panel" method="get" action="<?= e($config['path']) ?>"><label>Search<input name="search" type="search" value="<?= e($search) ?>" placeholder="<?= e($config['name_label']) ?>"></label><label>Status<select name="status"><option value="">All statuses</option><option value="active" <?= $statusFilter === 'active' ? 'selected' : '' ?>>Active</option><option value="inactive" <?= $statusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option></select></label><div class="filter-actions"><button class="button primary" type="submit">Apply filters</button><a class="secondary-action" href="<?= e($config['path']) ?>">Clear</a></div></form>
-            <div class="admin-panel table-panel">
-              <div class="table-heading"><h3><?= e($config['heading']) ?></h3><span><?= e((string) count($rows)) ?> result<?= count($rows) === 1 ? '' : 's' ?></span></div>
-              <?php if (!$rows): ?><p class="empty-state">No <?= e($config['heading']) ?> match the current filters.</p><?php else: ?>
-                <div class="table-scroll"><table class="data-table"><thead><tr><th>Name</th><?php if (!empty($config['has_company'])): ?><th>Company</th><?php endif; ?><th>Status</th><th>Modules</th><th>Updated</th><th></th></tr></thead><tbody>
-                  <?php foreach ($rows as $row): $rowModules = access_decode_modules($row['module_permissions'] ?? null); ?>
-                    <tr>
-                      <td><strong><?= e($row['name']) ?></strong><small><?= e((string) ($row['notes'] ?? '')) ?></small></td>
-                      <?php if (!empty($config['has_company'])): ?><td><?= e((string) ($row['company_name'] ?? 'Unassigned')) ?></td><?php endif; ?>
-                      <td><span class="status-badge <?= (int) $row['is_active'] === 1 ? 'is-active' : 'is-muted' ?>"><?= (int) $row['is_active'] === 1 ? 'Active' : 'Inactive' ?></span></td>
-                      <td><?php if (!$rowModules): ?><span class="status-badge is-muted">None selected</span><?php else: ?><small><?= e(access_module_labels($rowModules)) ?></small><?php endif; ?></td>
-                      <td class="nowrap"><?= e((string) $row['updated_at']) ?></td>
-                      <td class="row-actions"><button class="table-action" type="button" data-edit-access data-id="<?= e((string) $row['id']) ?>" data-name="<?= e($row['name']) ?>" data-notes="<?= e((string) ($row['notes'] ?? '')) ?>" data-active="<?= e((string) $row['is_active']) ?>" data-company="<?= e((string) ($row['company_id'] ?? '')) ?>" data-modules="<?= e(implode(',', $rowModules)) ?>">Edit</button><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="deactivate"><input type="hidden" name="id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Deactivate</button></form><form method="post" data-confirm="Delete this <?= e($config['single']) ?> if it is not referenced? Referenced records will be deactivated instead."><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form></td>
-                    </tr>
-                  <?php endforeach; ?>
-                </tbody></table></div>
-              <?php endif; ?>
-            </div>
-            <div class="access-modal" id="access-modal" data-access-modal role="dialog" aria-modal="true" aria-labelledby="access-modal-title" hidden>
-              <button class="access-modal-backdrop" type="button" data-access-modal-close aria-label="Close form"></button>
-              <div class="access-modal-dialog">
-                <div class="access-modal-header"><h3 id="access-modal-title" data-access-form-title>Create <?= e($config['single']) ?></h3><button class="access-modal-close" type="button" data-access-modal-close aria-label="Close form">×</button></div>
-                <form class="admin-panel" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="save"><input type="hidden" name="id" data-access-id value="0">
-                  <label><?= e($config['name_label']) ?><input name="name" data-access-name required></label>
-                  <?php if (!empty($config['has_company'])): ?><label>Company<select name="company_id" data-access-company><option value="">Unassigned</option><?php foreach ($companies as $company): ?><option value="<?= e((string) $company['id']) ?>"><?= e($company['name']) ?></option><?php endforeach; ?></select></label><?php endif; ?>
-                  <label><?= e($config['notes_label']) ?><textarea name="notes" data-access-notes rows="3"></textarea></label>
-                  <label class="check-row"><input name="is_active" type="checkbox" value="1" data-access-active checked><span>Active</span></label>
-                  <fieldset><legend>Visible modules</legend><div class="module-grid"><?php foreach ($modules as $key => $label): ?><label class="module-chip"><input type="checkbox" name="modules[]" value="<?= e($key) ?>" data-access-module="<?= e($key) ?>"><span><?= e($label) ?></span></label><?php endforeach; ?></div></fieldset>
-                  <div class="form-actions"><button class="button primary" type="submit">Save <?= e($config['single']) ?></button><button class="button secondary" type="button" data-reset-access-form>Cancel</button></div>
-                </form>
-              </div>
-            </div>
-          </section>
-        </main>
-      </div>
-    </div>
-  </body>
-</html>
-    <?php
-}

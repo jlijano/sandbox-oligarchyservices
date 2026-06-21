@@ -12,7 +12,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
-- Admin-created portal users must confirm their email address before signing in, then create their own password before opening the dashboard.
+- Admin-created portal users receive a generated temporary password by email, confirm their email address before signing in, then create their own password before opening the dashboard.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
 - The installer also writes persistent database config backups outside `public_html` when Hostinger file permissions allow it, so full file syncs do not force a database reinstall.
 - The portal can also read `DB_HOST`, `DB_DATABASE`/`DB_NAME`, `DB_USERNAME`/`DB_USER`, `DB_PASSWORD`, and optional `DB_PORT` environment variables.
@@ -84,10 +84,11 @@ The PHP form includes a CSRF token and submits to `api/login.php`, which verifie
 users against the database, records login attempts, regenerates the session ID on
 successful login, and redirects authenticated users to `dashboard.php`.
 
-Newly created users must confirm their email address first through the link sent
-when an admin creates the account under `Valley > Users`. After confirmation,
-their first successful login redirects to `/change-password.php`; dashboard
-access remains blocked until they create their own password.
+Newly created users receive a generated temporary password in the account email.
+They must confirm their email address first through the link sent when an admin
+creates the account under `Valley > Users`. After confirmation, their first
+successful login with the temporary password redirects to `/change-password.php`;
+dashboard access remains blocked until they create their own password.
 
 Confirmation links expire after 48 hours. The sender defaults to a domain-based
 `no-reply` address; set `PORTAL_MAIL_FROM` to use a specific mailbox. Set
@@ -177,6 +178,7 @@ the service host or a local uncommitted environment file.
 
 ## Change notes
 
+- 2026-06-21: Added generated temporary passwords to account confirmation emails for new portal users.
 - 2026-06-21: Required newly confirmed portal users to create their own password before dashboard access.
 - 2026-06-21: Added email confirmation for admin-created portal users before first login.
 - 2026-06-21: Hardened PHP portal config persistence so Hostinger file syncs do not require database reinstallation when `includes/config.php` is removed.

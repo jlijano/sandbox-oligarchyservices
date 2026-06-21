@@ -172,6 +172,17 @@ function access_decode_modules(?string $stored): array
     return array_values(array_intersect(array_keys(access_modules()), array_map('strval', $decoded)));
 }
 
+function access_module_labels(array $moduleKeys): string
+{
+    $modules = access_modules();
+    $labels = [];
+    foreach ($moduleKeys as $key) {
+        $labels[] = $modules[$key] ?? $key;
+    }
+
+    return implode(', ', $labels);
+}
+
 function access_selected_modules(): array
 {
     $raw = $_POST['modules'] ?? [];
@@ -519,7 +530,7 @@ function access_render_entity_page(string $entity): void
                       <td><strong><?= e($row['name']) ?></strong><small><?= e((string) ($row['notes'] ?? '')) ?></small></td>
                       <?php if (!empty($config['has_company'])): ?><td><?= e((string) ($row['company_name'] ?? 'Unassigned')) ?></td><?php endif; ?>
                       <td><span class="status-badge <?= (int) $row['is_active'] === 1 ? 'is-active' : 'is-muted' ?>"><?= (int) $row['is_active'] === 1 ? 'Active' : 'Inactive' ?></span></td>
-                      <td><?php if (!$rowModules): ?><span class="status-badge is-muted">None selected</span><?php else: ?><small><?= e(implode(', ', array_map(static fn($key) => access_modules()[$key] ?? $key, $rowModules))) ?></small><?php endif; ?></td>
+                      <td><?php if (!$rowModules): ?><span class="status-badge is-muted">None selected</span><?php else: ?><small><?= e(access_module_labels($rowModules)) ?></small><?php endif; ?></td>
                       <td class="nowrap"><?= e((string) $row['updated_at']) ?></td>
                       <td class="row-actions"><button class="table-action" type="button" data-edit-access data-id="<?= e((string) $row['id']) ?>" data-name="<?= e($row['name']) ?>" data-notes="<?= e((string) ($row['notes'] ?? '')) ?>" data-active="<?= e((string) $row['is_active']) ?>" data-company="<?= e((string) ($row['company_id'] ?? '')) ?>" data-modules="<?= e(implode(',', $rowModules)) ?>">Edit</button><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="deactivate"><input type="hidden" name="id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Deactivate</button></form><form method="post" data-confirm="Delete this <?= e($config['single']) ?> if it is not referenced? Referenced records will be deactivated instead."><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form></td>
                     </tr>
@@ -536,7 +547,7 @@ function access_render_entity_page(string $entity): void
                   <?php if (!empty($config['has_company'])): ?><label>Company<select name="company_id" data-access-company><option value="">Unassigned</option><?php foreach ($companies as $company): ?><option value="<?= e((string) $company['id']) ?>"><?= e($company['name']) ?></option><?php endforeach; ?></select></label><?php endif; ?>
                   <label><?= e($config['notes_label']) ?><textarea name="notes" data-access-notes rows="3"></textarea></label>
                   <label class="check-row"><input name="is_active" type="checkbox" value="1" data-access-active checked><span>Active</span></label>
-                  <fieldset class="admin-panel"><legend>Visible modules</legend><div class="module-grid"><?php foreach ($modules as $key => $label): ?><label class="module-chip"><input type="checkbox" name="modules[]" value="<?= e($key) ?>" data-access-module="<?= e($key) ?>"><span><?= e($label) ?></span></label><?php endforeach; ?></div></fieldset>
+                  <fieldset><legend>Visible modules</legend><div class="module-grid"><?php foreach ($modules as $key => $label): ?><label class="module-chip"><input type="checkbox" name="modules[]" value="<?= e($key) ?>" data-access-module="<?= e($key) ?>"><span><?= e($label) ?></span></label><?php endforeach; ?></div></fieldset>
                   <div class="form-actions"><button class="button primary" type="submit">Save <?= e($config['single']) ?></button><button class="button secondary" type="button" data-reset-access-form>Cancel</button></div>
                 </form>
               </div>

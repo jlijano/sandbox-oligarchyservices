@@ -13,12 +13,22 @@
     overview: "fa-tachometer",
     valley: "fa-sitemap",
     users: "fa-users",
+    roles: "fa-id-badge",
+    companies: "fa-building",
+    departments: "fa-object-group",
     pages: "fa-file-text-o",
     blogs: "fa-newspaper-o",
     navigation: "fa-bars",
     settings: "fa-cog",
     activity: "fa-history"
   };
+
+  const valleyLinks = [
+    { label: "Users", href: "/users.php" },
+    { label: "Roles", href: "/roles.php" },
+    { label: "Companies", href: "/companies.php" },
+    { label: "Departments", href: "/departments.php" }
+  ];
 
   const loadFontAwesome = () => {
     if (document.querySelector("link[data-font-awesome-sidebar]")) return;
@@ -27,6 +37,34 @@
     link.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css";
     link.dataset.fontAwesomeSidebar = "true";
     document.head.appendChild(link);
+  };
+
+  const ensureValleyLinks = () => {
+    const subnav = document.querySelector("[data-valley-subnav]");
+    if (!subnav) return;
+    const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+    valleyLinks.forEach((item) => {
+      let link = Array.from(subnav.querySelectorAll("a")).find((candidate) => {
+        const label = candidate.querySelector(".nav-label")?.textContent?.trim().toLowerCase();
+        return label === item.label.toLowerCase();
+      });
+      if (!link) {
+        link = document.createElement("a");
+        link.innerHTML = `<span class="nav-icon" aria-hidden="true">${item.label.charAt(0)}</span><span class="nav-label">${item.label}</span>`;
+        subnav.appendChild(link);
+      }
+      link.href = item.href;
+      link.removeAttribute("data-section-link");
+      const isActive = currentPath === item.href.replace(/\/+$/, "");
+      link.classList.toggle("is-active", isActive);
+      if (isActive) link.setAttribute("aria-current", "page");
+    });
+    if (valleyGroup) {
+      const isValleyPath = valleyLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
+      valleyGroup.classList.toggle("is-active", isValleyPath || valleyGroup.classList.contains("is-active"));
+      valleyGroup.classList.toggle("is-open", isValleyPath || valleyGroup.classList.contains("is-open"));
+      if (valleyToggle) valleyToggle.setAttribute("aria-expanded", String(valleyGroup.classList.contains("is-open")));
+    }
   };
 
   const applySidebarIcons = () => {
@@ -39,19 +77,8 @@
     });
   };
 
+  ensureValleyLinks();
   applySidebarIcons();
-
-  const routeUsersLinksToUsersPage = () => {
-    document.querySelectorAll(".sidebar-nav a, .quick-actions a, .hero-actions a").forEach((link) => {
-      const label = link.querySelector(".nav-label")?.textContent?.trim().toLowerCase() || link.textContent.trim().toLowerCase();
-      const isUsersLink = label === "users" || link.dataset.sectionLink === "users";
-      if (!isUsersLink) return;
-      link.href = "/users.php";
-      link.removeAttribute("data-section-link");
-    });
-  };
-
-  routeUsersLinksToUsersPage();
 
   if (valleyGroup && valleyToggle) {
     valleyToggle.addEventListener("click", () => {
@@ -85,13 +112,14 @@
 
   const sections = Array.from(document.querySelectorAll("[data-dashboard-section]"));
   const links = Array.from(document.querySelectorAll("[data-section-link]"));
-  const allowedIds = sections.map((section) => section.id);
+  const allowedIds = sections.map((section) => section.id).filter(Boolean);
   const normalizeHash = () => {
     const raw = window.location.hash.replace("#", "").trim().toLowerCase();
     return allowedIds.includes(raw) ? raw : allowedIds[0];
   };
 
   const showSection = (id) => {
+    if (!id) return;
     sections.forEach((section) => {
       const isActive = section.id === id;
       section.classList.toggle("is-active", isActive);
@@ -99,12 +127,6 @@
       if (isActive && sectionTitle) sectionTitle.textContent = section.dataset.sectionLabel || section.id;
     });
     links.forEach((link) => link.classList.toggle("is-active", link.dataset.sectionLink === id));
-    if (valleyGroup && valleyToggle) {
-      const isValleyActive = id === "users";
-      valleyGroup.classList.toggle("is-active", isValleyActive);
-      valleyGroup.classList.toggle("is-open", isValleyActive || valleyGroup.classList.contains("is-open"));
-      valleyToggle.setAttribute("aria-expanded", String(valleyGroup.classList.contains("is-open")));
-    }
     setMobileOpen(false);
   };
 
@@ -118,8 +140,10 @@
     });
   });
 
-  window.addEventListener("hashchange", () => showSection(normalizeHash()));
-  showSection(normalizeHash());
+  if (allowedIds.length) {
+    window.addEventListener("hashchange", () => showSection(normalizeHash()));
+    showSection(normalizeHash());
+  }
 
   document.querySelectorAll("form[data-confirm]").forEach((form) => {
     form.addEventListener("submit", (event) => {
@@ -142,6 +166,20 @@
   const userPasswordLabel = userPassword?.closest("label");
   const userModal = document.querySelector("[data-user-modal]");
   const addUserButton = document.querySelector("[data-add-user]");
+  const userCompany = document.querySelector("[data-user-company]");
+  const userDepartment = document.querySelector("[data-user-department]");
+
+  const syncDepartmentOptions = () => {
+    if (!userCompany || !userDepartment) return;
+    const companyId = userCompany.value;
+    Array.from(userDepartment.options).forEach((option) => {
+      if (!option.value) return;
+      const optionCompany = option.dataset.companyId || "";
+      const visible = !companyId || !optionCompany || optionCompany === companyId;
+      option.hidden = !visible;
+      if (!visible && option.selected) userDepartment.value = "";
+    });
+  };
 
   const openUserModal = () => {
     if (!userModal) return;
@@ -178,6 +216,7 @@
     const title = document.querySelector("[data-user-form-title]");
     if (title) title.textContent = "Create user";
     syncUserPasswordMode();
+    syncDepartmentOptions();
   };
 
   if (userForm && userPassword && userIdField) {
@@ -188,18 +227,12 @@
     syncUserPasswordMode();
   }
 
+  userCompany?.addEventListener("change", syncDepartmentOptions);
   addUserButton?.addEventListener("click", () => {
     resetUserForm();
     openUserModal();
   });
-
-  document.querySelectorAll("[data-user-modal-close]").forEach((button) => {
-    button.addEventListener("click", closeUserModal);
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && userModal && !userModal.hidden) closeUserModal();
-  });
+  document.querySelectorAll("[data-user-modal-close]").forEach((button) => button.addEventListener("click", closeUserModal));
 
   document.querySelectorAll("[data-edit-user]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -207,10 +240,13 @@
       setValue("[data-user-name]", button.dataset.name);
       setValue("[data-user-email]", button.dataset.email);
       setValue("[data-user-role]", button.dataset.role);
+      setValue("[data-user-company]", button.dataset.company);
+      setValue("[data-user-department]", button.dataset.department);
       setChecked("[data-user-active]", button.dataset.active);
       const title = document.querySelector("[data-user-form-title]");
       if (title) title.textContent = "Edit user";
       syncUserPasswordMode();
+      syncDepartmentOptions();
       openUserModal();
     });
   });
@@ -218,6 +254,56 @@
   document.querySelector("[data-reset-user-form]")?.addEventListener("click", () => {
     resetUserForm();
     closeUserModal();
+  });
+
+  const accessModal = document.querySelector("[data-access-modal]");
+  const accessForm = document.querySelector("[data-access-id]")?.closest("form");
+  const openAccessModal = () => {
+    if (!accessModal) return;
+    accessModal.hidden = false;
+    document.body.classList.add("access-modal-open");
+    window.setTimeout(() => document.querySelector("[data-access-name]")?.focus(), 0);
+  };
+  const closeAccessModal = () => {
+    if (!accessModal) return;
+    accessModal.hidden = true;
+    document.body.classList.remove("access-modal-open");
+  };
+  const resetAccessForm = () => {
+    if (accessForm) accessForm.reset();
+    setValue("[data-access-id]", "0");
+    setValue("[data-access-company]", "");
+    setChecked("[data-access-active]", true);
+    document.querySelectorAll("[data-access-module]").forEach((field) => { field.checked = false; });
+    const title = document.querySelector("[data-access-form-title]");
+    if (title) title.textContent = title.textContent.replace(/^Edit /, "Create ");
+  };
+
+  document.querySelector("[data-add-access]")?.addEventListener("click", () => {
+    resetAccessForm();
+    openAccessModal();
+  });
+  document.querySelectorAll("[data-access-modal-close]").forEach((button) => button.addEventListener("click", closeAccessModal));
+  document.querySelector("[data-reset-access-form]")?.addEventListener("click", () => {
+    resetAccessForm();
+    closeAccessModal();
+  });
+  document.querySelectorAll("[data-edit-access]").forEach((button) => {
+    button.addEventListener("click", () => {
+      resetAccessForm();
+      setValue("[data-access-id]", button.dataset.id);
+      setValue("[data-access-name]", button.dataset.name);
+      setValue("[data-access-notes]", button.dataset.notes);
+      setValue("[data-access-company]", button.dataset.company);
+      setChecked("[data-access-active]", button.dataset.active);
+      const selected = (button.dataset.modules || "").split(",").filter(Boolean);
+      document.querySelectorAll("[data-access-module]").forEach((field) => {
+        field.checked = selected.includes(field.value);
+      });
+      const title = document.querySelector("[data-access-form-title]");
+      if (title) title.textContent = title.textContent.replace(/^Create /, "Edit ");
+      openAccessModal();
+    });
   });
 
   document.querySelectorAll("[data-edit-page]").forEach((button) => {
@@ -261,5 +347,12 @@
     setValue("[data-nav-id]", "0");
     const title = document.querySelector("[data-nav-form-title]");
     if (title) title.textContent = "Create link";
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      if (userModal && !userModal.hidden) closeUserModal();
+      if (accessModal && !accessModal.hidden) closeAccessModal();
+    }
   });
 })();

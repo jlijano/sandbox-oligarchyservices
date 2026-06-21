@@ -232,9 +232,12 @@ $userPage = $userPageRaw === false ? 1 : max(1, (int) $userPageRaw);
 $usersPerPage = 10;
 $totalUsers = 0;
 $totalUserPages = 1;
-$counts = ['active_users' => 0, 'pages' => 0, 'published_pages' => 0, 'nav_items' => 0];
+$counts = ['total_users' => 0, 'active_users' => 0, 'inactive_users' => 0, 'admin_users' => 0, 'pages' => 0, 'published_pages' => 0, 'nav_items' => 0];
 try {
+    $counts['total_users'] = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
     $counts['active_users'] = (int) $pdo->query('SELECT COUNT(*) FROM users WHERE is_active = 1')->fetchColumn();
+    $counts['inactive_users'] = (int) $pdo->query('SELECT COUNT(*) FROM users WHERE is_active = 0')->fetchColumn();
+    $counts['admin_users'] = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
     if (table_exists($pdo, 'pages')) {
         $counts['pages'] = (int) $pdo->query('SELECT COUNT(*) FROM pages')->fetchColumn();
         $counts['published_pages'] = (int) $pdo->query("SELECT COUNT(*) FROM pages WHERE status = 'published'")->fetchColumn();
@@ -314,7 +317,7 @@ $csrf = csrf_token();
     <meta name="robots" content="noindex">
     <title>Dashboard | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-cms-panel">
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-users-density">
     <script defer src="/assets/dashboard.js?v=20260621-cms-panel"></script>
   </head>
   <body class="dashboard-body">
@@ -374,8 +377,14 @@ $csrf = csrf_token();
           </section>
 
           <?php if ($canManageUsers): ?>
-          <section class="dashboard-section" id="users" data-dashboard-section data-section-label="Users">
+          <section class="dashboard-section users-section" id="users" data-dashboard-section data-section-label="Users">
             <div class="section-heading-row"><div><p class="eyebrow">Access control</p><h2>Users</h2></div></div>
+            <section class="user-summary-grid" aria-label="User account summary">
+              <article><span>Total users</span><strong><?= e((string) $counts['total_users']) ?></strong></article>
+              <article><span>Active</span><strong><?= e((string) $counts['active_users']) ?></strong></article>
+              <article><span>Inactive</span><strong><?= e((string) $counts['inactive_users']) ?></strong></article>
+              <article><span>Admins</span><strong><?= e((string) $counts['admin_users']) ?></strong></article>
+            </section>
             <form class="admin-panel filter-panel" method="get" action="/dashboard.php#users">
               <label>Search users<input name="user_search" type="search" value="<?= e($userSearch) ?>" placeholder="Name or email"></label>
               <label>Role<select name="user_role"><option value="">All roles</option><?php foreach ($allowedRoles as $r): ?><option value="<?= e($r) ?>" <?= $userRoleFilter === $r ? 'selected' : '' ?>><?= e(ucfirst($r)) ?></option><?php endforeach; ?></select></label>

@@ -230,6 +230,32 @@ function account_confirmation_send_email(string $email, string $name, string $to
     return account_confirmation_send_via_php_mail($email, $subject, $parts);
 }
 
+function account_confirmation_flash_keys(): array
+{
+    return request_path() === '/users.php'
+        ? ['notice' => 'users_notice', 'error' => 'users_error']
+        : ['notice' => 'dashboard_notice', 'error' => 'dashboard_error'];
+}
+
+function account_confirmation_existing_error(): bool
+{
+    $keys = account_confirmation_flash_keys();
+    return !empty($_SESSION[$keys['error']]) || !empty($_SESSION['dashboard_error']) || !empty($_SESSION['users_error']);
+}
+
+function account_confirmation_flash_notice(string $message): void
+{
+    $keys = account_confirmation_flash_keys();
+    $_SESSION[$keys['notice']] = $message;
+}
+
+function account_confirmation_flash_error(string $message): void
+{
+    $keys = account_confirmation_flash_keys();
+    unset($_SESSION[$keys['notice']]);
+    $_SESSION[$keys['error']] = $message;
+}
+
 function account_confirmation_register_dashboard_hook(): void
 {
     static $registered = false;
@@ -252,7 +278,7 @@ function account_confirmation_finalize_dashboard_create(): void
     if ((int) ($_POST['user_id'] ?? 0) !== 0) {
         return;
     }
-    if (!empty($_SESSION['dashboard_error'])) {
+    if (account_confirmation_existing_error()) {
         return;
     }
 
@@ -283,14 +309,12 @@ function account_confirmation_finalize_dashboard_create(): void
         $update->execute([password_hash($temporaryPassword, PASSWORD_DEFAULT), $tokenHash, (int) $createdUser['id']]);
 
         if (account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword)) {
-            $_SESSION['dashboard_notice'] = 'User created. Confirmation email and temporary password sent to ' . $email . '.';
+            account_confirmation_flash_notice('User created. Confirmation email and temporary password sent to ' . $email . '.');
         } else {
-            unset($_SESSION['dashboard_notice']);
-            $_SESSION['dashboard_error'] = 'User created, but the confirmation email could not be sent. Confirm mail settings and make sure the Sentinel mail orchestrator is not in dry-run mode.';
+            account_confirmation_flash_error('User created, but the confirmation email could not be sent. Confirm mail settings and make sure the Sentinel mail orchestrator is not in dry-run mode.');
         }
     } catch (Throwable $error) {
         error_log('Account confirmation setup failed: ' . $error->getMessage());
-        unset($_SESSION['dashboard_notice']);
-        $_SESSION['dashboard_error'] = 'User created, but account confirmation setup failed. Check the PHP error log.';
+        account_confirmation_flash_error('User created, but account confirmation setup failed. Check the PHP error log.');
     }
 }

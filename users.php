@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Enter a valid user email.');
             if ($name === '') throw new RuntimeException('User name is required.');
             if (!in_array($newRole, $allowedRoles, true)) throw new RuntimeException('Choose a valid role.');
-            if ($userId === 0 && strlen($password) < 10) throw new RuntimeException('New users need a password of at least 10 characters.');
+            if ($userId === 0 && $password === '') $password = account_confirmation_generate_temporary_password();
             if ($password !== '' && strlen($password) < 10) throw new RuntimeException('Password must be at least 10 characters.');
             if ($companyId !== null && !users_option_exists($pdo, 'companies', $companyId)) throw new RuntimeException('Choose a valid company.');
             if ($departmentId !== null && !users_option_exists($pdo, 'departments', $departmentId)) throw new RuntimeException('Choose a valid department.');

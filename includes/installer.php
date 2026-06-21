@@ -49,12 +49,78 @@ function installer_config_contents(string $dbHost, string $dbName, string $dbUse
     ], true) . ";\n";
 }
 
-function installer_backup_config_path(string $configPath): string
+function installer_backup_config_paths(string $configPath): array
 {
-    return dirname($configPath, 3) . '/oligarchy-config.php';
+    $paths = [];
+
+    foreach ([5, 3] as $levels) {
+        $directory = dirname($configPath, $levels);
+        if ($directory !== '.' && $directory !== DIRECTORY_SEPARATOR) {
+            $paths[] = $directory . '/oligarchy-config.php';
+        }
+    }
+
+    return array_values(array_unique($paths));
 }
 
-function installer_write_config(string $configPath, string $dbHost, string $dbName, string $dbUser, string $dbPassword): void
+function installer_backup_config_path(string $configPath): string
+{
+    return installer_backup_config_paths($configPath)[0] ?? dirname($configPath, 3) . '/oligarchy-config.php';
+}
+
+function installer_config_file_is_valid(string $path): bool
+{
+    if (!is_file($path)) {
+        return false;
+    }
+
+    try {
+        $loaded = require $path;
+    } catch (Throwable $error) {
+        error_log('Database config could not be loaded at ' . $path . ': ' . $error->getMessage());
+        return false;
+    }
+
+    if (!is_array($loaded)) {
+        error_log('Database config is not a PHP config array at ' . $path);
+        return false;
+    }
+
+    foreach (['host', 'database', 'username'] as $requiredKey) {
+        if (trim((string) ($loaded[$requiredKey] ?? '')) === '') {
+            error_log('Database config is missing required key at ' . $path . ': ' . $requiredKey);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function installer_existing_config_path(string $configPath): ?string
+{
+    $paths = array_merge([$configPath], installer_backup_config_paths($configPath));
+
+    foreach ($paths as $path) {
+        if (installer_config_file_is_valid($path)) {
+            return $path;
+        }
+    }
+
+    return null;
+}
+
+function installer_has_persistent_config(string $configPath): bool
+{
+    foreach (installer_backup_config_paths($configPath) as $path) {
+        if (installer_config_file_is_valid($path)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function installer_write_config(string $configPath, string $dbHost, string $dbName, string $dbUser, string $dbPassword): array
 {
     $config = installer_config_contents($dbHost, $dbName, $dbUser, $dbPassword);
 
@@ -62,43 +128,67 @@ function installer_write_config(string $configPath, string $dbHost, string $dbNa
         throw new RuntimeException('Could not write includes/config.php. Check file permissions.');
     }
 
-    $backupPath = installer_backup_config_path($configPath);
-    if (@file_put_contents($backupPath, $config, LOCK_EX) === false) {
-        error_log('Could not write backup database config at ' . $backupPath);
+    @chmod($configPath, 0600);
+
+    $result = ['written' => [], 'failed' => []];
+    foreach (installer_backup_config_paths($configPath) as $backupPath) {
+        if (@file_put_contents($backupPath, $config, LOCK_EX) === false) {
+            error_log('Could not write persistent database config at ' . $backupPath);
+            $result['failed'][] = $backupPath;
+            continue;
+        }
+
+        @chmod($backupPath, 0600);
+        $result['written'][] = $backupPath;
     }
+
+    if (!$result['written']) {
+        error_log('No persistent database config backup could be written. Future full-file deploys may require repair.php.');
+    }
+
+    return $result;
+}
+
+function installer_config_write_warnings(array $writeResult): array
+{
+    if (empty($writeResult['written'])) {
+        return ['The portal connected to the database, but Hostinger did not allow a persistent config backup to be saved. If a full file sync removes includes/config.php again, open /repair.php once to restore it.'];
+    }
+
+    if (!empty($writeResult['failed'])) {
+        return ['The portal saved a persistent config backup, but one backup location was not writable. Login should survive normal deploys, but check the Hostinger PHP error log if repair appears again.'];
+    }
+
+    return [];
 }
 
 function installer_restore_config_from_backup(string $configPath): bool
 {
-    if (is_file($configPath)) {
+    if (installer_config_file_is_valid($configPath)) {
         return true;
     }
 
-    $backupPath = installer_backup_config_path($configPath);
-    if (!is_file($backupPath)) {
-        return false;
-    }
-
-    $loaded = require $backupPath;
-    if (!is_array($loaded)) {
-        error_log('Backup database config is not a PHP config array.');
-        return false;
-    }
-
-    foreach (['host', 'database', 'username'] as $requiredKey) {
-        if (trim((string) ($loaded[$requiredKey] ?? '')) === '') {
-            error_log('Backup database config is missing required key: ' . $requiredKey);
-            return false;
+    foreach (installer_backup_config_paths($configPath) as $backupPath) {
+        if (!installer_config_file_is_valid($backupPath)) {
+            continue;
         }
+
+        $config = file_get_contents($backupPath);
+        if ($config === false) {
+            error_log('Could not read persistent database config at ' . $backupPath);
+            return true;
+        }
+
+        if (file_put_contents($configPath, $config, LOCK_EX) === false) {
+            error_log('Could not restore includes/config.php from persistent database config at ' . $backupPath);
+            return true;
+        }
+
+        @chmod($configPath, 0600);
+        return true;
     }
 
-    $config = file_get_contents($backupPath);
-    if ($config === false || file_put_contents($configPath, $config, LOCK_EX) === false) {
-        error_log('Could not restore includes/config.php from backup database config.');
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
 function installer_sql_name(string $name): string

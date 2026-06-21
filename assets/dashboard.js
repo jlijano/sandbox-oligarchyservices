@@ -19,6 +19,7 @@
     pages: "fa-file-text-o",
     blogs: "fa-newspaper-o",
     navigation: "fa-bars",
+    automation: "fa-bolt",
     settings: "fa-cog",
     "system settings": "fa-cog",
     activity: "fa-history",

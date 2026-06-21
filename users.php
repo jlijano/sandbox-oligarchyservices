@@ -178,7 +178,7 @@ $csrf = csrf_token();
     <meta name="robots" content="noindex">
     <title>Users | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-access-management">
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
     <style>
       .users-toolbar { align-items: center; }
       .icon-action { gap: 9px; }
@@ -195,7 +195,7 @@ $csrf = csrf_token();
       body.user-modal-open { overflow: hidden; }
       @media (max-width: 680px) { .users-toolbar { align-items: stretch; } .users-toolbar .primary-action { width: 100%; } .user-modal { align-items: end; padding: 12px; } .user-modal-dialog { width: 100%; max-height: calc(100dvh - 24px); } }
     </style>
-    <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-automation"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

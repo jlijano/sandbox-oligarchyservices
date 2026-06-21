@@ -170,9 +170,9 @@ $roleLabel = ucfirst($role);
     <meta name="robots" content="noindex">
     <title>Blogs Admin | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
     <link rel="stylesheet" href="/assets/blogs.css?v=20260621-blogs">
-    <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-automation"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

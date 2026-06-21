@@ -24,8 +24,8 @@ $agentUrl = 'https://chatgpt.com/agents/a/agt_6a2264db70cc819197eca97e19bf072b';
     <meta name="robots" content="noindex">
     <title>Agents | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-playground-agents">
-    <script defer src="/assets/dashboard.js?v=20260621-sidebar-state-fix"></script>
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
+    <script defer src="/assets/dashboard.js?v=20260621-automation"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

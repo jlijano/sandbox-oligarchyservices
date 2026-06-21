@@ -13,6 +13,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
+- The installer also writes persistent database config backups outside `public_html` when Hostinger file permissions allow it, so full file syncs do not force a database reinstall.
 - `automation/sentinel-mail-orchestrator/` contains a separate Node.js automation service for Sentinel email sending. It is not part of the Hostinger public website upload.
 
 ## Hostinger deployment
@@ -40,7 +41,8 @@ Before going live:
    `/install.php`, confirm login works, and then use `/update.php` for future
    schema updates after deployments.
 5. If `includes/config.php` is missing on the live server, use `/repair.php` to
-   recreate it from the Hostinger database values.
+   reconnect the existing database. Do not reinstall, drop, empty, or recreate
+   the database just because the config file is missing.
 6. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
    `privacy.html`, and one missing URL after upload.
 
@@ -52,8 +54,8 @@ See `HOSTINGER.md` for the full checklist.
   config, required tables, and first admin account.
 - `/update.php`: logged-in admin maintenance page. Applies safe, non-destructive
   table updates after CMS code changes.
-- `/repair.php`: server repair page. Recreates `includes/config.php` only when
-  the installer lock exists but the config file is missing.
+- `/repair.php`: server repair page. Reconnects the existing database when the
+  server-local config file is missing. Existing tables and data are kept.
 
 Direct browser access to `/includes/config.php` is blocked by `.htaccess` on
 purpose because that file contains the database password. PHP can still read it
@@ -155,6 +157,7 @@ the service host or a local uncommitted environment file.
 
 ## Change notes
 
+- 2026-06-21: Hardened PHP portal config persistence so Hostinger file syncs do not require database reinstallation when `includes/config.php` is removed.
 - 2026-06-21: Added a separate Sentinel mail orchestrator scaffold for sending automation emails through `sentinel@oligarchyservices.com`.
 - 2026-06-21: Split portal setup into `/install.php`, `/update.php`, and `/repair.php` so first setup, schema updates, and missing-config repair use separate flows.
 - 2026-06-20: Aligned README architecture and deployment notes with the PHP/MySQL client portal documented in `HOSTINGER.md`.

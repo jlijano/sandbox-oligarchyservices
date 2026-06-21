@@ -7,8 +7,9 @@ $lockPath = __DIR__ . '/includes/installed.lock';
 $configPath = __DIR__ . '/includes/config.php';
 installer_restore_config_from_backup($configPath);
 $hasLock = is_file($lockPath);
-$hasConfig = is_file($configPath) || is_file(installer_backup_config_path($configPath));
+$hasConfig = installer_existing_config_path($configPath) !== null;
 $errors = [];
+$warnings = [];
 $success = false;
 
 if ($hasLock && !$hasConfig) {
@@ -18,7 +19,7 @@ if ($hasLock && !$hasConfig) {
 
 if ($hasLock || $hasConfig) {
     http_response_code(403);
-    echo 'Install is not available because this portal already has setup files. Use /update.php while logged in as an admin, or use /repair.php only if includes/config.php is missing.';
+    echo 'Install is not available because this portal already has setup files. Use /update.php while logged in as an admin, or use /repair.php only if the database config is missing.';
     exit;
 }
 
@@ -40,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo = installer_pdo_from_credentials($dbHost, $dbName, $dbUser, $dbPassword);
             create_or_update_schema($pdo);
             installer_upsert_admin($pdo, $adminEmail, $adminPassword, $adminName);
-            installer_write_config($configPath, $dbHost, $dbName, $dbUser, $dbPassword);
+            $warnings = installer_config_write_warnings(installer_write_config($configPath, $dbHost, $dbName, $dbUser, $dbPassword));
             file_put_contents($lockPath, 'Installed at ' . gmdate('c') . PHP_EOL, LOCK_EX);
             $success = true;
         } catch (Throwable $exception) {
@@ -59,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <body>
     <main class="login-page"><section class="login-hero" aria-labelledby="install-heading"><a class="login-brand-logo" href="/" aria-label="Oligarchy Services home">OLIGARCHY</a><form class="login-panel" method="post"><div class="login-panel-heading"><p class="eyebrow">Portal setup</p><h1 id="install-heading">Install backend</h1><p>Create the portal config, required tables, and first admin account inside the Hostinger database.</p></div>
       <?php if ($success): ?><div class="form-alert is-visible is-success">Install complete. Open <a href="/login.html">login</a>.</div><?php endif; ?>
+      <?php foreach ($warnings as $warning): ?><div class="form-alert is-visible is-error"><?= htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') ?></div><?php endforeach; ?>
       <?php foreach ($errors as $error): ?><div class="form-alert is-visible is-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endforeach; ?>
       <label class="field"><span>Database host</span><input name="db_host" value="<?= htmlspecialchars(installer_post_value('db_host', 'localhost'), ENT_QUOTES, 'UTF-8') ?>" required><small class="field-error">For Hostinger, use localhost unless hPanel shows a separate MySQL host. Do not use the website domain here.</small></label>
       <label class="field"><span>Database name</span><input name="db_name" value="<?= htmlspecialchars(installer_post_value('db_name'), ENT_QUOTES, 'UTF-8') ?>" required></label>

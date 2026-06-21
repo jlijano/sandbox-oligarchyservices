@@ -26,6 +26,14 @@
 .sidebar-nav { display: grid; gap: 6px; padding: 18px 14px; }
 .sidebar-nav a { display: flex; min-height: 46px; align-items: center; gap: 12px; border-radius: 8px; padding: 0 12px; color: #c6c8ce; text-decoration: none; transition: background 160ms ease, color 160ms ease, transform 160ms ease; }
 .sidebar-nav a:hover, .sidebar-nav a.is-active { background: rgba(176, 7, 20, 0.18); color: #ffffff; transform: translateX(2px); }
+.sidebar-group { display: grid; gap: 6px; }
+.sidebar-group-toggle { display: flex; min-height: 46px; width: 100%; align-items: center; gap: 12px; border: 0; border-radius: 8px; padding: 0 12px; background: transparent; color: #c6c8ce; font: inherit; cursor: pointer; text-align: left; transition: background 160ms ease, color 160ms ease, transform 160ms ease; }
+.sidebar-group-toggle:hover, .sidebar-group.is-open > .sidebar-group-toggle, .sidebar-group.is-active > .sidebar-group-toggle { background: rgba(176, 7, 20, 0.18); color: #ffffff; transform: translateX(2px); }
+.sidebar-group-caret { margin-left: auto; color: #8d9099; font-size: 0.78rem; transition: transform 160ms ease; }
+.sidebar-group.is-open .sidebar-group-caret { transform: rotate(90deg); }
+.sidebar-subnav { display: none; gap: 6px; padding-left: 20px; }
+.sidebar-group.is-open .sidebar-subnav { display: grid; }
+.sidebar-subnav a { min-height: 40px; padding-left: 10px; }
 .nav-icon { display: inline-grid; flex: 0 0 28px; width: 28px; height: 28px; place-items: center; border-radius: 8px; background: #202024; color: #ffffff; font-size: 0.78rem; font-weight: 900; }
 .sidebar-footer { margin-top: auto; padding: 18px 20px 22px; border-top: 1px solid rgba(90, 93, 99, 0.28); }
 .sidebar-status, .sidebar-footer strong { display: block; }
@@ -34,6 +42,7 @@
 .dashboard-shell.is-collapsed .dashboard-sidebar { width: 86px; }
 .dashboard-shell.is-collapsed .sidebar-brand { justify-content: center; padding-inline: 10px; }
 .dashboard-shell.is-collapsed .sidebar-brand a, .dashboard-shell.is-collapsed .nav-label, .dashboard-shell.is-collapsed .sidebar-footer { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.dashboard-shell.is-collapsed .sidebar-group-caret, .dashboard-shell.is-collapsed .sidebar-subnav { display: none; }
 .dashboard-shell.is-collapsed .sidebar-collapse { transform: rotate(180deg); }
 .dashboard-main { min-width: 0; }
 .dashboard-topbar { position: sticky; top: 0; z-index: 20; display: flex; min-height: 74px; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 1px solid rgba(90, 93, 99, 0.3); padding: 12px clamp(18px, 3vw, 32px); background: rgba(8, 8, 9, 0.86); backdrop-filter: blur(18px); }

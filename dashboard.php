@@ -324,8 +324,8 @@ $csrf = csrf_token();
     <meta name="robots" content="noindex">
     <title>Dashboard | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-admin-density">
-    <script defer src="/assets/dashboard.js?v=20260621-cms-panel"></script>
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-valley-nav">
+    <script defer src="/assets/dashboard.js?v=20260621-valley-nav"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>
@@ -336,10 +336,26 @@ $csrf = csrf_token();
         </div>
         <nav class="sidebar-nav">
           <?php foreach ($visibleNav as $index => $item): ?>
-            <a class="<?= $index === 0 ? 'is-active' : '' ?>" href="#<?= e($item['id']) ?>" data-section-link="<?= e($item['id']) ?>">
-              <span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span>
-              <span class="nav-label"><?= e($item['label']) ?></span>
-            </a>
+            <?php if ($item['id'] === 'users'): ?>
+              <div class="sidebar-group" data-valley-group>
+                <button class="sidebar-group-toggle" type="button" data-valley-toggle aria-expanded="false">
+                  <span class="nav-icon" aria-hidden="true">V</span>
+                  <span class="nav-label">Valley</span>
+                  <span class="sidebar-group-caret" aria-hidden="true">&gt;</span>
+                </button>
+                <div class="sidebar-subnav" data-valley-subnav>
+                  <a href="#<?= e($item['id']) ?>" data-section-link="<?= e($item['id']) ?>">
+                    <span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span>
+                    <span class="nav-label"><?= e($item['label']) ?></span>
+                  </a>
+                </div>
+              </div>
+            <?php else: ?>
+              <a class="<?= $index === 0 ? 'is-active' : '' ?>" href="#<?= e($item['id']) ?>" data-section-link="<?= e($item['id']) ?>">
+                <span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span>
+                <span class="nav-label"><?= e($item['label']) ?></span>
+              </a>
+            <?php endif; ?>
           <?php endforeach; ?>
         </nav>
         <div class="sidebar-footer"><span class="sidebar-status">Role</span><strong><?= e($roleLabel) ?></strong></div>

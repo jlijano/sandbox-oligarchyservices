@@ -140,6 +140,21 @@
   const userForm = userIdField?.closest("form");
   const userPassword = userForm?.querySelector("input[name='password']");
   const userPasswordLabel = userPassword?.closest("label");
+  const userModal = document.querySelector("[data-user-modal]");
+  const addUserButton = document.querySelector("[data-add-user]");
+
+  const openUserModal = () => {
+    if (!userModal) return;
+    userModal.hidden = false;
+    document.body.classList.add("user-modal-open");
+    window.setTimeout(() => document.querySelector("[data-user-name]")?.focus(), 0);
+  };
+
+  const closeUserModal = () => {
+    if (!userModal) return;
+    userModal.hidden = true;
+    document.body.classList.remove("user-modal-open");
+  };
 
   const clientPlaceholderPassword = () => {
     const bytes = new Uint8Array(10);
@@ -156,6 +171,15 @@
     if (isCreate) userPassword.value = "";
   };
 
+  const resetUserForm = () => {
+    if (userForm) userForm.reset();
+    setValue("[data-user-id]", "0");
+    setChecked("[data-user-active]", true);
+    const title = document.querySelector("[data-user-form-title]");
+    if (title) title.textContent = "Create user";
+    syncUserPasswordMode();
+  };
+
   if (userForm && userPassword && userIdField) {
     userForm.addEventListener("submit", () => {
       const isCreate = userIdField.value === "0" || userIdField.value === "";
@@ -163,6 +187,19 @@
     });
     syncUserPasswordMode();
   }
+
+  addUserButton?.addEventListener("click", () => {
+    resetUserForm();
+    openUserModal();
+  });
+
+  document.querySelectorAll("[data-user-modal-close]").forEach((button) => {
+    button.addEventListener("click", closeUserModal);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && userModal && !userModal.hidden) closeUserModal();
+  });
 
   document.querySelectorAll("[data-edit-user]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -174,17 +211,13 @@
       const title = document.querySelector("[data-user-form-title]");
       if (title) title.textContent = "Edit user";
       syncUserPasswordMode();
-      document.querySelector("[data-user-name]")?.focus();
+      openUserModal();
     });
   });
 
   document.querySelector("[data-reset-user-form]")?.addEventListener("click", () => {
-    const form = document.querySelector("[data-user-id]")?.closest("form");
-    if (form) form.reset();
-    setValue("[data-user-id]", "0");
-    const title = document.querySelector("[data-user-form-title]");
-    if (title) title.textContent = "Create user";
-    syncUserPasswordMode();
+    resetUserForm();
+    closeUserModal();
   });
 
   document.querySelectorAll("[data-edit-page]").forEach((button) => {

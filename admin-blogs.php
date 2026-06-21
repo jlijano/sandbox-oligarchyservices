@@ -6,6 +6,7 @@ require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/blogs.php';
 require_once __DIR__ . '/includes/installer.php';
+require_once __DIR__ . '/includes/access-management.php';
 
 $user = require_login();
 $role = strtolower((string) ($user['role'] ?? 'client'));
@@ -175,27 +176,7 @@ $roleLabel = ucfirst($role);
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>
-      <aside class="dashboard-sidebar" id="portal-sidebar" aria-label="Portal navigation">
-        <div class="sidebar-brand">
-          <a href="/dashboard.php#overview" aria-label="Oligarchy Services dashboard">OLIGARCHY</a>
-          <button class="sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" aria-expanded="true">‹</button>
-        </div>
-        <nav class="sidebar-nav">
-          <a href="/dashboard.php#overview"><span class="nav-icon" aria-hidden="true">O</span><span class="nav-label">Overview</span></a>
-          <?php if ($role === 'admin'): ?>
-            <div class="sidebar-group" data-valley-group>
-              <button class="sidebar-group-toggle" type="button" data-valley-toggle aria-expanded="false"><span class="nav-icon" aria-hidden="true">V</span><span class="nav-label">Valley</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
-              <div class="sidebar-subnav" data-valley-subnav><a href="/dashboard.php#users"><span class="nav-icon" aria-hidden="true">U</span><span class="nav-label">Users</span></a></div>
-            </div>
-          <?php endif; ?>
-          <a href="/dashboard.php#pages"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Pages</span></a>
-          <a class="is-active" href="/admin-blogs.php" aria-current="page"><span class="nav-icon" aria-hidden="true">B</span><span class="nav-label">Blogs</span></a>
-          <a href="/dashboard.php#navigation"><span class="nav-icon" aria-hidden="true">N</span><span class="nav-label">Navigation</span></a>
-          <a href="/dashboard.php#settings"><span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Settings</span></a>
-          <a href="/dashboard.php#activity"><span class="nav-icon" aria-hidden="true">A</span><span class="nav-label">Activity</span></a>
-        </nav>
-        <div class="sidebar-footer"><span class="sidebar-status">Role</span><strong><?= e($roleLabel) ?></strong></div>
-      </aside>
+      <?php access_sidebar('blogs', $roleLabel, $role); ?>
       <div class="sidebar-backdrop" data-sidebar-backdrop></div>
       <div class="dashboard-main">
         <header class="dashboard-topbar">

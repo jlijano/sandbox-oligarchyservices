@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/installer.php';
+require_once __DIR__ . '/includes/password-change.php';
 
 $user = require_login();
 $errors = [];
@@ -28,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $pdo = db();
                 create_or_update_schema($pdo);
+                password_change_ensure_schema($pdo);
                 $stmt = $pdo->prepare('UPDATE users SET password_hash = ?, password_change_required = 0, updated_at = NOW() WHERE id = ?');
                 $stmt->execute([password_hash($password, PASSWORD_DEFAULT), (int) $user['id']]);
                 unset($_SESSION['password_change_required']);

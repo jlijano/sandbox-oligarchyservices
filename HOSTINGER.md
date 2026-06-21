@@ -12,7 +12,9 @@ Upload these repository files into the domain's `public_html` directory:
 - `login.php`
 - `dashboard.php`
 - `logout.php`
-- `install.php` only during setup; delete it after installation
+- `install.php` for first setup
+- `update.php` for admin-run database updates after deployments
+- `repair.php` for recreating a missing `includes/config.php`
 - `privacy.html`
 - `404.html`
 - `.htaccess`
@@ -36,16 +38,44 @@ passwords.
 
 ## PHP/MySQL setup
 
+Use the setup page that matches the job:
+
+- `/install.php`: first-time setup only. It creates `includes/config.php`, the
+  required tables, and the first admin account. If the portal is already
+  installed, this page stays locked.
+- `/update.php`: logged-in admin updates only. It applies safe, non-destructive
+  table updates after new CMS code is deployed.
+- `/repair.php`: config repair only. It recreates `includes/config.php` when
+  `includes/installed.lock` exists but `includes/config.php` is missing.
+
+First install:
+
 1. Create the MySQL database and user in Hostinger hPanel.
 2. Upload the repository files to `public_html`.
 3. Open `/install.php` in the browser.
 4. Enter the database host, database name, database user, and database password.
 5. Create the first admin account.
 6. Confirm the installer completes successfully.
-7. Delete `install.php` from Hostinger.
+7. Log in through `/login.html`.
+
+After deploying CMS changes:
+
+1. Log in as an admin.
+2. Open `/update.php`.
+3. Click **Run update**.
+4. Return to `/dashboard.php` and test the changed section.
+
+If login says the database config is missing:
+
+1. Open `/repair.php`.
+2. Re-enter the Hostinger database values.
+3. If no active admin exists, fill in the optional admin fields.
+4. Submit the form, then log in through `/login.html`.
 
 The installer writes `includes/config.php` and `includes/installed.lock` on the
-server. These files must not be committed to GitHub.
+server. These files must not be committed to GitHub. Direct browser access to
+`/includes/config.php` is blocked on purpose because it contains the database
+password.
 
 ## Before going live
 

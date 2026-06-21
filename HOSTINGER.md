@@ -11,6 +11,7 @@ Upload these repository files into the domain's `public_html` directory:
 - `login.html`
 - `login.php`
 - `dashboard.php`
+- `requests.php` for authenticated client service requests
 - `logout.php`
 - `account-confirmation.php` for account email confirmation links
 - `change-password.php` for required first-login password changes
@@ -52,7 +53,8 @@ Use the setup page that matches the job:
   required tables, and the first admin account. If the portal is already
   installed, this page stays locked.
 - `/update.php`: logged-in admin updates only. It applies safe, non-destructive
-  table updates after new CMS code is deployed.
+  table updates after new CMS, blog, access-management, or client request code is
+  deployed.
 - `/repair.php`: config repair only. It reconnects the existing database when
   `includes/config.php` is missing. Existing tables and data are kept. If a
   persistent `oligarchy-config.php` backup exists, repair restores from it
@@ -68,7 +70,7 @@ First install:
 6. Confirm the installer completes successfully.
 7. Log in through `/login.html`.
 
-After deploying CMS changes:
+After deploying CMS or client request changes:
 
 1. Log in as an admin.
 2. Open `/update.php`.
@@ -81,6 +83,12 @@ confirmed so they are not locked out. Newly created users receive a confirmation
 link and temporary password by email. After they confirm and sign in with the
 temporary password, they are redirected to `/change-password.php` and cannot open
 the dashboard until they create their own password.
+
+After deploying the Client Requests module, `/update.php` creates the
+`client_requests` table without deleting users or existing portal content.
+Clients can submit and view their own requests at `/requests.php`. Admin,
+editor, and support users can view the full queue, update status and priority,
+assign an internal owner, add internal notes, and record activity-log entries.
 
 If login says the database config is missing:
 
@@ -140,9 +148,9 @@ portal still accepts the parent backup config or these environment variables:
    `.htaccess`.
 3. If the domain uses a subdirectory install, update absolute paths in
    `.htaccess` and the sitemap.
-4. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
-   `account-confirmation.php`, `change-password.php`, `privacy.html`, and a fake
-   missing URL after upload.
+4. Test `index.html`, `login.html`, `dashboard.php`, `requests.php`,
+   `logout.php`, `account-confirmation.php`, `change-password.php`,
+   `privacy.html`, and a fake missing URL after upload.
 
 ## Analytics
 

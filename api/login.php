@@ -85,7 +85,7 @@ try {
     login_success_response('/dashboard.php');
 } catch (RuntimeException $error) {
     error_log('Login configuration error: ' . $error->getMessage());
-    login_response('Database configuration is missing on the server. Open /repair.php to reconnect the existing Hostinger database; do not reinstall or drop the database.', 503, '/repair.php');
+    login_response('Database configuration is missing on the server. Open /repair.php to reconnect the existing Hostinger database; do not reinstall or drop the database. Server admins can also provide DB_HOST, DB_DATABASE, DB_USERNAME, and DB_PASSWORD environment variables.', 503, '/repair.php');
 } catch (Throwable $error) {
     error_log('Login error: ' . $error->getMessage());
     login_response('Login could not reach the database. Check the Hostinger database settings or PHP error log for the exact cause.', 503);

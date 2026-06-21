@@ -1,13 +1,14 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/installer.php';
 
-$lockPath = __DIR__ . '/includes/installed.lock';
-$configPath = __DIR__ . '/includes/config.php';
+$lockPath = db_install_lock_path();
+$configPath = db_local_config_path();
 installer_restore_config_from_backup($configPath);
-$hasLock = is_file($lockPath);
-$hasConfig = installer_existing_config_path($configPath) !== null;
+$hasLock = db_has_install_lock();
+$hasConfig = installer_existing_config_path($configPath) !== null || db_has_config();
 $errors = [];
 $warnings = [];
 $success = false;

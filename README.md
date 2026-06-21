@@ -14,6 +14,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
 - The installer also writes persistent database config backups outside `public_html` when Hostinger file permissions allow it, so full file syncs do not force a database reinstall.
+- The portal can also read `DB_HOST`, `DB_DATABASE`/`DB_NAME`, `DB_USERNAME`/`DB_USER`, `DB_PASSWORD`, and optional `DB_PORT` environment variables.
 - `automation/sentinel-mail-orchestrator/` contains a separate Node.js automation service for Sentinel email sending. It is not part of the Hostinger public website upload.
 
 ## Hostinger deployment
@@ -55,11 +56,15 @@ See `HOSTINGER.md` for the full checklist.
 - `/update.php`: logged-in admin maintenance page. Applies safe, non-destructive
   table updates after CMS code changes.
 - `/repair.php`: server repair page. Reconnects the existing database when the
-  server-local config file is missing. Existing tables and data are kept.
+  server-local config file is missing. It restores from a persistent backup when
+  possible, or from entered Hostinger database values when the installer lock
+  exists but config is missing. Existing tables and data are kept.
 
 Direct browser access to `/includes/config.php` is blocked by `.htaccess` on
 purpose because that file contains the database password. PHP can still read it
-internally.
+internally. After code deployments, login and update pages also accept the
+parent-directory backup config or database environment variables, so a missing
+`includes/config.php` is no longer fatal by itself.
 
 ## Login page and client portal
 

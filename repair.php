@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/installer.php';
 
-$lockPath = __DIR__ . '/includes/installed.lock';
-$configPath = __DIR__ . '/includes/config.php';
+$lockPath = db_install_lock_path();
+$configPath = db_local_config_path();
 $restoredFromBackup = false;
 if (!is_file($configPath)) {
     $restoredFromBackup = installer_restore_config_from_backup($configPath);
@@ -12,8 +13,8 @@ if (!is_file($configPath)) {
         file_put_contents($lockPath, 'Installed at ' . gmdate('c') . PHP_EOL, LOCK_EX);
     }
 }
-$hasLock = is_file($lockPath);
-$hasConfig = installer_existing_config_path($configPath) !== null;
+$hasLock = db_has_install_lock();
+$hasConfig = installer_existing_config_path($configPath) !== null || db_has_config();
 $errors = [];
 $warnings = [];
 $success = $restoredFromBackup;
@@ -21,6 +22,12 @@ $success = $restoredFromBackup;
 if (is_file($configPath) && !$restoredFromBackup) {
     http_response_code(403);
     echo 'Repair is not needed because includes/config.php already exists. Use /update.php while logged in as an admin if tables need updates.';
+    exit;
+}
+
+if ($hasConfig && !$restoredFromBackup) {
+    http_response_code(403);
+    echo 'Repair is not needed because database configuration is available from a persistent backup or server environment. Use /update.php while logged in as an admin if tables need updates.';
     exit;
 }
 

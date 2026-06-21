@@ -2,15 +2,16 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/installer.php';
+require_once __DIR__ . '/includes/db.php';
 
-$configPath = __DIR__ . '/includes/config.php';
-$lockPath = __DIR__ . '/includes/installed.lock';
+$configPath = db_local_config_path();
+$lockPath = db_install_lock_path();
 
 if (!is_file($configPath)) {
     installer_restore_config_from_backup($configPath);
 }
 
-if (installer_existing_config_path($configPath) === null) {
+if (installer_existing_config_path($configPath) === null && !db_has_config()) {
     header('Location: ' . (is_file($lockPath) ? '/repair.php' : '/install.php'), true, 302);
     exit;
 }

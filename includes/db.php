@@ -23,18 +23,74 @@ function db_config_from_constants(): array
     ];
 }
 
+function db_config_from_environment(): array
+{
+    $read = static function (array $keys): string {
+        foreach ($keys as $key) {
+            $value = getenv($key);
+            if ($value !== false && trim((string) $value) !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return '';
+    };
+
+    return [
+        'host' => $read(['DB_HOST', 'MYSQL_HOST']),
+        'database' => $read(['DB_DATABASE', 'DB_NAME', 'MYSQL_DATABASE']),
+        'username' => $read(['DB_USERNAME', 'DB_USER', 'MYSQL_USER']),
+        'password' => $read(['DB_PASSWORD', 'MYSQL_PASSWORD']),
+        'port' => $read(['DB_PORT', 'MYSQL_PORT']),
+    ];
+}
+
+function db_normalize_config(array $config): array
+{
+    return [
+        'host' => read_config_value($config, ['host', 'db_host', 'DB_HOST']),
+        'database' => read_config_value($config, ['database', 'dbname', 'db_name', 'DB_DATABASE', 'DB_NAME']),
+        'username' => read_config_value($config, ['username', 'user', 'db_user', 'DB_USERNAME', 'DB_USER']),
+        'password' => read_config_value($config, ['password', 'pass', 'db_password', 'DB_PASSWORD']),
+        'port' => read_config_value($config, ['port', 'db_port', 'DB_PORT']),
+    ];
+}
+
+function db_config_is_complete(array $config): bool
+{
+    $normalized = db_normalize_config($config);
+
+    return $normalized['host'] !== ''
+        && $normalized['database'] !== ''
+        && $normalized['username'] !== '';
+}
+
+function db_local_config_path(): string
+{
+    return __DIR__ . '/config.php';
+}
+
+function db_backup_config_path(): string
+{
+    return dirname(__DIR__, 2) . '/oligarchy-config.php';
+}
+
+function db_install_lock_path(): string
+{
+    return __DIR__ . '/installed.lock';
+}
+
+function db_has_install_lock(): bool
+{
+    return is_file(db_install_lock_path());
+}
+
 function db_config_paths(): array
 {
-    $paths = [__DIR__ . '/config.php'];
-
-    foreach ([4, 2] as $levels) {
-        $directory = dirname(__DIR__, $levels);
-        if ($directory !== '.' && $directory !== DIRECTORY_SEPARATOR) {
-            $paths[] = $directory . '/oligarchy-config.php';
-        }
-    }
-
-    return array_values(array_unique($paths));
+    return [
+        __DIR__ . '/config.php',
+        dirname(__DIR__, 2) . '/oligarchy-config.php',
+    ];
 }
 
 function db_has_config(): bool
@@ -45,7 +101,7 @@ function db_has_config(): bool
         }
     }
 
-    return false;
+    return db_config_is_complete(db_config_from_environment()) || db_config_is_complete(db_config_from_constants());
 }
 
 function db_primary_config_path(): string
@@ -56,25 +112,22 @@ function db_primary_config_path(): string
         }
     }
 
-    return __DIR__ . '/config.php';
+    return '';
 }
 
 function load_db_config(string $configPath): array
 {
-    if (!is_file($configPath)) {
-        throw new RuntimeException('Database config is missing. Use repair.php to recreate it.');
+    if (is_file($configPath)) {
+        $loaded = require $configPath;
+        $config = is_array($loaded) ? $loaded : db_config_from_constants();
+    } else {
+        $config = db_config_from_environment();
+        if (!db_config_is_complete($config)) {
+            $config = db_config_from_constants();
+        }
     }
 
-    $loaded = require $configPath;
-    $config = is_array($loaded) ? $loaded : db_config_from_constants();
-
-    $normalized = [
-        'host' => read_config_value($config, ['host', 'db_host', 'DB_HOST']),
-        'database' => read_config_value($config, ['database', 'dbname', 'db_name', 'DB_DATABASE', 'DB_NAME']),
-        'username' => read_config_value($config, ['username', 'user', 'db_user', 'DB_USERNAME', 'DB_USER']),
-        'password' => read_config_value($config, ['password', 'pass', 'db_password', 'DB_PASSWORD']),
-        'port' => read_config_value($config, ['port', 'db_port', 'DB_PORT']),
-    ];
+    $normalized = db_normalize_config($config);
 
     foreach (['host', 'database', 'username'] as $required) {
         if ($normalized[$required] === '') {

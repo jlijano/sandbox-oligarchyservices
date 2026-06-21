@@ -49,7 +49,9 @@ Use the setup page that matches the job:
 - `/update.php`: logged-in admin updates only. It applies safe, non-destructive
   table updates after new CMS code is deployed.
 - `/repair.php`: config repair only. It reconnects the existing database when
-  `includes/config.php` is missing. Existing tables and data are kept.
+  `includes/config.php` is missing. Existing tables and data are kept. If a
+  persistent `oligarchy-config.php` backup exists, repair restores from it
+  automatically.
 
 First install:
 
@@ -97,6 +99,11 @@ Do not upload it to Hostinger `public_html`.
 Store the mailbox password and orchestrator bearer token only in the deployment
 host's secret manager. Do not add those values to GitHub, docs, prompts, or
 local files that may be committed.
+
+If a deployment replaces `public_html` and removes `includes/config.php`, the
+portal still accepts the parent backup config or these environment variables:
+`DB_HOST`, `DB_DATABASE` or `DB_NAME`, `DB_USERNAME` or `DB_USER`,
+`DB_PASSWORD`, and optional `DB_PORT`.
 
 ## Before going live
 

@@ -39,10 +39,10 @@ cron jobs, or a long-running Node.js process for the public website.
 login UI with a CSRF token and submits to `api/login.php`.
 
 The PHP/MySQL backend stores password hashes only. It never stores plain-text
-passwords. Admin-created users must confirm their email address before signing
-in, then create their own password before opening the dashboard. The
-confirmation email includes both the account confirmation link and the stable
-`/login.html` link.
+passwords. Admin-created users receive a generated temporary password by email,
+must confirm their email address before signing in, then create their own
+password before opening the dashboard. The confirmation email includes the
+account confirmation link, temporary password, and stable `/login.html` link.
 
 ## PHP/MySQL setup
 
@@ -78,9 +78,9 @@ After deploying CMS changes:
 After deploying account-confirmation changes, `/update.php` adds the email
 confirmation columns without deleting users. Existing older users are marked
 confirmed so they are not locked out. Newly created users receive a confirmation
-link and cannot sign in until that link is used. After they confirm and sign in,
-they are redirected to `/change-password.php` and cannot open the dashboard until
-they create their own password.
+link and temporary password by email. After they confirm and sign in with the
+temporary password, they are redirected to `/change-password.php` and cannot open
+the dashboard until they create their own password.
 
 If login says the database config is missing:
 

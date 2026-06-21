@@ -9,6 +9,37 @@
   const valleyGroup = document.querySelector("[data-valley-group]");
   const valleyToggle = document.querySelector("[data-valley-toggle]");
   const storageKey = "oligarchy_sidebar_collapsed";
+  const iconMap = {
+    overview: "fa-tachometer",
+    valley: "fa-sitemap",
+    users: "fa-users",
+    pages: "fa-file-text-o",
+    blogs: "fa-newspaper-o",
+    navigation: "fa-bars",
+    settings: "fa-cog",
+    activity: "fa-history"
+  };
+
+  const loadFontAwesome = () => {
+    if (document.querySelector("link[data-font-awesome-sidebar]")) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css";
+    link.dataset.fontAwesomeSidebar = "true";
+    document.head.appendChild(link);
+  };
+
+  const applySidebarIcons = () => {
+    loadFontAwesome();
+    document.querySelectorAll(".sidebar-nav .nav-icon").forEach((icon) => {
+      const label = icon.closest("a, button")?.querySelector(".nav-label")?.textContent?.trim().toLowerCase();
+      const iconClass = iconMap[label || ""];
+      if (!iconClass) return;
+      icon.innerHTML = `<i class="fa ${iconClass}" aria-hidden="true"></i>`;
+    });
+  };
+
+  applySidebarIcons();
 
   if (valleyGroup && valleyToggle) {
     valleyToggle.addEventListener("click", () => {

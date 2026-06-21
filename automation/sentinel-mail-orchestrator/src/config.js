@@ -21,9 +21,17 @@ function required(name) {
 }
 
 export function loadConfig() {
+  const dryRun = readBoolean('DRY_RUN', true);
+  const username = required('MAIL_USERNAME');
+  const password = process.env.MAIL_PASSWORD || '';
+
+  if (!dryRun && password === '') {
+    throw new Error('MAIL_PASSWORD is required when DRY_RUN=false.');
+  }
+
   return {
     port: readInteger('PORT', DEFAULT_PORT),
-    dryRun: readBoolean('DRY_RUN', true),
+    dryRun,
     token: required('ORCHESTRATOR_TOKEN'),
     defaultTo: process.env.MAIL_DEFAULT_TO || 'jlijano@gmail.com',
     smtp: {
@@ -31,10 +39,10 @@ export function loadConfig() {
       port: readInteger('SMTP_PORT', 465),
       secure: readBoolean('SMTP_SECURE', true),
       auth: {
-        user: required('MAIL_USERNAME'),
-        pass: required('MAIL_PASSWORD')
+        user: username,
+        pass: password
       }
     },
-    from: process.env.MAIL_FROM || required('MAIL_USERNAME')
+    from: process.env.MAIL_FROM || username
   };
 }

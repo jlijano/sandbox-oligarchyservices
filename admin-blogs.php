@@ -157,6 +157,9 @@ $counts = [
     'draft' => (int) $pdo->query("SELECT COUNT(*) FROM blogs WHERE status = 'draft'")->fetchColumn(),
 ];
 $csrf = csrf_token();
+$displayName = trim((string) ($user['full_name'] ?: $user['email']));
+$initials = strtoupper(substr($displayName, 0, 1));
+$roleLabel = ucfirst($role);
 ?>
 <!doctype html>
 <html lang="en">
@@ -166,66 +169,97 @@ $csrf = csrf_token();
     <meta name="robots" content="noindex">
     <title>Blogs Admin | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-admin">
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
     <link rel="stylesheet" href="/assets/blogs.css?v=20260621-blogs">
+    <script defer src="/assets/dashboard.js?v=20260621-blogs-nav"></script>
   </head>
   <body class="dashboard-body">
-    <main class="dashboard-content standalone-admin">
-      <header class="dashboard-hero compact-hero">
-        <div><p class="eyebrow">Website CMS</p><h1>Blogs</h1><p>Create, edit, publish, unpublish, and delete public blog posts.</p></div>
-        <div class="hero-actions"><a class="secondary-action" href="/dashboard.php">Dashboard</a><a class="secondary-action" href="/blogs.php" target="_blank" rel="noopener">Public Blogs</a><a class="logout-link" href="/logout.php">Log out</a></div>
-      </header>
-
-      <?php if ($notice): ?><div class="dashboard-alert is-success" role="status"><?= e((string) $notice) ?></div><?php endif; ?>
-      <?php if ($error): ?><div class="dashboard-alert is-error" role="alert"><?= e((string) $error) ?></div><?php endif; ?>
-
-      <section class="section-summary-grid three-up" aria-label="Blog summary">
-        <article><span>Total posts</span><strong><?= e((string) $counts['total']) ?></strong></article>
-        <article><span>Published</span><strong><?= e((string) $counts['published']) ?></strong></article>
-        <article><span>Drafts</span><strong><?= e((string) $counts['draft']) ?></strong></article>
-      </section>
-
-      <form class="admin-panel filter-panel blog-filter-panel" method="get" action="/admin-blogs.php">
-        <label>Search blogs<input name="search" type="search" value="<?= e($search) ?>" placeholder="Title, slug, or category"></label>
-        <label>Status<select name="status"><option value="">All statuses</option><option value="published" <?= $statusFilter === 'published' ? 'selected' : '' ?>>Published</option><option value="draft" <?= $statusFilter === 'draft' ? 'selected' : '' ?>>Draft</option></select></label>
-        <div class="filter-actions"><button class="button primary" type="submit">Apply filters</button><a class="secondary-action" href="/admin-blogs.php">Clear</a></div>
-      </form>
-
-      <section class="panel-grid form-and-table blog-admin-grid">
-        <form class="admin-panel page-editor" method="post" enctype="multipart/form-data">
-          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-          <input type="hidden" name="action" value="save_blog">
-          <input type="hidden" name="blog_id" value="<?= e((string) ($editing['id'] ?? 0)) ?>">
-          <h2><?= $editing ? 'Edit blog post' : 'Create blog post' ?></h2>
-          <label>Title<input name="title" data-blog-title value="<?= e((string) ($editing['title'] ?? '')) ?>" required></label>
-          <label>Slug<input name="slug" data-blog-slug value="<?= e((string) ($editing['slug'] ?? '')) ?>" placeholder="technology-operations" required></label>
-          <label>Excerpt<textarea name="excerpt" rows="3" required><?= e((string) ($editing['excerpt'] ?? '')) ?></textarea></label>
-          <label>Body<textarea name="body" rows="14" required><?= e((string) ($editing['body'] ?? '')) ?></textarea></label>
-          <label>Category or tag<input name="category" value="<?= e((string) ($editing['category'] ?? '')) ?>" placeholder="Operations"></label>
-          <label>Featured image<input name="featured_image" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></label>
-          <label>Current image URL<input name="existing_featured_image" value="<?= e((string) ($editing['featured_image'] ?? '')) ?>" placeholder="/uploads/blog/example.webp"></label>
-          <label>Status<select name="status"><option value="draft" <?= ($editing['status'] ?? '') !== 'published' ? 'selected' : '' ?>>Draft</option><option value="published" <?= ($editing['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published</option></select></label>
-          <label>SEO title<input name="seo_title" value="<?= e((string) ($editing['seo_title'] ?? '')) ?>"></label>
-          <label>SEO description<textarea name="seo_description" rows="2"><?= e((string) ($editing['seo_description'] ?? '')) ?></textarea></label>
-          <label>Social share title<input name="social_share_title" value="<?= e((string) ($editing['social_share_title'] ?? '')) ?>"></label>
-          <label>Social share description<textarea name="social_share_description" rows="2"><?= e((string) ($editing['social_share_description'] ?? '')) ?></textarea></label>
-          <div class="form-actions"><button class="button primary" type="submit">Save blog</button><?php if ($editing): ?><a class="button secondary" href="/admin-blogs.php">Cancel edit</a><?php endif; ?></div>
-        </form>
-
-        <div class="admin-panel table-panel">
-          <div class="table-heading"><h2>Blog library</h2><span><?= e((string) count($blogs)) ?> result<?= count($blogs) === 1 ? '' : 's' ?></span></div>
-          <?php if (!$blogs): ?>
-            <p class="empty-state">No blog posts match the current filters.</p>
-          <?php else: ?>
-            <div class="table-scroll"><table class="data-table blog-table"><thead><tr><th>Title</th><th>Status</th><th>Date</th><th>Author</th><th></th></tr></thead><tbody>
-              <?php foreach ($blogs as $row): ?>
-                <tr><td><strong><?= e($row['title']) ?></strong><small><?= e(blog_admin_excerpt($row['excerpt'] ?: $row['body'])) ?></small><small class="code-link"><?= e($row['slug']) ?></small></td><td><span class="status-badge <?= $row['status'] === 'published' ? 'is-active' : 'is-muted' ?>"><?= e($row['status']) ?></span></td><td class="nowrap"><?= e((string) ($row['published_at'] ?: $row['updated_at'])) ?></td><td><?= e((string) ($row['author_name'] ?? '')) ?></td><td class="row-actions"><a class="table-action" href="/admin-blogs.php?edit=<?= e((string) $row['id']) ?>">Edit</a><?php if ($row['status'] === 'published'): ?><a class="table-action" href="/blog.php?slug=<?= e($row['slug']) ?>" target="_blank" rel="noopener">View</a><?php endif; ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle_blog"><input type="hidden" name="blog_id" value="<?= e((string) $row['id']) ?>"><input type="hidden" name="status" value="<?= $row['status'] === 'published' ? 'draft' : 'published' ?>"><button class="table-action" type="submit"><?= $row['status'] === 'published' ? 'Unpublish' : 'Publish' ?></button></form><form method="post" data-confirm="Delete this blog post?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_blog"><input type="hidden" name="blog_id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form></td></tr>
-              <?php endforeach; ?>
-            </tbody></table></div>
-          <?php endif; ?>
+    <div class="dashboard-shell" data-dashboard-shell>
+      <aside class="dashboard-sidebar" id="portal-sidebar" aria-label="Portal navigation">
+        <div class="sidebar-brand">
+          <a href="/dashboard.php#overview" aria-label="Oligarchy Services dashboard">OLIGARCHY</a>
+          <button class="sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" aria-expanded="true">‹</button>
         </div>
-      </section>
-    </main>
+        <nav class="sidebar-nav">
+          <a href="/dashboard.php#overview"><span class="nav-icon" aria-hidden="true">O</span><span class="nav-label">Overview</span></a>
+          <?php if ($role === 'admin'): ?>
+            <div class="sidebar-group" data-valley-group>
+              <button class="sidebar-group-toggle" type="button" data-valley-toggle aria-expanded="false"><span class="nav-icon" aria-hidden="true">V</span><span class="nav-label">Valley</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
+              <div class="sidebar-subnav" data-valley-subnav><a href="/dashboard.php#users"><span class="nav-icon" aria-hidden="true">U</span><span class="nav-label">Users</span></a></div>
+            </div>
+          <?php endif; ?>
+          <a href="/dashboard.php#pages"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Pages</span></a>
+          <a class="is-active" href="/admin-blogs.php" aria-current="page"><span class="nav-icon" aria-hidden="true">B</span><span class="nav-label">Blogs</span></a>
+          <a href="/dashboard.php#navigation"><span class="nav-icon" aria-hidden="true">N</span><span class="nav-label">Navigation</span></a>
+          <a href="/dashboard.php#settings"><span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Settings</span></a>
+          <a href="/dashboard.php#activity"><span class="nav-icon" aria-hidden="true">A</span><span class="nav-label">Activity</span></a>
+        </nav>
+        <div class="sidebar-footer"><span class="sidebar-status">Role</span><strong><?= e($roleLabel) ?></strong></div>
+      </aside>
+      <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+      <div class="dashboard-main">
+        <header class="dashboard-topbar">
+          <div class="topbar-left"><button class="mobile-menu" type="button" data-mobile-menu aria-controls="portal-sidebar" aria-expanded="false">☰</button><div><p class="eyebrow">Website CMS</p><h1 data-section-title>Blogs</h1></div></div>
+          <div class="topbar-actions"><span class="role-pill"><?= e($roleLabel) ?></span><div class="user-chip" title="<?= e($user['email']) ?>"><span><?= e($initials) ?></span><div><strong><?= e($displayName) ?></strong><small><?= e($user['email']) ?></small></div></div><a class="logout-link" href="/logout.php">Log out</a></div>
+        </header>
+        <main class="dashboard-content standalone-admin">
+          <header class="dashboard-hero compact-hero">
+            <div><p class="eyebrow">Website CMS</p><h1>Blogs</h1><p>Create, edit, publish, unpublish, and delete public blog posts.</p></div>
+            <div class="hero-actions"><a class="secondary-action" href="/dashboard.php">Dashboard</a><a class="secondary-action" href="/blogs.php" target="_blank" rel="noopener">Public Blogs</a></div>
+          </header>
+
+          <?php if ($notice): ?><div class="dashboard-alert is-success" role="status"><?= e((string) $notice) ?></div><?php endif; ?>
+          <?php if ($error): ?><div class="dashboard-alert is-error" role="alert"><?= e((string) $error) ?></div><?php endif; ?>
+
+          <section class="section-summary-grid three-up" aria-label="Blog summary">
+            <article><span>Total posts</span><strong><?= e((string) $counts['total']) ?></strong></article>
+            <article><span>Published</span><strong><?= e((string) $counts['published']) ?></strong></article>
+            <article><span>Drafts</span><strong><?= e((string) $counts['draft']) ?></strong></article>
+          </section>
+
+          <form class="admin-panel filter-panel blog-filter-panel" method="get" action="/admin-blogs.php">
+            <label>Search blogs<input name="search" type="search" value="<?= e($search) ?>" placeholder="Title, slug, or category"></label>
+            <label>Status<select name="status"><option value="">All statuses</option><option value="published" <?= $statusFilter === 'published' ? 'selected' : '' ?>>Published</option><option value="draft" <?= $statusFilter === 'draft' ? 'selected' : '' ?>>Draft</option></select></label>
+            <div class="filter-actions"><button class="button primary" type="submit">Apply filters</button><a class="secondary-action" href="/admin-blogs.php">Clear</a></div>
+          </form>
+
+          <section class="panel-grid form-and-table blog-admin-grid">
+            <form class="admin-panel page-editor" method="post" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+              <input type="hidden" name="action" value="save_blog">
+              <input type="hidden" name="blog_id" value="<?= e((string) ($editing['id'] ?? 0)) ?>">
+              <h2><?= $editing ? 'Edit blog post' : 'Create blog post' ?></h2>
+              <label>Title<input name="title" data-blog-title value="<?= e((string) ($editing['title'] ?? '')) ?>" required></label>
+              <label>Slug<input name="slug" data-blog-slug value="<?= e((string) ($editing['slug'] ?? '')) ?>" placeholder="technology-operations" required></label>
+              <label>Excerpt<textarea name="excerpt" rows="3" required><?= e((string) ($editing['excerpt'] ?? '')) ?></textarea></label>
+              <label>Body<textarea name="body" rows="14" required><?= e((string) ($editing['body'] ?? '')) ?></textarea></label>
+              <label>Category or tag<input name="category" value="<?= e((string) ($editing['category'] ?? '')) ?>" placeholder="Operations"></label>
+              <label>Featured image<input name="featured_image" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"></label>
+              <label>Current image URL<input name="existing_featured_image" value="<?= e((string) ($editing['featured_image'] ?? '')) ?>" placeholder="/uploads/blog/example.webp"></label>
+              <label>Status<select name="status"><option value="draft" <?= ($editing['status'] ?? '') !== 'published' ? 'selected' : '' ?>>Draft</option><option value="published" <?= ($editing['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published</option></select></label>
+              <label>SEO title<input name="seo_title" value="<?= e((string) ($editing['seo_title'] ?? '')) ?>"></label>
+              <label>SEO description<textarea name="seo_description" rows="2"><?= e((string) ($editing['seo_description'] ?? '')) ?></textarea></label>
+              <label>Social share title<input name="social_share_title" value="<?= e((string) ($editing['social_share_title'] ?? '')) ?>"></label>
+              <label>Social share description<textarea name="social_share_description" rows="2"><?= e((string) ($editing['social_share_description'] ?? '')) ?></textarea></label>
+              <div class="form-actions"><button class="button primary" type="submit">Save blog</button><?php if ($editing): ?><a class="button secondary" href="/admin-blogs.php">Cancel edit</a><?php endif; ?></div>
+            </form>
+
+            <div class="admin-panel table-panel">
+              <div class="table-heading"><h2>Blog library</h2><span><?= e((string) count($blogs)) ?> result<?= count($blogs) === 1 ? '' : 's' ?></span></div>
+              <?php if (!$blogs): ?>
+                <p class="empty-state">No blog posts match the current filters.</p>
+              <?php else: ?>
+                <div class="table-scroll"><table class="data-table blog-table"><thead><tr><th>Title</th><th>Status</th><th>Date</th><th>Author</th><th></th></tr></thead><tbody>
+                  <?php foreach ($blogs as $row): ?>
+                    <tr><td><strong><?= e($row['title']) ?></strong><small><?= e(blog_admin_excerpt($row['excerpt'] ?: $row['body'])) ?></small><small class="code-link"><?= e($row['slug']) ?></small></td><td><span class="status-badge <?= $row['status'] === 'published' ? 'is-active' : 'is-muted' ?>"><?= e($row['status']) ?></span></td><td class="nowrap"><?= e((string) ($row['published_at'] ?: $row['updated_at'])) ?></td><td><?= e((string) ($row['author_name'] ?? '')) ?></td><td class="row-actions"><a class="table-action" href="/admin-blogs.php?edit=<?= e((string) $row['id']) ?>">Edit</a><?php if ($row['status'] === 'published'): ?><a class="table-action" href="/blog.php?slug=<?= e($row['slug']) ?>" target="_blank" rel="noopener">View</a><?php endif; ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="toggle_blog"><input type="hidden" name="blog_id" value="<?= e((string) $row['id']) ?>"><input type="hidden" name="status" value="<?= $row['status'] === 'published' ? 'draft' : 'published' ?>"><button class="table-action" type="submit"><?= $row['status'] === 'published' ? 'Unpublish' : 'Publish' ?></button></form><form method="post" data-confirm="Delete this blog post?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_blog"><input type="hidden" name="blog_id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form></td></tr>
+                  <?php endforeach; ?>
+                </tbody></table></div>
+              <?php endif; ?>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
     <script>
       document.querySelectorAll('form[data-confirm]').forEach((form) => { form.addEventListener('submit', (event) => { if (!window.confirm(form.dataset.confirm || 'Continue?')) event.preventDefault(); }); });
       const title = document.querySelector('[data-blog-title]');

@@ -84,11 +84,13 @@ link and temporary password by email. After they confirm and sign in with the
 temporary password, they are redirected to `/change-password.php` and cannot open
 the dashboard until they create their own password.
 
-After deploying the Client Requests module, `/update.php` creates the
-`client_requests` table without deleting users or existing portal content.
-Clients can submit and view their own requests at `/requests.php`. Admin,
+After deploying the Client Requests module, `/update.php` creates or updates the
+`client_requests` and `client_request_updates` tables without deleting users or
+existing portal content. Clients can submit requests, add client-visible
+follow-up comments, and view their own timeline at `/requests.php`. Admin,
 editor, and support users can view the full queue, update status and priority,
-assign an internal owner, add internal notes, and record activity-log entries.
+assign an internal owner, add client-visible updates, add internal-only notes,
+and record activity-log entries.
 
 If login says the database config is missing:
 

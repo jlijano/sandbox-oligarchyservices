@@ -15,6 +15,8 @@ $allowedRoles = ['admin', 'editor', 'support', 'client'];
 $canManageUsers = $role === 'admin';
 $canManageContent = in_array($role, ['admin', 'editor'], true);
 $canViewActivity = in_array($role, ['admin', 'editor', 'support'], true);
+$canManageSystem = $canManageContent;
+$canViewOperations = $canViewActivity;
 $notice = $_SESSION['dashboard_notice'] ?? null;
 $error = $_SESSION['dashboard_error'] ?? null;
 unset($_SESSION['dashboard_notice'], $_SESSION['dashboard_error']);
@@ -61,6 +63,7 @@ function setting_value(array $settings, string $key, string $default = ''): stri
 {
     return array_key_exists($key, $settings) ? (string) $settings[$key] : $default;
 }
+function health_badge_class(bool $ok): string { return $ok ? 'is-active' : 'is-muted'; }
 function require_content_permission(bool $allowed): void
 {
     if (!$allowed) {
@@ -200,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'save_settings') {
-            require_content_permission($canManageContent);
+            require_content_permission($canManageSystem);
             $pairs = [
                 'site_name' => post_string('site_name', 'Oligarchy Services'),
                 'contact_email' => strtolower(post_string('contact_email')),
@@ -213,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($pairs as $key => $value) $stmt->execute([$key, $value]);
             log_activity($pdo, (int) $user['id'], 'settings updated', 'settings', null, 'portal settings');
             flash_success('Settings saved.');
-            dashboard_redirect('settings');
+            dashboard_redirect('system-settings');
         }
     } catch (Throwable $e) {
         flash_error($e->getMessage());
@@ -221,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$users = $pages = $navItems = $activity = [];
+$users = $pages = $navItems = $activity = $mailTrace = [];
 $settings = [];
 $userSearch = trim((string) ($_GET['user_search'] ?? ''));
 $userRoleFilter = strtolower(trim((string) ($_GET['user_role'] ?? '')));
@@ -233,7 +236,7 @@ $userPage = $userPageRaw === false ? 1 : max(1, (int) $userPageRaw);
 $usersPerPage = 10;
 $totalUsers = 0;
 $totalUserPages = 1;
-$counts = ['total_users' => 0, 'active_users' => 0, 'inactive_users' => 0, 'admin_users' => 0, 'pages' => 0, 'published_pages' => 0, 'draft_pages' => 0, 'nav_items' => 0, 'visible_nav_items' => 0, 'hidden_nav_items' => 0, 'activity_entries' => 0, 'settings' => 0];
+$counts = ['total_users' => 0, 'active_users' => 0, 'inactive_users' => 0, 'admin_users' => 0, 'pages' => 0, 'published_pages' => 0, 'draft_pages' => 0, 'nav_items' => 0, 'visible_nav_items' => 0, 'hidden_nav_items' => 0, 'activity_entries' => 0, 'settings' => 0, 'mail_trace_entries' => 0, 'mail_trace_sent' => 0, 'mail_trace_failed' => 0];
 try {
     $counts['total_users'] = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
     $counts['active_users'] = (int) $pdo->query('SELECT COUNT(*) FROM users WHERE is_active = 1')->fetchColumn();
@@ -288,9 +291,26 @@ try {
         $counts['activity_entries'] = (int) $pdo->query('SELECT COUNT(*) FROM activity_log')->fetchColumn();
         $activity = $pdo->query('SELECT a.*, u.email FROM activity_log a LEFT JOIN users u ON u.id = a.user_id ORDER BY a.created_at DESC LIMIT 20')->fetchAll();
     }
+    if (function_exists('account_confirmation_mail_trace_ensure_schema')) {
+        account_confirmation_mail_trace_ensure_schema($pdo);
+    }
+    if (table_exists($pdo, 'mail_trace')) {
+        $counts['mail_trace_entries'] = (int) $pdo->query('SELECT COUNT(*) FROM mail_trace')->fetchColumn();
+        $counts['mail_trace_sent'] = (int) $pdo->query("SELECT COUNT(*) FROM mail_trace WHERE status = 'sent'")->fetchColumn();
+        $counts['mail_trace_failed'] = (int) $pdo->query("SELECT COUNT(*) FROM mail_trace WHERE status <> 'sent'")->fetchColumn();
+        $mailTrace = $pdo->query('SELECT * FROM mail_trace ORDER BY created_at DESC, id DESC LIMIT 50')->fetchAll();
+    }
 } catch (Throwable $e) {
     $error = $error ?: 'Some CMS tables are missing. Run the installer once to add the new dashboard tables.';
 }
+
+$healthChecks = [
+    ['label' => 'Database connection', 'ok' => db_has_config(), 'detail' => db_has_config() ? 'Database configuration loaded.' : 'Database configuration is missing.'],
+    ['label' => 'Settings table', 'ok' => table_exists($pdo, 'settings'), 'detail' => table_exists($pdo, 'settings') ? $counts['settings'] . ' settings stored.' : 'Run update.php to create settings.'],
+    ['label' => 'Activity log', 'ok' => table_exists($pdo, 'activity_log'), 'detail' => table_exists($pdo, 'activity_log') ? $counts['activity_entries'] . ' events recorded.' : 'Run update.php to create activity logging.'],
+    ['label' => 'Mail trace', 'ok' => table_exists($pdo, 'mail_trace'), 'detail' => table_exists($pdo, 'mail_trace') ? $counts['mail_trace_entries'] . ' email trace records.' : 'Mail trace table will be created after update.php or the next send attempt.'],
+    ['label' => 'PHP runtime', 'ok' => version_compare(PHP_VERSION, '8.0.0', '>='), 'detail' => 'PHP ' . PHP_VERSION],
+];
 
 $nav = [
     ['id' => 'overview', 'label' => 'Overview', 'roles' => ['admin','editor','support','client']],
@@ -298,8 +318,10 @@ $nav = [
     ['id' => 'pages', 'label' => 'Pages', 'roles' => ['admin','editor']],
     ['id' => 'blogs', 'label' => 'Blogs', 'roles' => ['admin','editor'], 'href' => '/admin-blogs.php'],
     ['id' => 'navigation', 'label' => 'Navigation', 'roles' => ['admin','editor']],
-    ['id' => 'settings', 'label' => 'Settings', 'roles' => ['admin','editor']],
+    ['id' => 'system-settings', 'label' => 'System Settings', 'roles' => ['admin','editor']],
     ['id' => 'activity', 'label' => 'Activity', 'roles' => ['admin','editor','support']],
+    ['id' => 'system-health', 'label' => 'System Health', 'roles' => ['admin','editor','support']],
+    ['id' => 'mail-trace', 'label' => 'Mail Trace', 'roles' => ['admin','editor','support']],
 ];
 $visibleNav = [];
 foreach ($nav as $item) {
@@ -327,7 +349,7 @@ $csrf = csrf_token();
     <title>Dashboard | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
-    <script defer src="/assets/dashboard.js?v=20260621-sidebar-dropdowns"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>
@@ -357,7 +379,7 @@ $csrf = csrf_token();
               <div><p class="eyebrow">Portal health</p><h2>Welcome back, <?= e($displayName) ?></h2><p>Manage accounts, website content, navigation, settings, and operational activity from one control panel.</p></div>
               <div class="hero-actions">
                 <?php if ($canManageUsers): ?><a class="primary-action" href="#users" data-section-link="users">Create user</a><?php endif; ?>
-                <?php if ($canManageContent): ?><a class="secondary-action" href="#pages" data-section-link="pages">Create page</a><a class="secondary-action" href="/admin-blogs.php">Manage blogs</a><a class="secondary-action" href="#settings" data-section-link="settings">Settings</a><?php endif; ?>
+                <?php if ($canManageContent): ?><a class="secondary-action" href="#pages" data-section-link="pages">Create page</a><a class="secondary-action" href="/admin-blogs.php">Manage blogs</a><a class="secondary-action" href="#system-settings" data-section-link="system-settings">Settings</a><?php endif; ?>
               </div>
             </div>
             <section class="stat-grid" aria-label="Dashboard metrics">
@@ -420,16 +442,34 @@ $csrf = csrf_token();
             </div>
           </section>
 
-          <section class="dashboard-section admin-workspace settings-section" id="settings" data-dashboard-section data-section-label="Settings">
-            <div class="section-heading-row"><div><p class="eyebrow">Portal configuration</p><h2>Settings</h2></div></div>
-            <form class="admin-panel settings-form" method="post"><div class="panel-title-row"><h3>Site controls</h3><span><?= e((string) $counts['settings']) ?> stored setting<?= $counts['settings'] === 1 ? '' : 's' ?></span></div><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="save_settings"><input type="hidden" name="return_section" value="settings"><label>Site name<input name="site_name" value="<?= e(setting_value($settings, 'site_name', 'Oligarchy Services')) ?>" required></label><label>Contact email<input name="contact_email" type="email" value="<?= e(setting_value($settings, 'contact_email')) ?>"></label><div class="settings-inline"><label>Analytics provider<input name="analytics_provider" value="<?= e(setting_value($settings, 'analytics_provider', 'plausible')) ?>"></label><label>Analytics domain<input name="analytics_domain" value="<?= e(setting_value($settings, 'analytics_domain')) ?>"></label></div><label class="check-row"><input name="analytics_enabled" type="checkbox" value="1" <?= setting_value($settings, 'analytics_enabled') === '1' ? 'checked' : '' ?>><span>Enable analytics</span></label><button class="button primary" type="submit">Save settings</button></form>
+          <section class="dashboard-section admin-workspace settings-section" id="system-settings" data-dashboard-section data-section-label="System Settings">
+            <div class="section-heading-row"><div><p class="eyebrow">System settings</p><h2>System Settings</h2></div></div>
+            <form class="admin-panel settings-form" method="post"><div class="panel-title-row"><h3>Global controls</h3><span><?= e((string) $counts['settings']) ?> stored setting<?= $counts['settings'] === 1 ? '' : 's' ?></span></div><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="save_settings"><input type="hidden" name="return_section" value="system-settings"><label>Site name<input name="site_name" value="<?= e(setting_value($settings, 'site_name', 'Oligarchy Services')) ?>" required></label><label>Contact email<input name="contact_email" type="email" value="<?= e(setting_value($settings, 'contact_email')) ?>"></label><div class="settings-inline"><label>Analytics provider<input name="analytics_provider" value="<?= e(setting_value($settings, 'analytics_provider', 'plausible')) ?>"></label><label>Analytics domain<input name="analytics_domain" value="<?= e(setting_value($settings, 'analytics_domain')) ?>"></label></div><label class="check-row"><input name="analytics_enabled" type="checkbox" value="1" <?= setting_value($settings, 'analytics_enabled') === '1' ? 'checked' : '' ?>><span>Enable analytics</span></label><button class="button primary" type="submit">Save settings</button></form>
           </section>
           <?php endif; ?>
 
-          <?php if ($canViewActivity): ?>
+          <?php if ($canViewOperations): ?>
           <section class="dashboard-section admin-workspace activity-section" id="activity" data-dashboard-section data-section-label="Activity">
             <div class="section-heading-row"><div><p class="eyebrow">Audit log</p><h2>Activity</h2></div></div>
             <div class="admin-panel table-panel"><div class="table-heading"><h3>Recent events</h3><span>Showing <?= e((string) count($activity)) ?> of <?= e((string) $counts['activity_entries']) ?></span></div><?php if (!$activity): ?><p class="empty-state">No activity has been recorded yet.</p><?php else: ?><div class="table-scroll"><table class="data-table activity-table"><thead><tr><th>Action</th><th>Actor</th><th>Target</th><th>Details</th><th>Time</th></tr></thead><tbody><?php foreach ($activity as $row): ?><tr><td><span class="status-badge"><?= e($row['action']) ?></span></td><td><?= e($row['email'] ?? 'System') ?></td><td><span class="code-link"><?= e(trim(($row['target_type'] ?? '') . ' #' . ($row['target_id'] ?? ''), ' #')) ?></span></td><td><?= e((string) $row['details']) ?></td><td class="nowrap"><?= e($row['created_at']) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></div>
+          </section>
+          <section class="dashboard-section admin-workspace" id="system-health" data-dashboard-section data-section-label="System Health">
+            <div class="section-heading-row"><div><p class="eyebrow">Operational status</p><h2>System Health</h2></div></div>
+            <section class="section-summary-grid three-up" aria-label="System health summary">
+              <article><span>Active users</span><strong><?= e((string) $counts['active_users']) ?></strong></article>
+              <article><span>Mail traces</span><strong><?= e((string) $counts['mail_trace_entries']) ?></strong></article>
+              <article><span>Audit events</span><strong><?= e((string) $counts['activity_entries']) ?></strong></article>
+            </section>
+            <div class="admin-panel table-panel"><div class="table-heading"><h3>Health checks</h3><span><?= e((string) count($healthChecks)) ?> checks</span></div><div class="table-scroll"><table class="data-table compact-table"><thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead><tbody><?php foreach ($healthChecks as $check): ?><tr><td><strong><?= e($check['label']) ?></strong></td><td><span class="status-badge <?= e(health_badge_class((bool) $check['ok'])) ?>"><?= $check['ok'] ? 'Healthy' : 'Review' ?></span></td><td><?= e($check['detail']) ?></td></tr><?php endforeach; ?></tbody></table></div></div>
+          </section>
+          <section class="dashboard-section admin-workspace" id="mail-trace" data-dashboard-section data-section-label="Mail Trace">
+            <div class="section-heading-row"><div><p class="eyebrow">Email delivery</p><h2>Mail Trace</h2></div></div>
+            <section class="section-summary-grid three-up" aria-label="Mail trace summary">
+              <article><span>Total attempts</span><strong><?= e((string) $counts['mail_trace_entries']) ?></strong></article>
+              <article><span>Sent</span><strong><?= e((string) $counts['mail_trace_sent']) ?></strong></article>
+              <article><span>Needs review</span><strong><?= e((string) $counts['mail_trace_failed']) ?></strong></article>
+            </section>
+            <div class="admin-panel table-panel"><div class="table-heading"><h3>Recent email attempts</h3><span>Showing <?= e((string) count($mailTrace)) ?> of <?= e((string) $counts['mail_trace_entries']) ?></span></div><?php if (!$mailTrace): ?><p class="empty-state">No email trace records yet. Account confirmation emails will appear here after the next send attempt.</p><?php else: ?><div class="table-scroll"><table class="data-table activity-table"><thead><tr><th>Recipient</th><th>Subject</th><th>Provider</th><th>Status</th><th>Message</th><th>Time</th></tr></thead><tbody><?php foreach ($mailTrace as $row): ?><tr><td><?= e($row['recipient']) ?></td><td><strong><?= e($row['subject']) ?></strong></td><td><span class="code-link"><?= e($row['provider']) ?></span></td><td><span class="status-badge <?= (string) $row['status'] === 'sent' ? 'is-active' : 'is-muted' ?>"><?= e($row['status']) ?></span></td><td><?= e((string) ($row['message'] ?? '')) ?></td><td class="nowrap"><?= e($row['created_at']) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></div>
           </section>
           <?php endif; ?>
         </main>

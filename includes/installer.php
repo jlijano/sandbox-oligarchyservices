@@ -315,6 +315,18 @@ function installer_upgrade_existing_schema(PDO $pdo): void
         installer_add_index_if_missing($pdo, 'activity_log', 'idx_activity_created', '`created_at`');
         installer_add_index_if_missing($pdo, 'activity_log', 'idx_activity_user', '`user_id`');
     }
+
+    if (installer_table_exists($pdo, 'mail_trace')) {
+        installer_add_column_if_missing($pdo, 'mail_trace', 'recipient', "VARCHAR(190) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'mail_trace', 'subject', "VARCHAR(255) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'mail_trace', 'provider', "VARCHAR(80) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'mail_trace', 'status', "VARCHAR(40) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'mail_trace', 'message', 'TEXT NULL');
+        installer_add_column_if_missing($pdo, 'mail_trace', 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        installer_add_index_if_missing($pdo, 'mail_trace', 'idx_mail_trace_created', '`created_at`');
+        installer_add_index_if_missing($pdo, 'mail_trace', 'idx_mail_trace_recipient', '`recipient`');
+        installer_add_index_if_missing($pdo, 'mail_trace', 'idx_mail_trace_status', '`status`');
+    }
 }
 
 function create_or_update_schema(PDO $pdo): void
@@ -400,6 +412,19 @@ function create_or_update_schema(PDO $pdo): void
         INDEX idx_activity_created (created_at),
         INDEX idx_activity_user (user_id),
         CONSTRAINT fk_activity_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS mail_trace (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        recipient VARCHAR(190) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        provider VARCHAR(80) NOT NULL,
+        status VARCHAR(40) NOT NULL,
+        message TEXT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_mail_trace_created (created_at),
+        INDEX idx_mail_trace_recipient (recipient),
+        INDEX idx_mail_trace_status (status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
     installer_upgrade_existing_schema($pdo);

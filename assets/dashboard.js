@@ -20,7 +20,10 @@
     blogs: "fa-newspaper-o",
     navigation: "fa-bars",
     settings: "fa-cog",
-    activity: "fa-history"
+    "system settings": "fa-cog",
+    activity: "fa-history",
+    "system health": "fa-heartbeat",
+    "mail trace": "fa-envelope-o"
   };
 
   const loadFontAwesome = () => {
@@ -64,11 +67,11 @@
   };
 
   const syncSidebarGroups = () => {
-    document.querySelectorAll("[data-valley-group], [data-playground-group]").forEach((group) => {
+    document.querySelectorAll("[data-valley-group], [data-playground-group], [data-settings-group]").forEach((group) => {
       const hasActiveLink = Boolean(group.querySelector("a.is-active"));
       group.classList.toggle("is-active", hasActiveLink);
       if (hasActiveLink) group.classList.add("is-open");
-      const toggle = group.querySelector("[data-valley-toggle], [data-playground-toggle]");
+      const toggle = group.querySelector("[data-valley-toggle], [data-playground-toggle], [data-settings-toggle]");
       if (toggle) toggle.setAttribute("aria-expanded", String(group.classList.contains("is-open")));
     });
   };
@@ -94,9 +97,9 @@
   applySidebarIcons();
 
   document.addEventListener("click", (event) => {
-    const toggle = event.target.closest("[data-valley-toggle], [data-playground-toggle]");
+    const toggle = event.target.closest("[data-valley-toggle], [data-playground-toggle], [data-settings-toggle]");
     if (!toggle) return;
-    const group = toggle.closest("[data-valley-group], [data-playground-group]");
+    const group = toggle.closest("[data-valley-group], [data-playground-group], [data-settings-group]");
     if (!group) return;
     if (shell.classList.contains("is-collapsed")) {
       shell.classList.remove("is-collapsed");

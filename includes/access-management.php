@@ -12,8 +12,10 @@ function access_modules(): array
         'pages' => 'Pages',
         'blogs' => 'Blogs',
         'navigation' => 'Navigation',
-        'settings' => 'Settings',
+        'system_settings' => 'System Settings',
         'activity' => 'Activity',
+        'system_health' => 'System Health',
+        'mail_trace' => 'Mail Trace',
     ];
 }
 
@@ -128,8 +130,8 @@ function access_management_ensure_schema(PDO $pdo): void
     $seed = $pdo->prepare('INSERT INTO roles (name, description, is_active, module_permissions) VALUES (?, ?, 1, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)');
     $all = array_keys(access_modules());
     $seed->execute(['admin', 'Full administrative access.', access_encode_modules($all)]);
-    $seed->execute(['editor', 'Content manager access.', access_encode_modules(['overview', 'pages', 'blogs', 'navigation', 'settings', 'activity'])]);
-    $seed->execute(['support', 'Support and activity review access.', access_encode_modules(['overview', 'users', 'activity'])]);
+    $seed->execute(['editor', 'Content manager access.', access_encode_modules(['overview', 'pages', 'blogs', 'navigation', 'system_settings', 'activity', 'system_health', 'mail_trace'])]);
+    $seed->execute(['support', 'Support and activity review access.', access_encode_modules(['overview', 'users', 'activity', 'system_health', 'mail_trace'])]);
     $seed->execute(['client', 'Client dashboard access.', access_encode_modules(['overview'])]);
 }
 
@@ -224,6 +226,16 @@ function access_sidebar(string $active, string $roleLabel, string $role = 'admin
     $isAdmin = $role === 'admin';
     $canManageContent = in_array($role, ['admin', 'editor'], true);
     $canViewActivity = in_array($role, ['admin', 'editor', 'support'], true);
+    $settingsItems = [];
+    if ($canManageContent) {
+        $settingsItems[] = ['href' => '/dashboard.php#system-settings', 'label' => 'System Settings', 'key' => 'system-settings'];
+    }
+    if ($canViewActivity) {
+        $settingsItems[] = ['href' => '/dashboard.php#activity', 'label' => 'Activity', 'key' => 'activity'];
+        $settingsItems[] = ['href' => '/dashboard.php#system-health', 'label' => 'System Health', 'key' => 'system-health'];
+        $settingsItems[] = ['href' => '/dashboard.php#mail-trace', 'label' => 'Mail Trace', 'key' => 'mail-trace'];
+    }
+    $settingsActiveKeys = array_column($settingsItems, 'key');
     $items = [
         ['href' => '/companies.php', 'label' => 'Companies', 'key' => 'companies'],
         ['href' => '/departments.php', 'label' => 'Departments', 'key' => 'departments'],
@@ -260,11 +272,15 @@ function access_sidebar(string $active, string $roleLabel, string $role = 'admin
           </div>
         </div>
         <?php endif; ?>
-        <?php if ($canManageContent): ?>
-        <a class="<?= $active === 'settings' ? 'is-active' : '' ?>" href="/dashboard.php#settings" data-section-link="settings" <?= $active === 'settings' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Settings</span></a>
-        <?php endif; ?>
-        <?php if ($canViewActivity): ?>
-        <a class="<?= $active === 'activity' ? 'is-active' : '' ?>" href="/dashboard.php#activity" data-section-link="activity" <?= $active === 'activity' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">A</span><span class="nav-label">Activity</span></a>
+        <?php if ($settingsItems): ?>
+        <div class="sidebar-group <?= in_array($active, $settingsActiveKeys, true) ? 'is-open is-active' : '' ?>" data-settings-group>
+          <button class="sidebar-group-toggle" type="button" data-settings-toggle aria-expanded="<?= in_array($active, $settingsActiveKeys, true) ? 'true' : 'false' ?>"><span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Settings</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
+          <div class="sidebar-subnav" data-settings-subnav>
+            <?php foreach ($settingsItems as $item): ?>
+              <a class="<?= $active === $item['key'] ? 'is-active' : '' ?>" href="<?= e($item['href']) ?>" data-section-link="<?= e($item['key']) ?>" <?= $active === $item['key'] ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span><span class="nav-label"><?= e($item['label']) ?></span></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
         <?php endif; ?>
       </nav>
       <div class="sidebar-footer"><span class="sidebar-status">Role</span><strong><?= e($roleLabel) ?></strong></div>
@@ -528,7 +544,7 @@ function access_render_entity_page(string $entity): void
       body.access-modal-open { overflow: hidden; }
       @media (max-width: 680px) { .access-toolbar { align-items: stretch; } .access-toolbar .primary-action { width: 100%; } .module-grid { grid-template-columns: 1fr; } .access-modal { align-items: end; padding: 12px; } .access-modal-dialog { width: 100%; max-height: calc(100dvh - 24px); } }
     </style>
-    <script defer src="/assets/dashboard.js?v=20260621-sidebar-dropdowns"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

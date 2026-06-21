@@ -217,6 +217,34 @@ function account_confirmation_send_via_php_mail(string $email, string $subject, 
     return mail($email, $subject, $body, implode("\r\n", $headers));
 }
 
+function account_confirmation_mail_trace_ensure_schema(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS mail_trace (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        recipient VARCHAR(190) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        provider VARCHAR(80) NOT NULL,
+        status VARCHAR(40) NOT NULL,
+        message TEXT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_mail_trace_created (created_at),
+        INDEX idx_mail_trace_recipient (recipient),
+        INDEX idx_mail_trace_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
+
+function account_confirmation_record_mail_trace(string $email, string $subject, string $provider, bool $sent, string $message = ''): void
+{
+    try {
+        $pdo = db();
+        account_confirmation_mail_trace_ensure_schema($pdo);
+        $stmt = $pdo->prepare('INSERT INTO mail_trace (recipient, subject, provider, status, message) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$email, $subject, $provider, $sent ? 'sent' : 'failed', $message]);
+    } catch (Throwable $error) {
+        error_log('Mail trace skipped: ' . $error->getMessage());
+    }
+}
+
 function account_confirmation_send_email(string $email, string $name, string $token, string $temporaryPassword): bool
 {
     $subject = 'Confirm your Oligarchy Services account';
@@ -224,10 +252,13 @@ function account_confirmation_send_email(string $email, string $name, string $to
     $orchestratorResult = account_confirmation_send_via_orchestrator($email, $subject, $parts);
 
     if ($orchestratorResult !== null) {
+        account_confirmation_record_mail_trace($email, $subject, 'orchestrator', $orchestratorResult, $orchestratorResult ? 'Accepted by Sentinel mail orchestrator.' : 'Sentinel mail orchestrator did not confirm delivery.');
         return $orchestratorResult;
     }
 
-    return account_confirmation_send_via_php_mail($email, $subject, $parts);
+    $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
+    account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by PHP mail().' : 'PHP mail() returned false.');
+    return $phpMailResult;
 }
 
 function account_confirmation_flash_keys(): array

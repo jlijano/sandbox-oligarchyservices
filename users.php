@@ -195,7 +195,7 @@ $csrf = csrf_token();
       body.user-modal-open { overflow: hidden; }
       @media (max-width: 680px) { .users-toolbar { align-items: stretch; } .users-toolbar .primary-action { width: 100%; } .user-modal { align-items: end; padding: 12px; } .user-modal-dialog { width: 100%; max-height: calc(100dvh - 24px); } }
     </style>
-    <script defer src="/assets/dashboard.js?v=20260621-sidebar-dropdowns"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

@@ -32,7 +32,10 @@
     { label: "Roles", href: "/roles.php" }
   ];
   const playgroundLinks = [
-    { label: "Agents", href: "/agents.php" }
+    { label: "Agents", href: "/agents.php" },
+    { label: "Pages", href: "/dashboard.php#pages", section: "pages" },
+    { label: "Blogs", href: "/admin-blogs.php" },
+    { label: "Navigation", href: "/dashboard.php#navigation", section: "navigation" }
   ];
 
   const loadFontAwesome = () => {
@@ -73,9 +76,10 @@
       playgroundGroup.innerHTML = '<button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="false"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button><div class="sidebar-subnav" data-playground-subnav></div>';
     }
     const playgroundSubnav = playgroundGroup.querySelector("[data-playground-subnav]");
-    const isPlaygroundPath = playgroundLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
+    const currentHash = window.location.hash.replace("#", "").trim().toLowerCase();
+    const isPlaygroundPath = playgroundLinks.some((item) => item.section ? currentHash === item.section : currentPath === item.href.replace(/#.*$/, "").replace(/\/+$/, ""));
     playgroundLinks.forEach((item) => {
-      let link = Array.from(playgroundSubnav.querySelectorAll("a")).find((candidate) => {
+      let link = Array.from(document.querySelectorAll(".sidebar-nav a")).find((candidate) => {
         const label = candidate.querySelector(".nav-label")?.textContent?.trim().toLowerCase();
         return label === item.label.toLowerCase();
       });
@@ -84,19 +88,22 @@
         link.innerHTML = `<span class="nav-icon" aria-hidden="true">${item.label.charAt(0)}</span><span class="nav-label">${item.label}</span>`;
       }
       link.href = item.href;
+      if (item.section) link.dataset.sectionLink = item.section;
+      if (!item.section) link.removeAttribute("data-section-link");
       playgroundSubnav.appendChild(link);
-      const isActive = currentPath === item.href.replace(/\/+$/, "");
+      const isActive = item.section ? currentHash === item.section : currentPath === item.href.replace(/#.*$/, "").replace(/\/+$/, "");
       link.classList.toggle("is-active", isActive);
       if (isActive) link.setAttribute("aria-current", "page");
+      if (!isActive) link.removeAttribute("aria-current");
     });
     playgroundGroup.classList.toggle("is-active", isPlaygroundPath);
     playgroundGroup.classList.toggle("is-open", isPlaygroundPath || playgroundGroup.classList.contains("is-open"));
     playgroundGroup.querySelector("[data-playground-toggle]")?.setAttribute("aria-expanded", String(playgroundGroup.classList.contains("is-open")));
-    const pagesLink = Array.from(document.querySelectorAll(".sidebar-nav > a")).find((link) => {
-      return link.querySelector(".nav-label")?.textContent?.trim().toLowerCase() === "pages";
+    const settingsLink = Array.from(document.querySelectorAll(".sidebar-nav > a")).find((link) => {
+      return link.querySelector(".nav-label")?.textContent?.trim().toLowerCase() === "settings";
     });
     if (valleyGroup?.parentNode) {
-      valleyGroup.parentNode.insertBefore(playgroundGroup, pagesLink || valleyGroup.nextSibling);
+      valleyGroup.parentNode.insertBefore(playgroundGroup, settingsLink || valleyGroup.nextSibling);
     }
     if (valleyGroup) {
       const isValleyPath = valleyLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
@@ -127,14 +134,14 @@
     });
   }
 
-  document.querySelectorAll("[data-playground-toggle]").forEach((toggle) => {
-    toggle.addEventListener("click", () => {
-      const group = toggle.closest("[data-playground-group]");
-      if (!group) return;
-      const isOpen = !group.classList.contains("is-open");
-      group.classList.toggle("is-open", isOpen);
-      toggle.setAttribute("aria-expanded", String(isOpen));
-    });
+  document.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-playground-toggle]");
+    if (!toggle) return;
+    const group = toggle.closest("[data-playground-group]");
+    if (!group) return;
+    const isOpen = !group.classList.contains("is-open");
+    group.classList.toggle("is-open", isOpen);
+    toggle.setAttribute("aria-expanded", String(isOpen));
   });
 
   if (window.localStorage.getItem(storageKey) === "true") {

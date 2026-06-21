@@ -32,6 +32,21 @@ function current_user(): ?array
     return $user;
 }
 
+function password_change_path(): string
+{
+    return '/change-password.php';
+}
+
+function request_path(): string
+{
+    return parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+}
+
+function password_change_is_allowed_path(): bool
+{
+    return in_array(request_path(), [password_change_path(), '/logout.php'], true);
+}
+
 function require_login(): array
 {
     if (!db_has_config()) {
@@ -46,14 +61,23 @@ function require_login(): array
         redirect_to('/login.html');
     }
 
+    if (!empty($_SESSION['password_change_required']) && !password_change_is_allowed_path()) {
+        redirect_to(password_change_path());
+    }
+
     return $user;
 }
 
-function login_user(int $userId): void
+function login_user(int $userId, bool $passwordChangeRequired = false): void
 {
     session_regenerate_id(true);
     $_SESSION['user_id'] = $userId;
     $_SESSION['logged_in_at'] = time();
+    if ($passwordChangeRequired) {
+        $_SESSION['password_change_required'] = 1;
+    } else {
+        unset($_SESSION['password_change_required']);
+    }
 }
 
 function logout_user(): void

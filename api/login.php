@@ -5,6 +5,7 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/installer.php';
+require_once __DIR__ . '/../includes/password-change.php';
 
 function wants_json(): bool
 {
@@ -36,6 +37,7 @@ function login_success_response(string $redirect = '/dashboard.php'): void
 function ensure_login_schema(PDO $pdo): void
 {
     create_or_update_schema($pdo);
+    password_change_ensure_schema($pdo);
 }
 
 function audit_login(PDO $pdo, ?int $userId, string $action, string $email, string $ipAddress): void

@@ -5,10 +5,79 @@
   const collapseButton = document.querySelector("[data-sidebar-collapse]");
   const mobileButton = document.querySelector("[data-mobile-menu]");
   const backdrop = document.querySelector("[data-sidebar-backdrop]");
-  const sections = Array.from(document.querySelectorAll("[data-dashboard-section]"));
-  const links = Array.from(document.querySelectorAll("[data-section-link]"));
   const sectionTitle = document.querySelector("[data-section-title]");
   const storageKey = "oligarchy_sidebar_collapsed";
+
+  const injectValleyStyles = () => {
+    if (document.querySelector("[data-valley-styles]")) return;
+    const style = document.createElement("style");
+    style.dataset.valleyStyles = "true";
+    style.textContent = `
+      .sidebar-group { display: grid; gap: 6px; }
+      .sidebar-group-toggle {
+        display: flex; min-height: 46px; width: 100%; align-items: center; gap: 12px;
+        border: 0; border-radius: 8px; padding: 0 12px; background: transparent;
+        color: #c6c8ce; font: inherit; cursor: pointer; text-align: left;
+        transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+      }
+      .sidebar-group-toggle:hover, .sidebar-group.is-open > .sidebar-group-toggle, .sidebar-group.is-active > .sidebar-group-toggle {
+        background: rgba(176, 7, 20, 0.18); color: #ffffff; transform: translateX(2px);
+      }
+      .sidebar-group-caret { margin-left: auto; color: #8d9099; font-size: 0.78rem; transition: transform 160ms ease; }
+      .sidebar-group.is-open .sidebar-group-caret { transform: rotate(90deg); }
+      .sidebar-subnav { display: none; gap: 6px; padding-left: 20px; }
+      .sidebar-group.is-open .sidebar-subnav { display: grid; }
+      .sidebar-subnav a { min-height: 40px; padding-left: 10px; }
+      .dashboard-shell.is-collapsed .sidebar-group-caret, .dashboard-shell.is-collapsed .sidebar-subnav { display: none; }
+    `;
+    document.head.appendChild(style);
+  };
+
+  const setupValleyNav = () => {
+    injectValleyStyles();
+
+    const overviewLink = document.querySelector('[data-section-link="overview"]');
+    const overviewLabel = overviewLink?.querySelector(".nav-label");
+    const overviewIcon = overviewLink?.querySelector(".nav-icon");
+    const overviewSection = document.querySelector('#overview[data-dashboard-section]');
+    if (overviewLabel) overviewLabel.textContent = "Dashboard";
+    if (overviewIcon) overviewIcon.textContent = "D";
+    if (overviewSection) overviewSection.dataset.sectionLabel = "Dashboard";
+
+    const quickOverview = Array.from(document.querySelectorAll('.quick-actions [data-section-link="overview"]'));
+    quickOverview.forEach((link) => { link.textContent = "Dashboard"; });
+
+    const usersLink = document.querySelector('.sidebar-nav > [data-section-link="users"]');
+    if (!usersLink || document.querySelector("[data-valley-group]")) return;
+
+    const group = document.createElement("div");
+    group.className = "sidebar-group";
+    group.dataset.valleyGroup = "true";
+
+    const toggle = document.createElement("button");
+    toggle.className = "sidebar-group-toggle";
+    toggle.type = "button";
+    toggle.dataset.valleyToggle = "true";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.innerHTML = '<span class="nav-icon" aria-hidden="true">V</span><span class="nav-label">Valley</span><span class="sidebar-group-caret" aria-hidden="true">›</span>';
+
+    const subnav = document.createElement("div");
+    subnav.className = "sidebar-subnav";
+    subnav.dataset.valleySubnav = "true";
+
+    usersLink.parentNode.insertBefore(group, usersLink);
+    group.appendChild(toggle);
+    group.appendChild(subnav);
+    subnav.appendChild(usersLink);
+
+    toggle.addEventListener("click", () => {
+      const isOpen = !group.classList.contains("is-open");
+      group.classList.toggle("is-open", isOpen);
+      toggle.setAttribute("aria-expanded", String(isOpen));
+    });
+  };
+
+  setupValleyNav();
 
   if (window.localStorage.getItem(storageKey) === "true") {
     shell.classList.add("is-collapsed");
@@ -32,6 +101,10 @@
   if (backdrop) backdrop.addEventListener("click", () => setMobileOpen(false));
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") setMobileOpen(false); });
 
+  const sections = Array.from(document.querySelectorAll("[data-dashboard-section]"));
+  const links = Array.from(document.querySelectorAll("[data-section-link]"));
+  const valleyGroup = document.querySelector("[data-valley-group]");
+  const valleyToggle = document.querySelector("[data-valley-toggle]");
   const allowedIds = sections.map((section) => section.id);
   const normalizeHash = () => {
     const raw = window.location.hash.replace("#", "").trim().toLowerCase();
@@ -46,6 +119,12 @@
       if (isActive && sectionTitle) sectionTitle.textContent = section.dataset.sectionLabel || section.id;
     });
     links.forEach((link) => link.classList.toggle("is-active", link.dataset.sectionLink === id));
+    if (valleyGroup && valleyToggle) {
+      const isValleyActive = id === "users";
+      valleyGroup.classList.toggle("is-active", isValleyActive);
+      valleyGroup.classList.toggle("is-open", isValleyActive || valleyGroup.classList.contains("is-open"));
+      valleyToggle.setAttribute("aria-expanded", String(valleyGroup.classList.contains("is-open")));
+    }
     setMobileOpen(false);
   };
 

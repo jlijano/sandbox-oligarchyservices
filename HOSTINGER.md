@@ -24,9 +24,12 @@ Upload these repository files into the domain's `public_html` directory:
 - `api/`
 - `includes/` without committing or exposing generated credentials
 
-Do not upload local scratch folders, dependency folders, or environment files.
+Do not upload local scratch folders, dependency folders, environment files, or
+`automation/`. The Sentinel mail orchestrator in `automation/` is a separate
+Node.js service and is not part of the Hostinger public website upload.
+
 This project does not require `node_modules`, `npm install`, a build command,
-cron jobs, or a long-running Node.js process.
+cron jobs, or a long-running Node.js process for the public website.
 
 ## Login page
 
@@ -77,6 +80,17 @@ server. These files must not be committed to GitHub. Direct browser access to
 `/includes/config.php` is blocked on purpose because it contains the database
 password.
 
+## Sentinel mail orchestrator
+
+`automation/sentinel-mail-orchestrator/` is a separate Node.js service for
+sending Sentinel automation emails through `sentinel@oligarchyservices.com`.
+Deploy it on a Node-capable host such as Render, Fly.io, Railway, or Cloud Run.
+Do not upload it to Hostinger `public_html`.
+
+Store the mailbox password and orchestrator bearer token only in the deployment
+host's secret manager. Do not add those values to GitHub, docs, prompts, or
+local files that may be committed.
+
 ## Before going live
 
 1. Confirm `robots.txt` and `sitemap.xml` use the production domain.
@@ -97,9 +111,12 @@ HTML page and keep `respectDoNotTrack: true`.
 
 ## Hostinger fit
 
-The site avoids features that commonly cause issues on entry-level shared
-hosting plans:
+The public website avoids features that commonly cause issues on entry-level
+shared hosting plans:
 
 - no dependency installation;
 - no custom server process;
 - no build output required.
+
+The Sentinel mail orchestrator is intentionally outside that public website
+runtime and should be deployed separately only when email automation is needed.

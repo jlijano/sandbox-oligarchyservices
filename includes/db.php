@@ -23,10 +23,40 @@ function db_config_from_constants(): array
     ];
 }
 
+function db_config_paths(): array
+{
+    return [
+        __DIR__ . '/config.php',
+        dirname(__DIR__, 2) . '/oligarchy-config.php',
+    ];
+}
+
+function db_has_config(): bool
+{
+    foreach (db_config_paths() as $path) {
+        if (is_file($path)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function db_primary_config_path(): string
+{
+    foreach (db_config_paths() as $path) {
+        if (is_file($path)) {
+            return $path;
+        }
+    }
+
+    return __DIR__ . '/config.php';
+}
+
 function load_db_config(string $configPath): array
 {
     if (!is_file($configPath)) {
-        throw new RuntimeException('Database config is missing at includes/config.php.');
+        throw new RuntimeException('Database config is missing. Use repair.php to recreate it.');
     }
 
     $loaded = require $configPath;
@@ -57,7 +87,7 @@ function db(): PDO
         return $pdo;
     }
 
-    $config = load_db_config(__DIR__ . '/config.php');
+    $config = load_db_config(db_primary_config_path());
     $dsn = sprintf(
         'mysql:host=%s;%sdbname=%s;charset=utf8mb4',
         $config['host'],

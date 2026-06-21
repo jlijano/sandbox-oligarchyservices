@@ -245,18 +245,22 @@ function access_sidebar(string $active, string $roleLabel, string $role = 'admin
           </div>
         </div>
         <?php endif; ?>
-        <?php if ($isAdmin): ?>
-        <div class="sidebar-group <?= $active === 'agents' ? 'is-open is-active' : '' ?>" data-playground-group>
-          <button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="<?= $active === 'agents' ? 'true' : 'false' ?>"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
+        <?php if ($isAdmin || $canManageContent): ?>
+        <div class="sidebar-group <?= in_array($active, ['agents', 'pages', 'blogs', 'navigation'], true) ? 'is-open is-active' : '' ?>" data-playground-group>
+          <button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="<?= in_array($active, ['agents', 'pages', 'blogs', 'navigation'], true) ? 'true' : 'false' ?>"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
           <div class="sidebar-subnav" data-playground-subnav>
+            <?php if ($isAdmin): ?>
             <a class="<?= $active === 'agents' ? 'is-active' : '' ?>" href="/agents.php" <?= $active === 'agents' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">A</span><span class="nav-label">Agents</span></a>
+            <?php endif; ?>
+            <?php if ($canManageContent): ?>
+            <a class="<?= $active === 'pages' ? 'is-active' : '' ?>" href="/dashboard.php#pages" data-section-link="pages" <?= $active === 'pages' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Pages</span></a>
+            <a class="<?= $active === 'blogs' ? 'is-active' : '' ?>" href="/admin-blogs.php" <?= $active === 'blogs' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">B</span><span class="nav-label">Blogs</span></a>
+            <a class="<?= $active === 'navigation' ? 'is-active' : '' ?>" href="/dashboard.php#navigation" data-section-link="navigation" <?= $active === 'navigation' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">N</span><span class="nav-label">Navigation</span></a>
+            <?php endif; ?>
           </div>
         </div>
         <?php endif; ?>
         <?php if ($canManageContent): ?>
-        <a class="<?= $active === 'pages' ? 'is-active' : '' ?>" href="/dashboard.php#pages" data-section-link="pages" <?= $active === 'pages' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Pages</span></a>
-        <a class="<?= $active === 'blogs' ? 'is-active' : '' ?>" href="/admin-blogs.php" <?= $active === 'blogs' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">B</span><span class="nav-label">Blogs</span></a>
-        <a class="<?= $active === 'navigation' ? 'is-active' : '' ?>" href="/dashboard.php#navigation" data-section-link="navigation" <?= $active === 'navigation' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">N</span><span class="nav-label">Navigation</span></a>
         <a class="<?= $active === 'settings' ? 'is-active' : '' ?>" href="/dashboard.php#settings" data-section-link="settings" <?= $active === 'settings' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Settings</span></a>
         <?php endif; ?>
         <?php if ($canViewActivity): ?>

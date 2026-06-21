@@ -65,12 +65,12 @@
       link.classList.toggle("is-active", isActive);
       if (isActive) link.setAttribute("aria-current", "page");
     });
-    let playgroundGroup = subnav.querySelector("[data-playground-group]");
+    let playgroundGroup = document.querySelector("[data-playground-group]");
     if (!playgroundGroup) {
       playgroundGroup = document.createElement("div");
-      playgroundGroup.className = "sidebar-group sidebar-nested-group";
+      playgroundGroup.className = "sidebar-group";
       playgroundGroup.dataset.playgroundGroup = "true";
-      playgroundGroup.innerHTML = '<button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="false"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button><div class="sidebar-subnav sidebar-nested-subnav" data-playground-subnav></div>';
+      playgroundGroup.innerHTML = '<button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="false"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button><div class="sidebar-subnav" data-playground-subnav></div>';
     }
     const playgroundSubnav = playgroundGroup.querySelector("[data-playground-subnav]");
     const isPlaygroundPath = playgroundLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
@@ -92,9 +92,14 @@
     playgroundGroup.classList.toggle("is-active", isPlaygroundPath);
     playgroundGroup.classList.toggle("is-open", isPlaygroundPath || playgroundGroup.classList.contains("is-open"));
     playgroundGroup.querySelector("[data-playground-toggle]")?.setAttribute("aria-expanded", String(playgroundGroup.classList.contains("is-open")));
-    subnav.appendChild(playgroundGroup);
+    const pagesLink = Array.from(document.querySelectorAll(".sidebar-nav > a")).find((link) => {
+      return link.querySelector(".nav-label")?.textContent?.trim().toLowerCase() === "pages";
+    });
+    if (valleyGroup?.parentNode) {
+      valleyGroup.parentNode.insertBefore(playgroundGroup, pagesLink || valleyGroup.nextSibling);
+    }
     if (valleyGroup) {
-      const isValleyPath = valleyLinks.some((item) => currentPath === item.href.replace(/\/+$/, "")) || isPlaygroundPath;
+      const isValleyPath = valleyLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
       valleyGroup.classList.toggle("is-active", isValleyPath || valleyGroup.classList.contains("is-active"));
       valleyGroup.classList.toggle("is-open", isValleyPath || valleyGroup.classList.contains("is-open"));
       if (valleyToggle) valleyToggle.setAttribute("aria-expanded", String(valleyGroup.classList.contains("is-open")));

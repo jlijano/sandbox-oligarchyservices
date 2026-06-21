@@ -7,7 +7,7 @@ $lockPath = __DIR__ . '/includes/installed.lock';
 $configPath = __DIR__ . '/includes/config.php';
 installer_restore_config_from_backup($configPath);
 $hasLock = is_file($lockPath);
-$hasConfig = is_file($configPath);
+$hasConfig = is_file($configPath) || is_file(installer_backup_config_path($configPath));
 $errors = [];
 $success = false;
 

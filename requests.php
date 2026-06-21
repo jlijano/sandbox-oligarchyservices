@@ -47,11 +47,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Request title must be 190 characters or fewer.');
             }
 
+            $pdo->beginTransaction();
             $stmt = $pdo->prepare("INSERT INTO client_requests (user_id, title, description, status, priority) VALUES (?, ?, ?, 'new', 'normal')");
             $stmt->execute([(int) $user['id'], $title, $description]);
             $requestId = (int) $pdo->lastInsertId();
+            request_add_update($pdo, $requestId, (int) $user['id'], 'Request submitted.', false, 'new', 'normal');
+            $pdo->commit();
             request_log_activity($pdo, (int) $user['id'], 'request created', $requestId, $title);
             requests_flash_success('Request submitted.');
+            requests_redirect();
+        }
+
+        if ($action === 'add_request_comment') {
+            $requestId = requests_post_int('request_id');
+            $body = trim((string) ($_POST['body'] ?? ''));
+            if ($body === '') {
+                throw new RuntimeException('Enter a comment before saving.');
+            }
+
+            $lookupSql = 'SELECT id, user_id, status, priority FROM client_requests WHERE id = ?';
+            $lookupParams = [$requestId];
+            if (!$canManageAll) {
+                $lookupSql .= ' AND user_id = ?';
+                $lookupParams[] = (int) $user['id'];
+            }
+            $lookupSql .= ' LIMIT 1';
+            $lookup = $pdo->prepare($lookupSql);
+            $lookup->execute($lookupParams);
+            $existing = $lookup->fetch();
+            if (!$existing) {
+                throw new RuntimeException('Choose a valid request.');
+            }
+
+            request_add_update($pdo, $requestId, (int) $user['id'], $body, false, (string) $existing['status'], (string) $existing['priority']);
+            request_log_activity($pdo, (int) $user['id'], 'request comment added', $requestId);
+            requests_flash_success('Comment added.');
             requests_redirect();
         }
 
@@ -65,9 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $priority = request_priority(requests_post_string('priority'));
             $assignedTo = requests_post_int('assigned_to');
             $assignedTo = $assignedTo > 0 ? $assignedTo : null;
-            $internalNotes = trim((string) ($_POST['internal_notes'] ?? ''));
+            $publicUpdate = trim((string) ($_POST['public_update'] ?? ''));
+            $internalUpdate = trim((string) ($_POST['internal_update'] ?? ''));
+            $visibleToClient = isset($_POST['visible_to_client']);
 
-            $lookup = $pdo->prepare('SELECT id, title FROM client_requests WHERE id = ? LIMIT 1');
+            $lookup = $pdo->prepare('SELECT id, title, status, priority, assigned_to FROM client_requests WHERE id = ? LIMIT 1');
             $lookup->execute([$requestId]);
             $existing = $lookup->fetch();
             if (!$existing) {
@@ -82,13 +114,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            $stmt = $pdo->prepare('UPDATE client_requests SET status = ?, priority = ?, assigned_to = ?, internal_notes = ?, updated_at = NOW() WHERE id = ?');
-            $stmt->execute([$status, $priority, $assignedTo, $internalNotes, $requestId]);
+            $changes = [];
+            if ((string) $existing['status'] !== $status) {
+                $changes[] = 'Status changed to ' . request_label($status) . '.';
+            }
+            if ((string) $existing['priority'] !== $priority) {
+                $changes[] = 'Priority set to ' . request_label($priority) . '.';
+            }
+            if ((int) ($existing['assigned_to'] ?? 0) !== (int) ($assignedTo ?? 0)) {
+                $changes[] = 'Assignee updated.';
+            }
+            $summary = $changes ? implode(' ', $changes) : 'Request reviewed.';
+
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare('UPDATE client_requests SET status = ?, priority = ?, assigned_to = ?, updated_at = NOW() WHERE id = ?');
+            $stmt->execute([$status, $priority, $assignedTo, $requestId]);
+
+            if ($publicUpdate !== '') {
+                request_add_update($pdo, $requestId, (int) $user['id'], $publicUpdate, false, $status, $priority);
+            } elseif ($changes && $visibleToClient) {
+                request_add_update($pdo, $requestId, (int) $user['id'], $summary, false, $status, $priority);
+            }
+
+            if ($internalUpdate !== '') {
+                request_add_update($pdo, $requestId, (int) $user['id'], $internalUpdate, true, $status, $priority);
+            } elseif ($changes && !$visibleToClient) {
+                request_add_update($pdo, $requestId, (int) $user['id'], $summary, true, $status, $priority);
+            }
+
+            $pdo->commit();
             request_log_activity($pdo, (int) $user['id'], 'request updated', $requestId, $status . ' / ' . $priority);
             requests_flash_success('Request updated.');
             requests_redirect();
         }
     } catch (Throwable $postError) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         requests_flash_error($postError->getMessage());
         requests_redirect();
     }
@@ -127,6 +189,7 @@ $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
 $stmt = $pdo->prepare('SELECT r.*, owner.email AS owner_email, owner.full_name AS owner_name, assignee.email AS assignee_email, assignee.full_name AS assignee_name FROM client_requests r LEFT JOIN users owner ON owner.id = r.user_id LEFT JOIN users assignee ON assignee.id = r.assigned_to' . $whereSql . ' ORDER BY r.updated_at DESC, r.id DESC');
 $stmt->execute($params);
 $requests = $stmt->fetchAll();
+$requestUpdates = request_fetch_updates($pdo, array_column($requests, 'id'), $canManageAll);
 
 $counts = ['total' => 0, 'open' => 0, 'urgent' => 0, 'resolved' => 0];
 if ($canManageAll) {
@@ -157,18 +220,26 @@ $csrf = csrf_token();
     <meta name="robots" content="noindex">
     <title>Requests | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-client-requests">
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260622-request-timeline">
     <style>
       .request-filter-panel { margin: 0 0 14px; border: 0; padding: 0; background: transparent; box-shadow: none; }
       .inline-editor { position: relative; }
       .inline-editor summary { list-style: none; }
       .inline-editor summary::-webkit-details-marker { display: none; }
-      .request-update-form { position: absolute; right: 0; z-index: 10; display: grid; gap: 12px; width: min(360px, 86vw); margin-top: 8px; border: 1px solid rgba(90,93,99,0.48); border-radius: 8px; padding: 14px; background: #141417; box-shadow: 0 18px 54px rgba(0,0,0,0.42); text-align: left; }
-      .request-update-form label { display: grid; gap: 7px; color: #e6e6e8; font-size: 0.86rem; font-weight: 800; }
-      .request-update-form textarea { min-height: 110px; }
+      .request-update-form { position: absolute; right: 0; z-index: 10; display: grid; gap: 12px; width: min(390px, 86vw); margin-top: 8px; border: 1px solid rgba(90,93,99,0.48); border-radius: 8px; padding: 14px; background: #141417; box-shadow: 0 18px 54px rgba(0,0,0,0.42); text-align: left; }
+      .request-update-form label, .request-comment-form label { display: grid; gap: 7px; color: #e6e6e8; font-size: 0.86rem; font-weight: 800; }
+      .request-update-form textarea { min-height: 100px; }
+      .request-timeline { display: grid; gap: 9px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(90,93,99,0.28); }
+      .request-timeline h3 { margin: 0; font-size: 0.86rem; }
+      .request-update { display: grid; gap: 5px; border-left: 3px solid rgba(176,7,20,0.52); padding: 0 0 0 10px; }
+      .request-update.is-internal { border-left-color: rgba(90,93,99,0.8); }
+      .request-update p { margin: 0; color: #e6e6e8; white-space: pre-wrap; }
+      .request-update-meta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 0.78rem; }
+      .request-comment-form { display: grid; gap: 8px; margin-top: 12px; }
+      .request-comment-form textarea { min-height: 78px; }
       @media (max-width: 680px) { .request-update-form { position: fixed; inset: auto 12px 12px; width: auto; max-height: calc(100dvh - 24px); overflow: auto; } }
     </style>
-    <script defer src="/assets/dashboard.js?v=20260621-client-requests"></script>
+    <script defer src="/assets/dashboard.js?v=20260622-request-timeline"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>
@@ -184,7 +255,7 @@ $csrf = csrf_token();
           <?php if ($error): ?><div class="dashboard-alert is-error" role="alert"><?= e((string) $error) ?></div><?php endif; ?>
 
           <header class="dashboard-hero compact-hero">
-            <div><p class="eyebrow"><?= $canManageAll ? 'Service operations' : 'Client requests' ?></p><h2>Requests</h2><p><?= $canManageAll ? 'Review incoming client requests, assign priority, track status, and keep internal notes.' : 'Submit service requests and track their current status from your portal workspace.' ?></p></div>
+            <div><p class="eyebrow"><?= $canManageAll ? 'Service operations' : 'Client requests' ?></p><h2>Requests</h2><p><?= $canManageAll ? 'Review incoming client requests, assign priority, track status, and publish client-visible or internal-only timeline updates.' : 'Submit service requests and track client-visible updates from your portal workspace.' ?></p></div>
             <div class="hero-actions"><a class="secondary-action" href="/dashboard.php">Dashboard</a></div>
           </header>
 
@@ -218,9 +289,33 @@ $csrf = csrf_token();
                 <p class="empty-state">No requests match the current view.</p>
               <?php else: ?>
                 <div class="table-scroll"><table class="data-table activity-table"><thead><tr><th>Request</th><th>Client</th><th>Status</th><th>Priority</th><th>Assigned</th><th>Updated</th><?php if ($canManageAll): ?><th></th><?php endif; ?></tr></thead><tbody>
-                  <?php foreach ($requests as $row): ?>
+                  <?php foreach ($requests as $row): $updates = $requestUpdates[(int) $row['id']] ?? []; ?>
                     <tr>
-                      <td><strong><?= e($row['title']) ?></strong><small><?= e(request_excerpt((string) $row['description'])) ?></small><?php if ($canManageAll && trim((string) ($row['internal_notes'] ?? '')) !== ''): ?><small class="code-link">Internal note: <?= e(request_excerpt((string) $row['internal_notes'], 80)) ?></small><?php endif; ?></td>
+                      <td>
+                        <strong><?= e($row['title']) ?></strong>
+                        <small><?= e(request_excerpt((string) $row['description'])) ?></small>
+                        <?php if ($canManageAll && trim((string) ($row['internal_notes'] ?? '')) !== ''): ?><small class="code-link">Legacy internal note: <?= e(request_excerpt((string) $row['internal_notes'], 80)) ?></small><?php endif; ?>
+                        <div class="request-timeline">
+                          <h3>Timeline</h3>
+                          <?php if (!$updates): ?>
+                            <small>No timeline updates yet.</small>
+                          <?php else: ?>
+                            <?php foreach (array_slice($updates, 0, 5) as $update): ?>
+                              <article class="request-update <?= (int) $update['is_internal'] === 1 ? 'is-internal' : '' ?>">
+                                <div class="request-update-meta"><span><?= (int) $update['is_internal'] === 1 ? 'Internal' : 'Client-visible' ?></span><span><?= e((string) ($update['actor_name'] ?: $update['actor_email'] ?: 'System')) ?></span><span><?= e((string) $update['created_at']) ?></span></div>
+                                <p><?= e((string) $update['body']) ?></p>
+                              </article>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </div>
+                        <form class="request-comment-form" method="post">
+                          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                          <input type="hidden" name="action" value="add_request_comment">
+                          <input type="hidden" name="request_id" value="<?= e((string) $row['id']) ?>">
+                          <label>Add client-visible comment<textarea name="body" rows="3" placeholder="Add a follow-up or clarification"></textarea></label>
+                          <button class="table-action" type="submit">Add comment</button>
+                        </form>
+                      </td>
                       <td><?= e((string) ($row['owner_name'] ?: $row['owner_email'])) ?></td>
                       <td><span class="status-badge <?= in_array($row['status'], ['resolved', 'closed'], true) ? 'is-active' : '' ?>"><?= e(request_label($row['status'])) ?></span></td>
                       <td><span class="status-badge <?= $row['priority'] === 'urgent' ? 'is-muted' : '' ?>"><?= e(request_label($row['priority'])) ?></span></td>
@@ -236,8 +331,10 @@ $csrf = csrf_token();
                               <label>Status<select name="status"><?php foreach (request_statuses() as $status): ?><option value="<?= e($status) ?>" <?= $row['status'] === $status ? 'selected' : '' ?>><?= e(request_label($status)) ?></option><?php endforeach; ?></select></label>
                               <label>Priority<select name="priority"><?php foreach (request_priorities() as $priority): ?><option value="<?= e($priority) ?>" <?= $row['priority'] === $priority ? 'selected' : '' ?>><?= e(request_label($priority)) ?></option><?php endforeach; ?></select></label>
                               <label>Assignee<select name="assigned_to"><option value="0">Unassigned</option><?php foreach ($assignees as $assignee): ?><option value="<?= e((string) $assignee['id']) ?>" <?= (int) ($row['assigned_to'] ?? 0) === (int) $assignee['id'] ? 'selected' : '' ?>><?= e((string) ($assignee['full_name'] ?: $assignee['email'])) ?></option><?php endforeach; ?></select></label>
-                              <label>Internal notes<textarea name="internal_notes" rows="4"><?= e((string) ($row['internal_notes'] ?? '')) ?></textarea></label>
-                              <button class="button primary" type="submit">Save</button>
+                              <label>Client-visible update<textarea name="public_update" rows="3" placeholder="Optional note clients can see"></textarea></label>
+                              <label class="check-row"><input name="visible_to_client" type="checkbox" value="1" checked><span>Publish status or priority changes to the client timeline</span></label>
+                              <label>Internal-only note<textarea name="internal_update" rows="3" placeholder="Optional internal context"></textarea></label>
+                              <button class="button primary" type="submit">Save update</button>
                             </form>
                           </details>
                         </td>

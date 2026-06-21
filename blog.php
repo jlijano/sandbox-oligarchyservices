@@ -38,6 +38,8 @@ $canonical = blog_canonical_url('/blog.php?slug=' . rawurlencode((string) $post[
 $encodedUrl = rawurlencode($canonical);
 $encodedTitle = rawurlencode($shareTitle);
 $encodedDescription = rawurlencode($shareDescription);
+$encodedWhatsApp = rawurlencode($shareTitle . ' ' . $canonical);
+$shareImage = $public['featuredImage'] !== '' ? blog_canonical_url($public['featuredImage']) : '';
 $body = nl2br(e((string) $post['body']));
 ?>
 <!doctype html>
@@ -52,11 +54,15 @@ $body = nl2br(e((string) $post['body']));
     <meta property="og:description" content="<?= e($shareDescription) ?>">
     <meta property="og:type" content="article">
     <meta property="og:url" content="<?= e($canonical) ?>">
-    <?php if ($public['featuredImage'] !== ''): ?><meta property="og:image" content="<?= e(blog_canonical_url($public['featuredImage'])) ?>"><?php endif; ?>
+    <?php if ($shareImage !== ''): ?><meta property="og:image" content="<?= e($shareImage) ?>"><?php endif; ?>
+    <meta name="twitter:card" content="<?= $shareImage !== '' ? 'summary_large_image' : 'summary' ?>">
+    <meta name="twitter:title" content="<?= e($shareTitle) ?>">
+    <meta name="twitter:description" content="<?= e($shareDescription) ?>">
+    <?php if ($shareImage !== ''): ?><meta name="twitter:image" content="<?= e($shareImage) ?>"><?php endif; ?>
     <link rel="stylesheet" href="/assets/styles.css?v=20260621-blogs">
-    <link rel="stylesheet" href="/assets/blogs.css?v=20260621-blogs">
+    <link rel="stylesheet" href="/assets/blogs.css?v=20260622-blogs-complete">
     <link rel="stylesheet" href="/assets/footer.css?v=20260618-crawford-layout">
-    <script defer src="/assets/blogs.js?v=20260621-blogs"></script>
+    <script defer src="/assets/blogs.js?v=20260622-blogs-complete"></script>
   </head>
   <body>
     <header class="site-header"><a class="brand" href="/" aria-label="Oligarchy Services home"><span class="brand-mark" aria-hidden="true"></span></a><button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">Menu</button><nav id="primary-navigation" class="nav-links" aria-label="Primary navigation"><a href="/">Home</a><a href="/about.html">About Us</a><div class="nav-dropdown"><button class="nav-dropdown-toggle" type="button" aria-expanded="false">Services</button><div class="nav-dropdown-menu"><a href="/ai-automation.html">AI &amp; Automation</a><a href="/help-desk.html">Help Desk</a><a href="/business-systems.html">Business Systems</a><a href="/itad.html">ITAD</a><a href="/itam.html">ITAM</a></div></div><a href="/blogs.php">Blogs</a><a href="/contact.html">Contact Us</a><a class="nav-cta" href="/contact.html">Get Quote</a></nav></header>
@@ -71,7 +77,7 @@ $body = nl2br(e((string) $post['body']));
           </div>
         </header>
         <?php if ($public['featuredImage'] !== ''): ?>
-          <img class="blog-detail-image" src="<?= e($public['featuredImage']) ?>" alt="<?= e($post['title']) ?>">
+          <img class="blog-detail-image" src="<?= e($public['featuredImage']) ?>" alt="<?= e($public['featuredImageAlt']) ?>">
         <?php endif; ?>
         <div class="blog-detail-layout">
           <div class="cms-content blog-body"><?= $body ?></div>
@@ -80,6 +86,7 @@ $body = nl2br(e((string) $post['body']));
             <a href="https://www.facebook.com/sharer/sharer.php?u=<?= e($encodedUrl) ?>" target="_blank" rel="noopener noreferrer">Facebook</a>
             <a href="https://twitter.com/intent/tweet?url=<?= e($encodedUrl) ?>&text=<?= e($encodedTitle) ?>" target="_blank" rel="noopener noreferrer">X / Twitter</a>
             <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?= e($encodedUrl) ?>&title=<?= e($encodedTitle) ?>&summary=<?= e($encodedDescription) ?>" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            <a href="https://wa.me/?text=<?= e($encodedWhatsApp) ?>" target="_blank" rel="noopener noreferrer">WhatsApp</a>
             <button type="button" data-copy-link data-copy-value="<?= e($canonical) ?>">Copy Link</button>
             <span class="copy-feedback" data-copy-feedback aria-live="polite"></span>
           </aside>
@@ -92,8 +99,8 @@ $body = nl2br(e((string) $post['body']));
           <div class="blog-card-grid">
             <?php foreach (array_slice($related, 0, 3) as $row): $item = blog_public_fields($row); ?>
               <article class="blog-card">
-                <a class="blog-card-image" href="<?= e($item['url']) ?>"><?php if ($item['featuredImage'] !== ''): ?><img src="<?= e($item['featuredImage']) ?>" alt="<?= e($item['title']) ?>" loading="lazy"><?php else: ?><span aria-hidden="true">OS</span><?php endif; ?></a>
-                <div class="blog-card-body"><div class="blog-meta"><time datetime="<?= e(substr($item['publishedAt'], 0, 10)) ?>"><?= e(date('M j, Y', strtotime($item['publishedAt']))) ?></time></div><h3><a href="<?= e($item['url']) ?>"><?= e($item['title']) ?></a></h3><p><?= e($item['excerpt']) ?></p><a class="blog-read-more" href="<?= e($item['url']) ?>">Read More</a></div>
+                <a class="blog-card-image" href="<?= e($item['url']) ?>"><?php if ($item['featuredImage'] !== ''): ?><img src="<?= e($item['featuredImage']) ?>" alt="<?= e($item['featuredImageAlt']) ?>" loading="lazy"><?php else: ?><span aria-hidden="true">OS</span><?php endif; ?></a>
+                <div class="blog-card-body"><div class="blog-meta"><?php if ($item['category'] !== ''): ?><span><?= e($item['category']) ?></span><?php endif; ?><time datetime="<?= e(substr($item['publishedAt'], 0, 10)) ?>"><?= e(date('M j, Y', strtotime($item['publishedAt']))) ?></time></div><h3><a href="<?= e($item['url']) ?>"><?= e($item['title']) ?></a></h3><p><?= e($item['excerpt']) ?></p><a class="blog-read-more" href="<?= e($item['url']) ?>">Read More</a></div>
               </article>
             <?php endforeach; ?>
           </div>

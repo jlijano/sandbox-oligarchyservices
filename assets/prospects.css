@@ -1,0 +1,237 @@
+.prospects-workspace {
+  max-width: 1760px;
+}
+
+.prospects-header h2 {
+  font-size: clamp(2rem, 3.4vw, 2.8rem);
+}
+
+.prospect-view-switcher {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(90, 93, 99, 0.45);
+  border-radius: 8px;
+  padding: 4px;
+  background: rgba(23, 23, 26, 0.92);
+}
+
+.prospect-view-switcher button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  color: #c6c8ce;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.prospect-view-switcher button.is-active {
+  background: rgba(176, 7, 20, 0.24);
+  color: #ffffff;
+}
+
+.prospect-view {
+  display: grid;
+  gap: 16px;
+}
+
+.prospect-view[hidden] {
+  display: none;
+}
+
+.prospect-filters {
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 0.7fr));
+  align-items: end;
+}
+
+.prospects-table {
+  min-width: 1480px;
+}
+
+.prospect-pill {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  border: 1px solid rgba(90, 93, 99, 0.45);
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status-new { background: rgba(87, 148, 255, 0.16); border-color: rgba(87, 148, 255, 0.42); }
+.status-contacted { background: rgba(226, 183, 67, 0.16); border-color: rgba(226, 183, 67, 0.42); }
+.status-qualified { background: rgba(72, 187, 120, 0.16); border-color: rgba(72, 187, 120, 0.42); }
+.status-proposal { background: rgba(120, 110, 255, 0.16); border-color: rgba(120, 110, 255, 0.42); }
+.status-negotiation { background: rgba(244, 114, 182, 0.16); border-color: rgba(244, 114, 182, 0.42); }
+.status-won { background: rgba(56, 161, 105, 0.22); border-color: rgba(56, 161, 105, 0.5); color: #c8f7dc; }
+.status-lost { background: rgba(110, 113, 122, 0.22); border-color: rgba(110, 113, 122, 0.5); color: #d5d7dd; }
+.priority-high { background: rgba(176, 7, 20, 0.2); border-color: rgba(176, 7, 20, 0.58); color: #ffced3; }
+.priority-medium { background: rgba(226, 183, 67, 0.16); border-color: rgba(226, 183, 67, 0.48); color: #ffe9a8; }
+.priority-low { background: rgba(90, 93, 99, 0.18); border-color: rgba(90, 93, 99, 0.52); color: #d6d8df; }
+
+.prospect-board {
+  display: grid;
+  grid-auto-columns: minmax(250px, 1fr);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.kanban-column {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 420px;
+  border: 1px solid rgba(90, 93, 99, 0.38);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(23, 23, 26, 0.92);
+}
+
+.kanban-column-header,
+.kanban-card-footer,
+.kanban-card-meta,
+.widget-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.kanban-column-header h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.kanban-column-header span,
+.owner-avatar {
+  display: inline-grid;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.kanban-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(90, 93, 99, 0.38);
+  border-radius: 8px;
+  padding: 12px;
+  background: #111114;
+}
+
+.kanban-card small,
+.kanban-card-footer,
+.timeline-item small,
+.prospect-widget p {
+  color: var(--muted);
+}
+
+.timeline-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 118px minmax(220px, 1fr) 120px 110px auto;
+  gap: 12px;
+  align-items: center;
+  border-top: 1px solid rgba(90, 93, 99, 0.32);
+  padding: 12px 0;
+}
+
+.timeline-date {
+  color: #f4b6bd;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.prospect-widget-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.prospect-widget {
+  position: relative;
+  min-height: 160px;
+  align-content: space-between;
+}
+
+.prospect-widget span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.prospect-widget strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.widget-actions {
+  justify-content: flex-end;
+}
+
+.widget-actions button {
+  min-height: 28px;
+  border: 1px solid rgba(90, 93, 99, 0.45);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.prospect-widget.is-muted {
+  opacity: 0.45;
+}
+
+@media (max-width: 1180px) {
+  .prospect-filters,
+  .prospect-widget-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .timeline-item {
+    grid-template-columns: 110px minmax(180px, 1fr) auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .prospect-filters,
+  .prospect-widget-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prospect-view-switcher {
+    width: 100%;
+  }
+
+  .prospect-view-switcher button {
+    flex: 1 0 auto;
+  }
+
+  .timeline-item {
+    grid-template-columns: 1fr;
+  }
+}

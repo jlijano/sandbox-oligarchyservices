@@ -17,6 +17,7 @@
     const grid = document.querySelector("[data-latest-blogs-grid]");
     const status = document.querySelector("[data-latest-blogs-status]");
     if (!section || !grid) return;
+    const viewAll = section.querySelector("[data-latest-blogs-view-all], a[href='/blogs.php'], a[href=\"/blogs.php\"]");
 
     try {
       const response = await fetch("/api/blogs.php?limit=3", { headers: { Accept: "application/json" } });
@@ -42,7 +43,7 @@
         if (post.featuredImage) {
           const image = document.createElement("img");
           image.src = post.featuredImage;
-          image.alt = post.title || "Blog featured image";
+          image.alt = post.featuredImageAlt || post.title || "Blog featured image";
           image.loading = "lazy";
           image.addEventListener("error", () => imageLink.replaceChildren(createFallback()), { once: true });
           imageLink.append(image);
@@ -86,6 +87,7 @@
         grid.append(article);
       });
       if (status) status.textContent = "";
+      if (viewAll) viewAll.hidden = !payload.hasMore;
       section.hidden = false;
     } catch (error) {
       if (status) status.textContent = "Latest blog posts are temporarily unavailable.";
@@ -97,7 +99,7 @@
     document.querySelectorAll("[data-copy-link]").forEach((button) => {
       button.addEventListener("click", async () => {
         const value = button.dataset.copyValue || window.location.href;
-        const feedback = document.querySelector("[data-copy-feedback]");
+        const feedback = button.parentElement ? button.parentElement.querySelector("[data-copy-feedback]") : null;
         try {
           await navigator.clipboard.writeText(value);
           if (feedback) feedback.textContent = "Link copied.";

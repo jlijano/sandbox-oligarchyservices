@@ -9,6 +9,7 @@
   const storageKey = "oligarchy_sidebar_collapsed";
   const iconMap = {
     overview: "fa-tachometer",
+    requests: "fa-ticket",
     valley: "fa-sitemap",
     users: "fa-users",
     roles: "fa-id-badge",
@@ -16,6 +17,7 @@
     departments: "fa-object-group",
     playground: "fa-flask",
     agents: "fa-android",
+    prospects: "fa-address-card-o",
     pages: "fa-file-text-o",
     blogs: "fa-newspaper-o",
     navigation: "fa-bars",
@@ -34,6 +36,20 @@
     link.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css";
     link.dataset.fontAwesomeSidebar = "true";
     document.head.appendChild(link);
+  };
+
+  const ensureProspectsNavigation = () => {
+    const playgroundSubnav = document.querySelector("[data-playground-subnav]");
+    if (!playgroundSubnav || playgroundSubnav.querySelector("a[href='/prospects.php']")) return;
+    const link = document.createElement("a");
+    link.href = "/prospects.php";
+    link.innerHTML = '<span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Prospects</span>';
+    const navigationLink = playgroundSubnav.querySelector("a[href='/dashboard.php#navigation']");
+    if (navigationLink) {
+      playgroundSubnav.insertBefore(link, navigationLink);
+    } else {
+      playgroundSubnav.appendChild(link);
+    }
   };
 
   const applySidebarIcons = () => {
@@ -95,6 +111,7 @@
     syncSidebarGroups();
   };
 
+  ensureProspectsNavigation();
   applySidebarIcons();
 
   document.addEventListener("click", (event) => {

@@ -32,7 +32,7 @@ function redirect_to(string $path): void
     exit;
 }
 
-function e(string $value): string
+function e($value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }

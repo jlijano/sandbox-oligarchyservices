@@ -24,10 +24,10 @@
   };
 
   const valleyLinks = [
-    { label: "Users", href: "/users.php" },
-    { label: "Roles", href: "/roles.php" },
     { label: "Companies", href: "/companies.php" },
-    { label: "Departments", href: "/departments.php" }
+    { label: "Departments", href: "/departments.php" },
+    { label: "Users", href: "/users.php" },
+    { label: "Roles", href: "/roles.php" }
   ];
 
   const loadFontAwesome = () => {
@@ -55,6 +55,7 @@
       }
       link.href = item.href;
       link.removeAttribute("data-section-link");
+      subnav.appendChild(link);
       const isActive = currentPath === item.href.replace(/\/+$/, "");
       link.classList.toggle("is-active", isActive);
       if (isActive) link.setAttribute("aria-current", "page");

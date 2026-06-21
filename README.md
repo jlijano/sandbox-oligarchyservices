@@ -32,12 +32,27 @@ Before going live:
    controls the default index page, 404 page, security headers, caching, HTTPS
    redirect, login rewrite, and protected helper paths.
 4. If enabling the client portal, create the Hostinger MySQL database, run
-   `/install.php`, confirm login works, and delete `install.php` from Hostinger
-   after installation.
-5. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
+   `/install.php`, confirm login works, and then use `/update.php` for future
+   schema updates after deployments.
+5. If `includes/config.php` is missing on the live server, use `/repair.php` to
+   recreate it from the Hostinger database values.
+6. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
    `privacy.html`, and one missing URL after upload.
 
 See `HOSTINGER.md` for the full checklist.
+
+## Portal setup pages
+
+- `/install.php`: first-time portal setup. Creates the server-local database
+  config, required tables, and first admin account.
+- `/update.php`: logged-in admin maintenance page. Applies safe, non-destructive
+  table updates after CMS code changes.
+- `/repair.php`: server repair page. Recreates `includes/config.php` only when
+  the installer lock exists but the config file is missing.
+
+Direct browser access to `/includes/config.php` is blocked by `.htaccess` on
+purpose because that file contains the database password. PHP can still read it
+internally.
 
 ## Login page and client portal
 
@@ -117,6 +132,7 @@ generated local `includes/config.php`. Do not commit generated credentials.
 
 ## Change notes
 
+- 2026-06-21: Split portal setup into `/install.php`, `/update.php`, and `/repair.php` so first setup, schema updates, and missing-config repair use separate flows.
 - 2026-06-20: Aligned README architecture and deployment notes with the PHP/MySQL client portal documented in `HOSTINGER.md`.
 - 2026-06-20: Added a Hostinger-compatible static client login page at `/login.html` with responsive styling and browser-side validation.
 - 2026-06-20: Updated `robots.txt` and `sitemap.xml` to use the live Hostinger sandbox domain.

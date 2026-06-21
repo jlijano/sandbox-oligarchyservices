@@ -12,6 +12,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
+- Authenticated clients can submit and view service requests at `/requests.php`; admin, editor, and support users can manage the full request queue.
 - Admin-created portal users receive a generated temporary password by email, confirm their email address before signing in, then create their own password before opening the dashboard.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
 - The installer also writes persistent database config backups outside `public_html` when Hostinger file permissions allow it, so full file syncs do not force a database reinstall.
@@ -48,9 +49,9 @@ Before going live:
 6. If `includes/config.php` is missing on the live server, use `/repair.php` to
    reconnect the existing database. Do not reinstall, drop, empty, or recreate
    the database just because the config file is missing.
-7. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
-   `privacy.html`, `account-confirmation.php`, `change-password.php`, and one
-   missing URL after upload.
+7. Test `index.html`, `login.html`, `dashboard.php`, `requests.php`,
+   `logout.php`, `privacy.html`, `account-confirmation.php`,
+   `change-password.php`, and one missing URL after upload.
 
 See `HOSTINGER.md` for the full checklist.
 
@@ -59,7 +60,8 @@ See `HOSTINGER.md` for the full checklist.
 - `/install.php`: first-time portal setup. Creates the server-local database
   config, required tables, and first admin account.
 - `/update.php`: logged-in admin maintenance page. Applies safe, non-destructive
-  table updates after CMS code changes.
+  table updates after CMS, blog, access-management, or client request code
+  changes.
 - `/repair.php`: server repair page. Reconnects the existing database when the
   server-local config file is missing. It restores from a persistent backup when
   possible, or from entered Hostinger database values when the installer lock
@@ -94,6 +96,22 @@ Confirmation links expire after 48 hours. The sender defaults to a domain-based
 `no-reply` address; set `PORTAL_MAIL_FROM` to use a specific mailbox. Set
 `PORTAL_BASE_URL` when the portal runs behind a proxy or when generated email
 links must always use the production domain.
+
+## Client requests
+
+`/requests.php` adds a lightweight authenticated service request module for the
+portal. Clients can submit requests and view only their own request history.
+Admin, editor, and support users can view all requests, update status, assign
+priority, choose an internal assignee, add internal notes, and write activity-log
+entries.
+
+Request statuses are `new`, `in_review`, `waiting_on_client`, `in_progress`,
+`resolved`, and `closed`. Request priorities are `low`, `normal`, `high`, and
+`urgent`.
+
+After deploying the request module to an existing Hostinger portal, log in as an
+admin and run `/update.php` once. The update creates the `client_requests` table
+without deleting existing users, pages, blogs, settings, or activity records.
 
 ## Sentinel mail orchestrator
 
@@ -178,6 +196,7 @@ the service host or a local uncommitted environment file.
 
 ## Change notes
 
+- 2026-06-21: Added a Client Requests portal module for authenticated client submissions and admin/support/editor queue management.
 - 2026-06-21: Added generated temporary passwords to account confirmation emails for new portal users.
 - 2026-06-21: Required newly confirmed portal users to create their own password before dashboard access.
 - 2026-06-21: Added email confirmation for admin-created portal users before first login.

@@ -1,8 +1,14 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/includes/installer.php';
+
 $configPath = __DIR__ . '/includes/config.php';
 $lockPath = __DIR__ . '/includes/installed.lock';
+
+if (!is_file($configPath)) {
+    installer_restore_config_from_backup($configPath);
+}
 
 if (!is_file($configPath)) {
     header('Location: ' . (is_file($lockPath) ? '/repair.php' : '/install.php'), true, 302);
@@ -12,7 +18,6 @@ if (!is_file($configPath)) {
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/includes/installer.php';
 
 $user = require_login();
 if (($user['role'] ?? '') !== 'admin') {

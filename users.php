@@ -4,20 +4,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/access-management.php';
 
-$user = require_login();
-$role = strtolower((string) ($user['role'] ?? 'client'));
-if ($role !== 'admin') {
-    http_response_code(403);
-    echo 'Only admins can manage users.';
-    exit;
-}
-
+$user = access_admin_user();
 $pdo = db();
+access_management_ensure_schema($pdo);
+
+$role = strtolower((string) ($user['role'] ?? 'client'));
 $displayName = trim((string) ($user['full_name'] ?: $user['email']));
 $initials = strtoupper(substr($displayName, 0, 1));
 $roleLabel = ucfirst($role);
-$allowedRoles = ['admin', 'editor', 'support', 'client'];
 $notice = $_SESSION['users_notice'] ?? null;
 $error = $_SESSION['users_error'] ?? null;
 unset($_SESSION['users_notice'], $_SESSION['users_error']);
@@ -28,16 +24,33 @@ function users_redirect(array $params = []): void { redirect_to('/users.php' . (
 function users_post_string(string $key, string $default = ''): string { return trim((string) ($_POST[$key] ?? $default)); }
 function users_post_int(string $key, int $default = 0): int { return filter_var($_POST[$key] ?? $default, FILTER_VALIDATE_INT) !== false ? (int) $_POST[$key] : $default; }
 function users_checked_value(string $key): int { return isset($_POST[$key]) ? 1 : 0; }
-function users_role_badge(string $value): string { return in_array($value, ['admin','editor','support','client'], true) ? $value : 'client'; }
 function users_log_activity(PDO $pdo, int $actorId, string $action, string $targetType = '', ?int $targetId = null, string $details = ''): void
 {
-    try {
-        $stmt = $pdo->prepare('INSERT INTO activity_log (user_id, action, target_type, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$actorId, $action, $targetType, $targetId, $details, $_SERVER['REMOTE_ADDR'] ?? '']);
-    } catch (Throwable $error) {
-        error_log('User activity log skipped: ' . $error->getMessage());
-    }
+    access_log_activity($pdo, $actorId, $action, $targetType, $targetId, $details);
 }
+function users_option_exists(PDO $pdo, string $table, int $id): bool
+{
+    if ($id <= 0) {
+        return false;
+    }
+    $stmt = $pdo->prepare('SELECT id FROM ' . access_sql_name($table) . ' WHERE id = ? LIMIT 1');
+    $stmt->execute([$id]);
+    return (bool) $stmt->fetch();
+}
+function users_department_matches_company(PDO $pdo, int $departmentId, int $companyId): bool
+{
+    if ($departmentId <= 0 || $companyId <= 0) {
+        return true;
+    }
+    $stmt = $pdo->prepare('SELECT id FROM departments WHERE id = ? AND (company_id = ? OR company_id IS NULL) LIMIT 1');
+    $stmt->execute([$departmentId, $companyId]);
+    return (bool) $stmt->fetch();
+}
+
+$roles = $pdo->query('SELECT name FROM roles WHERE is_active = 1 ORDER BY FIELD(name, "admin", "editor", "support", "client") DESC, name ASC')->fetchAll(PDO::FETCH_COLUMN);
+$allowedRoles = array_values(array_unique(array_merge(['admin', 'editor', 'support', 'client'], array_map('strval', $roles))));
+$companies = access_fetch_options($pdo, 'companies');
+$departments = $pdo->query('SELECT d.id, d.name, d.company_id, c.name AS company_name FROM departments d LEFT JOIN companies c ON c.id = d.company_id WHERE d.is_active = 1 ORDER BY c.name ASC, d.name ASC')->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify($_POST['csrf_token'] ?? null)) {
@@ -52,28 +65,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userId = users_post_int('user_id');
             $name = users_post_string('full_name');
             $email = strtolower(users_post_string('email'));
-            $newRole = users_role_badge(strtolower(users_post_string('role', 'client')));
+            $newRole = strtolower(users_post_string('role', 'client'));
             $isActive = users_checked_value('is_active');
             $password = (string) ($_POST['password'] ?? '');
+            $companyId = users_post_int('company_id');
+            $departmentId = users_post_int('department_id');
+            $companyId = $companyId > 0 ? $companyId : null;
+            $departmentId = $departmentId > 0 ? $departmentId : null;
 
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Enter a valid user email.');
             if ($name === '') throw new RuntimeException('User name is required.');
+            if (!in_array($newRole, $allowedRoles, true)) throw new RuntimeException('Choose a valid role.');
             if ($userId === 0 && strlen($password) < 10) throw new RuntimeException('New users need a password of at least 10 characters.');
             if ($password !== '' && strlen($password) < 10) throw new RuntimeException('Password must be at least 10 characters.');
+            if ($companyId !== null && !users_option_exists($pdo, 'companies', $companyId)) throw new RuntimeException('Choose a valid company.');
+            if ($departmentId !== null && !users_option_exists($pdo, 'departments', $departmentId)) throw new RuntimeException('Choose a valid department.');
+            if ($companyId !== null && $departmentId !== null && !users_department_matches_company($pdo, $departmentId, $companyId)) throw new RuntimeException('Choose a department that belongs to the selected company.');
 
             if ($userId > 0) {
-                $params = [$email, $name, $newRole, $isActive, $userId];
-                $sql = 'UPDATE users SET email = ?, full_name = ?, role = ?, is_active = ?, updated_at = NOW() WHERE id = ?';
+                $params = [$email, $name, $newRole, $isActive, $companyId, $departmentId, $userId];
+                $sql = 'UPDATE users SET email = ?, full_name = ?, role = ?, is_active = ?, company_id = ?, department_id = ?, updated_at = NOW() WHERE id = ?';
                 if ($password !== '') {
-                    $sql = 'UPDATE users SET email = ?, full_name = ?, role = ?, is_active = ?, password_hash = ?, updated_at = NOW() WHERE id = ?';
-                    $params = [$email, $name, $newRole, $isActive, password_hash($password, PASSWORD_DEFAULT), $userId];
+                    $sql = 'UPDATE users SET email = ?, full_name = ?, role = ?, is_active = ?, company_id = ?, department_id = ?, password_hash = ?, updated_at = NOW() WHERE id = ?';
+                    $params = [$email, $name, $newRole, $isActive, $companyId, $departmentId, password_hash($password, PASSWORD_DEFAULT), $userId];
                 }
                 $pdo->prepare($sql)->execute($params);
                 users_log_activity($pdo, (int) $user['id'], 'user updated', 'user', $userId, $email);
                 users_flash_success('User updated.');
             } else {
-                $stmt = $pdo->prepare('INSERT INTO users (email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, ?)');
-                $stmt->execute([$email, password_hash($password, PASSWORD_DEFAULT), $name, $newRole, $isActive]);
+                $stmt = $pdo->prepare('INSERT INTO users (email, password_hash, full_name, role, is_active, company_id, department_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                $stmt->execute([$email, password_hash($password, PASSWORD_DEFAULT), $name, $newRole, $isActive, $companyId, $departmentId]);
                 users_log_activity($pdo, (int) $user['id'], 'user created', 'user', (int) $pdo->lastInsertId(), $email);
                 users_flash_success('User created.');
             }
@@ -103,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $userSearch = trim((string) ($_GET['user_search'] ?? ''));
 $userRoleFilter = strtolower(trim((string) ($_GET['user_role'] ?? '')));
 $userStatusFilter = strtolower(trim((string) ($_GET['user_status'] ?? '')));
-if (!in_array($userRoleFilter, ['', 'admin', 'editor', 'support', 'client'], true)) $userRoleFilter = '';
+if (!in_array($userRoleFilter, array_merge([''], $allowedRoles), true)) $userRoleFilter = '';
 if (!in_array($userStatusFilter, ['', 'active', 'inactive'], true)) $userStatusFilter = '';
 $userPageRaw = filter_var($_GET['user_page'] ?? 1, FILTER_VALIDATE_INT);
 $userPage = $userPageRaw === false ? 1 : max(1, (int) $userPageRaw);
@@ -111,27 +132,27 @@ $usersPerPage = 10;
 $userWhere = [];
 $userParams = [];
 if ($userSearch !== '') {
-    $userWhere[] = '(full_name LIKE ? OR email LIKE ?)';
+    $userWhere[] = '(u.full_name LIKE ? OR u.email LIKE ? OR c.name LIKE ? OR d.name LIKE ?)';
     $searchLike = '%' . $userSearch . '%';
-    $userParams[] = $searchLike;
-    $userParams[] = $searchLike;
+    array_push($userParams, $searchLike, $searchLike, $searchLike, $searchLike);
 }
 if ($userRoleFilter !== '') {
-    $userWhere[] = 'role = ?';
+    $userWhere[] = 'u.role = ?';
     $userParams[] = $userRoleFilter;
 }
 if ($userStatusFilter !== '') {
-    $userWhere[] = 'is_active = ?';
+    $userWhere[] = 'u.is_active = ?';
     $userParams[] = $userStatusFilter === 'active' ? 1 : 0;
 }
+$joinSql = ' FROM users u LEFT JOIN companies c ON c.id = u.company_id LEFT JOIN departments d ON d.id = u.department_id';
 $userWhereSql = $userWhere ? ' WHERE ' . implode(' AND ', $userWhere) : '';
-$countStmt = $pdo->prepare('SELECT COUNT(*) FROM users' . $userWhereSql);
+$countStmt = $pdo->prepare('SELECT COUNT(*)' . $joinSql . $userWhereSql);
 $countStmt->execute($userParams);
 $totalUsers = (int) $countStmt->fetchColumn();
 $totalUserPages = max(1, (int) ceil($totalUsers / $usersPerPage));
 $userPage = min($userPage, $totalUserPages);
 $userOffset = ($userPage - 1) * $usersPerPage;
-$userSql = 'SELECT id, email, full_name, role, is_active, last_login_at, created_at FROM users' . $userWhereSql . ' ORDER BY created_at DESC, id DESC LIMIT ' . $usersPerPage . ' OFFSET ' . $userOffset;
+$userSql = 'SELECT u.id, u.email, u.full_name, u.role, u.is_active, u.company_id, u.department_id, u.last_login_at, u.created_at, c.name AS company_name, d.name AS department_name' . $joinSql . $userWhereSql . ' ORDER BY u.created_at DESC, u.id DESC LIMIT ' . $usersPerPage . ' OFFSET ' . $userOffset;
 $userStmt = $pdo->prepare($userSql);
 $userStmt->execute($userParams);
 $users = $userStmt->fetchAll();
@@ -157,7 +178,7 @@ $csrf = csrf_token();
     <meta name="robots" content="noindex">
     <title>Users | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-users-page">
+    <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-access-management">
     <style>
       .users-toolbar { align-items: center; }
       .icon-action { gap: 9px; }
@@ -166,7 +187,7 @@ $csrf = csrf_token();
       .user-modal[hidden] { display: none; }
       .user-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 18px; }
       .user-modal-backdrop { position: absolute; inset: 0; border: 0; background: rgba(0,0,0,0.72); cursor: pointer; }
-      .user-modal-dialog { position: relative; width: min(560px, 100%); max-height: min(720px, calc(100dvh - 36px)); overflow: auto; border: 1px solid rgba(90,93,99,0.48); border-radius: 8px; background: linear-gradient(135deg, rgba(32,32,36,0.98), rgba(13,13,15,0.98)); box-shadow: 0 28px 80px rgba(0,0,0,0.46); }
+      .user-modal-dialog { position: relative; width: min(640px, 100%); max-height: min(760px, calc(100dvh - 36px)); overflow: auto; border: 1px solid rgba(90,93,99,0.48); border-radius: 8px; background: linear-gradient(135deg, rgba(32,32,36,0.98), rgba(13,13,15,0.98)); box-shadow: 0 28px 80px rgba(0,0,0,0.46); }
       .user-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 18px 0; }
       .user-modal-header h3 { margin: 0; }
       .user-modal-close { display: inline-grid; width: 38px; height: 38px; place-items: center; border: 1px solid rgba(90,93,99,0.5); border-radius: 8px; background: #17171a; color: #fff; cursor: pointer; font-size: 1.35rem; line-height: 1; }
@@ -174,23 +195,11 @@ $csrf = csrf_token();
       body.user-modal-open { overflow: hidden; }
       @media (max-width: 680px) { .users-toolbar { align-items: stretch; } .users-toolbar .primary-action { width: 100%; } .user-modal { align-items: end; padding: 12px; } .user-modal-dialog { width: 100%; max-height: calc(100dvh - 24px); } }
     </style>
-    <script defer src="/assets/dashboard.js?v=20260621-users-modal"></script>
+    <script defer src="/assets/dashboard.js?v=20260621-access-management"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>
-      <aside class="dashboard-sidebar" id="portal-sidebar" aria-label="Portal navigation">
-        <div class="sidebar-brand"><a href="/dashboard.php#overview" aria-label="Oligarchy Services dashboard">OLIGARCHY</a><button class="sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" aria-expanded="true">‹</button></div>
-        <nav class="sidebar-nav">
-          <a href="/dashboard.php#overview"><span class="nav-icon" aria-hidden="true">O</span><span class="nav-label">Overview</span></a>
-          <div class="sidebar-group is-open is-active" data-valley-group><button class="sidebar-group-toggle" type="button" data-valley-toggle aria-expanded="true"><span class="nav-icon" aria-hidden="true">V</span><span class="nav-label">Valley</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button><div class="sidebar-subnav" data-valley-subnav><a class="is-active" href="/users.php" aria-current="page"><span class="nav-icon" aria-hidden="true">U</span><span class="nav-label">Users</span></a></div></div>
-          <a href="/dashboard.php#pages"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Pages</span></a>
-          <a href="/admin-blogs.php"><span class="nav-icon" aria-hidden="true">B</span><span class="nav-label">Blogs</span></a>
-          <a href="/dashboard.php#navigation"><span class="nav-icon" aria-hidden="true">N</span><span class="nav-label">Navigation</span></a>
-          <a href="/dashboard.php#settings"><span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Settings</span></a>
-          <a href="/dashboard.php#activity"><span class="nav-icon" aria-hidden="true">A</span><span class="nav-label">Activity</span></a>
-        </nav>
-        <div class="sidebar-footer"><span class="sidebar-status">Role</span><strong><?= e($roleLabel) ?></strong></div>
-      </aside>
+      <?php access_sidebar('users', $roleLabel); ?>
       <div class="sidebar-backdrop" data-sidebar-backdrop></div>
       <div class="dashboard-main">
         <header class="dashboard-topbar"><div class="topbar-left"><button class="mobile-menu" type="button" data-mobile-menu aria-controls="portal-sidebar" aria-expanded="false">☰</button><div><p class="eyebrow">Access control</p><h1 data-section-title>Users</h1></div></div><div class="topbar-actions"><span class="role-pill"><?= e($roleLabel) ?></span><div class="user-chip" title="<?= e($user['email']) ?>"><span><?= e($initials) ?></span><div><strong><?= e($displayName) ?></strong><small><?= e($user['email']) ?></small></div></div><a class="logout-link" href="/logout.php">Log out</a></div></header>
@@ -200,15 +209,15 @@ $csrf = csrf_token();
           <section class="dashboard-section users-section is-active" id="users" data-dashboard-section data-section-label="Users">
             <div class="section-heading-row users-toolbar"><div><p class="eyebrow">Access control</p><h2>Users</h2></div><button class="primary-action icon-action" type="button" data-add-user aria-haspopup="dialog" aria-controls="user-modal"><span class="plus-mark" aria-hidden="true">+</span><span>Add user</span></button></div>
             <section class="user-summary-grid" aria-label="User account summary"><article><span>Total users</span><strong><?= e((string) $counts['total_users']) ?></strong></article><article><span>Active</span><strong><?= e((string) $counts['active_users']) ?></strong></article><article><span>Inactive</span><strong><?= e((string) $counts['inactive_users']) ?></strong></article><article><span>Admins</span><strong><?= e((string) $counts['admin_users']) ?></strong></article></section>
-            <form class="admin-panel filter-panel" method="get" action="/users.php"><label>Search users<input name="user_search" type="search" value="<?= e($userSearch) ?>" placeholder="Name or email"></label><label>Role<select name="user_role"><option value="">All roles</option><?php foreach ($allowedRoles as $r): ?><option value="<?= e($r) ?>" <?= $userRoleFilter === $r ? 'selected' : '' ?>><?= e(ucfirst($r)) ?></option><?php endforeach; ?></select></label><label>Status<select name="user_status"><option value="">All statuses</option><option value="active" <?= $userStatusFilter === 'active' ? 'selected' : '' ?>>Active</option><option value="inactive" <?= $userStatusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option></select></label><div class="filter-actions"><button class="button primary" type="submit">Apply filters</button><a class="secondary-action" href="/users.php">Clear</a></div></form>
+            <form class="admin-panel filter-panel" method="get" action="/users.php"><label>Search users<input name="user_search" type="search" value="<?= e($userSearch) ?>" placeholder="Name, email, company, or department"></label><label>Role<select name="user_role"><option value="">All roles</option><?php foreach ($allowedRoles as $r): ?><option value="<?= e($r) ?>" <?= $userRoleFilter === $r ? 'selected' : '' ?>><?= e(ucfirst($r)) ?></option><?php endforeach; ?></select></label><label>Status<select name="user_status"><option value="">All statuses</option><option value="active" <?= $userStatusFilter === 'active' ? 'selected' : '' ?>>Active</option><option value="inactive" <?= $userStatusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option></select></label><div class="filter-actions"><button class="button primary" type="submit">Apply filters</button><a class="secondary-action" href="/users.php">Clear</a></div></form>
             <div class="users-table-wrap">
-              <div class="admin-panel table-panel"><div class="table-heading"><h3>User accounts</h3><span><?= e((string) $totalUsers) ?> result<?= $totalUsers === 1 ? '' : 's' ?></span></div><?php if (!$users): ?><p class="empty-state">No users match the current filters.</p><?php else: ?><div class="table-scroll"><table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead><tbody><?php foreach ($users as $row): ?><tr><td><strong><?= e($row['full_name']) ?></strong></td><td><?= e($row['email']) ?></td><td><span class="status-badge"><?= e($row['role']) ?></span></td><td><span class="status-badge <?= (int) $row['is_active'] === 1 ? 'is-active' : 'is-muted' ?>"><?= (int) $row['is_active'] === 1 ? 'Active' : 'Inactive' ?></span></td><td class="nowrap"><?= e((string) ($row['last_login_at'] ?? 'Never')) ?></td><td class="row-actions"><button class="table-action" type="button" data-edit-user data-id="<?= e((string) $row['id']) ?>" data-name="<?= e($row['full_name']) ?>" data-email="<?= e($row['email']) ?>" data-role="<?= e($row['role']) ?>" data-active="<?= e((string) $row['is_active']) ?>">Edit</button><?php if ((int) $row['id'] !== (int) $user['id']): ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="deactivate_user"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Deactivate</button></form><form method="post" data-confirm="Delete this user permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form><?php endif; ?></td></tr><?php endforeach; ?></tbody></table></div><?php if ($totalUserPages > 1): ?><nav class="pagination" aria-label="User pages"><a class="secondary-action<?= $userPage <= 1 ? ' is-disabled' : '' ?>" href="<?= e($prevUserUrl) ?>">Previous</a><span>Page <?= e((string) $userPage) ?> of <?= e((string) $totalUserPages) ?></span><a class="secondary-action<?= $userPage >= $totalUserPages ? ' is-disabled' : '' ?>" href="<?= e($nextUserUrl) ?>">Next</a></nav><?php endif; ?><?php endif; ?></div>
+              <div class="admin-panel table-panel"><div class="table-heading"><h3>User accounts</h3><span><?= e((string) $totalUsers) ?> result<?= $totalUsers === 1 ? '' : 's' ?></span></div><?php if (!$users): ?><p class="empty-state">No users match the current filters.</p><?php else: ?><div class="table-scroll"><table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Company</th><th>Department</th><th>Status</th><th>Last login</th><th></th></tr></thead><tbody><?php foreach ($users as $row): ?><tr><td><strong><?= e($row['full_name']) ?></strong></td><td><?= e($row['email']) ?></td><td><span class="status-badge"><?= e($row['role']) ?></span></td><td><?= e((string) ($row['company_name'] ?? 'Unassigned')) ?></td><td><?= e((string) ($row['department_name'] ?? 'Unassigned')) ?></td><td><span class="status-badge <?= (int) $row['is_active'] === 1 ? 'is-active' : 'is-muted' ?>"><?= (int) $row['is_active'] === 1 ? 'Active' : 'Inactive' ?></span></td><td class="nowrap"><?= e((string) ($row['last_login_at'] ?? 'Never')) ?></td><td class="row-actions"><button class="table-action" type="button" data-edit-user data-id="<?= e((string) $row['id']) ?>" data-name="<?= e($row['full_name']) ?>" data-email="<?= e($row['email']) ?>" data-role="<?= e($row['role']) ?>" data-company="<?= e((string) ($row['company_id'] ?? '')) ?>" data-department="<?= e((string) ($row['department_id'] ?? '')) ?>" data-active="<?= e((string) $row['is_active']) ?>">Edit</button><?php if ((int) $row['id'] !== (int) $user['id']): ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="deactivate_user"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Deactivate</button></form><form method="post" data-confirm="Delete this user permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form><?php endif; ?></td></tr><?php endforeach; ?></tbody></table></div><?php if ($totalUserPages > 1): ?><nav class="pagination" aria-label="User pages"><a class="secondary-action<?= $userPage <= 1 ? ' is-disabled' : '' ?>" href="<?= e($prevUserUrl) ?>">Previous</a><span>Page <?= e((string) $userPage) ?> of <?= e((string) $totalUserPages) ?></span><a class="secondary-action<?= $userPage >= $totalUserPages ? ' is-disabled' : '' ?>" href="<?= e($nextUserUrl) ?>">Next</a></nav><?php endif; ?><?php endif; ?></div>
             </div>
             <div class="user-modal" id="user-modal" data-user-modal role="dialog" aria-modal="true" aria-labelledby="user-modal-title" hidden>
               <button class="user-modal-backdrop" type="button" data-user-modal-close aria-label="Close user form"></button>
               <div class="user-modal-dialog">
                 <div class="user-modal-header"><h3 id="user-modal-title" data-user-form-title>Create user</h3><button class="user-modal-close" type="button" data-user-modal-close aria-label="Close user form">×</button></div>
-                <form class="admin-panel" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="save_user"><input type="hidden" name="user_id" data-user-id value="0"><label>Full name<input name="full_name" data-user-name required></label><label>Email<input name="email" type="email" data-user-email required></label><label>Role<select name="role" data-user-role><?php foreach ($allowedRoles as $r): ?><option value="<?= e($r) ?>"><?= e(ucfirst($r)) ?></option><?php endforeach; ?></select></label><label class="check-row"><input name="is_active" type="checkbox" value="1" data-user-active checked><span>Active</span></label><label>Password<input name="password" type="password" autocomplete="new-password" minlength="10" placeholder="Set or reset password"></label><div class="form-actions"><button class="button primary" type="submit">Save user</button><button class="button secondary" type="button" data-reset-user-form>Cancel</button></div></form>
+                <form class="admin-panel" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="save_user"><input type="hidden" name="user_id" data-user-id value="0"><label>Full name<input name="full_name" data-user-name required></label><label>Email<input name="email" type="email" data-user-email required></label><label>Role<select name="role" data-user-role><?php foreach ($allowedRoles as $r): ?><option value="<?= e($r) ?>"><?= e(ucfirst($r)) ?></option><?php endforeach; ?></select></label><label>Company<select name="company_id" data-user-company><option value="">Unassigned</option><?php foreach ($companies as $company): ?><option value="<?= e((string) $company['id']) ?>"><?= e($company['name']) ?></option><?php endforeach; ?></select></label><label>Department<select name="department_id" data-user-department><option value="">Unassigned</option><?php foreach ($departments as $department): ?><option value="<?= e((string) $department['id']) ?>" data-company-id="<?= e((string) ($department['company_id'] ?? '')) ?>"><?= e(($department['company_name'] ? $department['company_name'] . ' / ' : '') . $department['name']) ?></option><?php endforeach; ?></select></label><label class="check-row"><input name="is_active" type="checkbox" value="1" data-user-active checked><span>Active</span></label><label>Password<input name="password" type="password" autocomplete="new-password" minlength="10" placeholder="Set or reset password"></label><div class="form-actions"><button class="button primary" type="submit">Save user</button><button class="button secondary" type="button" data-reset-user-form>Cancel</button></div></form>
               </div>
             </div>
           </section>

@@ -12,6 +12,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
+- Admin-created portal users must confirm their email address before signing in. The confirmation email includes the account confirmation link and the stable login link.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
 - The installer also writes persistent database config backups outside `public_html` when Hostinger file permissions allow it, so full file syncs do not force a database reinstall.
 - The portal can also read `DB_HOST`, `DB_DATABASE`/`DB_NAME`, `DB_USERNAME`/`DB_USER`, `DB_PASSWORD`, and optional `DB_PORT` environment variables.
@@ -41,11 +42,14 @@ Before going live:
 4. If enabling the client portal, create the Hostinger MySQL database, run
    `/install.php`, confirm login works, and then use `/update.php` for future
    schema updates after deployments.
-5. If `includes/config.php` is missing on the live server, use `/repair.php` to
+5. Confirm Hostinger PHP mail is allowed for the domain. Optionally set
+   `PORTAL_BASE_URL` and `PORTAL_MAIL_FROM` in the hosting environment so account
+   confirmation emails use the exact production URL and sender address.
+6. If `includes/config.php` is missing on the live server, use `/repair.php` to
    reconnect the existing database. Do not reinstall, drop, empty, or recreate
    the database just because the config file is missing.
-6. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
-   `privacy.html`, and one missing URL after upload.
+7. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
+   `privacy.html`, `account-confirmation.php`, and one missing URL after upload.
 
 See `HOSTINGER.md` for the full checklist.
 
@@ -77,7 +81,14 @@ accessible field errors, but it does not verify credentials or store passwords.
 When deployed with PHP/MySQL, `.htaccess` rewrites `/login.html` to `login.php`.
 The PHP form includes a CSRF token and submits to `api/login.php`, which verifies
 users against the database, records login attempts, regenerates the session ID on
-successful login, and redirects authenticated users to `dashboard.php`.
+successful login, and redirects authenticated users to `dashboard.php`. Newly
+created users must confirm their email address first through the link sent when
+an admin creates the account under `Valley > Users`.
+
+Confirmation links expire after 48 hours. The sender defaults to a domain-based
+`no-reply` address; set `PORTAL_MAIL_FROM` to use a specific mailbox. Set
+`PORTAL_BASE_URL` when the portal runs behind a proxy or when generated email
+links must always use the production domain.
 
 ## Sentinel mail orchestrator
 
@@ -162,6 +173,7 @@ the service host or a local uncommitted environment file.
 
 ## Change notes
 
+- 2026-06-21: Added email confirmation for admin-created portal users before first login.
 - 2026-06-21: Hardened PHP portal config persistence so Hostinger file syncs do not require database reinstallation when `includes/config.php` is removed.
 - 2026-06-21: Added a separate Sentinel mail orchestrator scaffold for sending automation emails through `sentinel@oligarchyservices.com`.
 - 2026-06-21: Split portal setup into `/install.php`, `/update.php`, and `/repair.php` so first setup, schema updates, and missing-config repair use separate flows.

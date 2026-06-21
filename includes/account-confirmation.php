@@ -34,7 +34,19 @@ function account_confirmation_from_header(): string
     return 'Oligarchy Services <' . $from . '>';
 }
 
-function account_confirmation_send_email(string $email, string $name, string $token): bool
+function account_confirmation_generate_temporary_password(): string
+{
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+    $password = '';
+    $max = strlen($alphabet) - 1;
+    for ($index = 0; $index < 18; $index++) {
+        $password .= $alphabet[random_int(0, $max)];
+    }
+
+    return $password;
+}
+
+function account_confirmation_send_email(string $email, string $name, string $token, string $temporaryPassword): bool
 {
     $confirmUrl = account_confirmation_url('/account-confirmation.php?token=' . rawurlencode($token));
     $loginUrl = account_confirmation_url('/login.html');
@@ -43,7 +55,8 @@ function account_confirmation_send_email(string $email, string $name, string $to
     $body = "Hi {$displayName},\n\n"
         . "Your Oligarchy Services account has been created. Confirm your email address before signing in:\n\n"
         . "{$confirmUrl}\n\n"
-        . "After confirming, log in here and create your own password before opening the dashboard:\n\n"
+        . "Temporary password:\n{$temporaryPassword}\n\n"
+        . "After confirming, log in here with the temporary password, then create your own password before opening the dashboard:\n\n"
         . "{$loginUrl}\n\n"
         . "This confirmation link expires in 48 hours.\n";
     $headers = [
@@ -103,11 +116,12 @@ function account_confirmation_finalize_dashboard_create(): void
 
         $token = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
-        $update = $pdo->prepare('UPDATE users SET email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 1, updated_at = NOW() WHERE id = ?');
-        $update->execute([$tokenHash, (int) $createdUser['id']]);
+        $temporaryPassword = account_confirmation_generate_temporary_password();
+        $update = $pdo->prepare('UPDATE users SET password_hash = ?, email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 1, updated_at = NOW() WHERE id = ?');
+        $update->execute([password_hash($temporaryPassword, PASSWORD_DEFAULT), $tokenHash, (int) $createdUser['id']]);
 
-        if (account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token)) {
-            $_SESSION['dashboard_notice'] = 'User created. Confirmation email sent to ' . $email . '.';
+        if (account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword)) {
+            $_SESSION['dashboard_notice'] = 'User created. Confirmation email and temporary password sent to ' . $email . '.';
         } else {
             unset($_SESSION['dashboard_notice']);
             $_SESSION['dashboard_error'] = 'User created, but the confirmation email could not be sent. Check Hostinger PHP mail settings.';

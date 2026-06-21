@@ -221,10 +221,10 @@ function access_fetch_options(PDO $pdo, string $table): array
 function access_sidebar(string $active, string $roleLabel): void
 {
     $items = [
-        ['href' => '/users.php', 'label' => 'Users', 'key' => 'users'],
-        ['href' => '/roles.php', 'label' => 'Roles', 'key' => 'roles'],
         ['href' => '/companies.php', 'label' => 'Companies', 'key' => 'companies'],
         ['href' => '/departments.php', 'label' => 'Departments', 'key' => 'departments'],
+        ['href' => '/users.php', 'label' => 'Users', 'key' => 'users'],
+        ['href' => '/roles.php', 'label' => 'Roles', 'key' => 'roles'],
     ];
     ?>
     <aside class="dashboard-sidebar" id="portal-sidebar" aria-label="Portal navigation">

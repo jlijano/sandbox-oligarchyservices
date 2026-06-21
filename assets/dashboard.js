@@ -16,6 +16,8 @@
     roles: "fa-id-badge",
     companies: "fa-building",
     departments: "fa-object-group",
+    playground: "fa-flask",
+    agents: "fa-android",
     pages: "fa-file-text-o",
     blogs: "fa-newspaper-o",
     navigation: "fa-bars",
@@ -28,6 +30,9 @@
     { label: "Departments", href: "/departments.php" },
     { label: "Users", href: "/users.php" },
     { label: "Roles", href: "/roles.php" }
+  ];
+  const playgroundLinks = [
+    { label: "Agents", href: "/agents.php" }
   ];
 
   const loadFontAwesome = () => {
@@ -60,8 +65,36 @@
       link.classList.toggle("is-active", isActive);
       if (isActive) link.setAttribute("aria-current", "page");
     });
+    let playgroundGroup = subnav.querySelector("[data-playground-group]");
+    if (!playgroundGroup) {
+      playgroundGroup = document.createElement("div");
+      playgroundGroup.className = "sidebar-group sidebar-nested-group";
+      playgroundGroup.dataset.playgroundGroup = "true";
+      playgroundGroup.innerHTML = '<button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="false"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button><div class="sidebar-subnav sidebar-nested-subnav" data-playground-subnav></div>';
+    }
+    const playgroundSubnav = playgroundGroup.querySelector("[data-playground-subnav]");
+    const isPlaygroundPath = playgroundLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
+    playgroundLinks.forEach((item) => {
+      let link = Array.from(playgroundSubnav.querySelectorAll("a")).find((candidate) => {
+        const label = candidate.querySelector(".nav-label")?.textContent?.trim().toLowerCase();
+        return label === item.label.toLowerCase();
+      });
+      if (!link) {
+        link = document.createElement("a");
+        link.innerHTML = `<span class="nav-icon" aria-hidden="true">${item.label.charAt(0)}</span><span class="nav-label">${item.label}</span>`;
+      }
+      link.href = item.href;
+      playgroundSubnav.appendChild(link);
+      const isActive = currentPath === item.href.replace(/\/+$/, "");
+      link.classList.toggle("is-active", isActive);
+      if (isActive) link.setAttribute("aria-current", "page");
+    });
+    playgroundGroup.classList.toggle("is-active", isPlaygroundPath);
+    playgroundGroup.classList.toggle("is-open", isPlaygroundPath || playgroundGroup.classList.contains("is-open"));
+    playgroundGroup.querySelector("[data-playground-toggle]")?.setAttribute("aria-expanded", String(playgroundGroup.classList.contains("is-open")));
+    subnav.appendChild(playgroundGroup);
     if (valleyGroup) {
-      const isValleyPath = valleyLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
+      const isValleyPath = valleyLinks.some((item) => currentPath === item.href.replace(/\/+$/, "")) || isPlaygroundPath;
       valleyGroup.classList.toggle("is-active", isValleyPath || valleyGroup.classList.contains("is-active"));
       valleyGroup.classList.toggle("is-open", isValleyPath || valleyGroup.classList.contains("is-open"));
       if (valleyToggle) valleyToggle.setAttribute("aria-expanded", String(valleyGroup.classList.contains("is-open")));
@@ -88,6 +121,16 @@
       valleyToggle.setAttribute("aria-expanded", String(isOpen));
     });
   }
+
+  document.querySelectorAll("[data-playground-toggle]").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const group = toggle.closest("[data-playground-group]");
+      if (!group) return;
+      const isOpen = !group.classList.contains("is-open");
+      group.classList.toggle("is-open", isOpen);
+      toggle.setAttribute("aria-expanded", String(isOpen));
+    });
+  });
 
   if (window.localStorage.getItem(storageKey) === "true") {
     shell.classList.add("is-collapsed");

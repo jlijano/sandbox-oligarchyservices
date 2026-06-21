@@ -41,6 +41,18 @@
 
   applySidebarIcons();
 
+  const routeUsersLinksToUsersPage = () => {
+    document.querySelectorAll(".sidebar-nav a, .quick-actions a, .hero-actions a").forEach((link) => {
+      const label = link.querySelector(".nav-label")?.textContent?.trim().toLowerCase() || link.textContent.trim().toLowerCase();
+      const isUsersLink = label === "users" || link.dataset.sectionLink === "users";
+      if (!isUsersLink) return;
+      link.href = "/users.php";
+      link.removeAttribute("data-section-link");
+    });
+  };
+
+  routeUsersLinksToUsersPage();
+
   if (valleyGroup && valleyToggle) {
     valleyToggle.addEventListener("click", () => {
       const isOpen = !valleyGroup.classList.contains("is-open");

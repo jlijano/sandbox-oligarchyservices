@@ -13,6 +13,7 @@ Upload these repository files into the domain's `public_html` directory:
 - `dashboard.php`
 - `logout.php`
 - `account-confirmation.php` for account email confirmation links
+- `change-password.php` for required first-login password changes
 - `install.php` for first setup
 - `update.php` for admin-run database updates after deployments
 - `repair.php` for reconnecting a missing database config
@@ -39,8 +40,9 @@ login UI with a CSRF token and submits to `api/login.php`.
 
 The PHP/MySQL backend stores password hashes only. It never stores plain-text
 passwords. Admin-created users must confirm their email address before signing
-in. The confirmation email includes both the account confirmation link and the
-stable `/login.html` link.
+in, then create their own password before opening the dashboard. The
+confirmation email includes both the account confirmation link and the stable
+`/login.html` link.
 
 ## PHP/MySQL setup
 
@@ -76,7 +78,9 @@ After deploying CMS changes:
 After deploying account-confirmation changes, `/update.php` adds the email
 confirmation columns without deleting users. Existing older users are marked
 confirmed so they are not locked out. Newly created users receive a confirmation
-link and cannot sign in until that link is used.
+link and cannot sign in until that link is used. After they confirm and sign in,
+they are redirected to `/change-password.php` and cannot open the dashboard until
+they create their own password.
 
 If login says the database config is missing:
 
@@ -137,8 +141,8 @@ portal still accepts the parent backup config or these environment variables:
 3. If the domain uses a subdirectory install, update absolute paths in
    `.htaccess` and the sitemap.
 4. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
-   `account-confirmation.php`, `privacy.html`, and a fake missing URL after
-   upload.
+   `account-confirmation.php`, `change-password.php`, `privacy.html`, and a fake
+   missing URL after upload.
 
 ## Analytics
 

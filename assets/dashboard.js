@@ -9,6 +9,7 @@
   const storageKey = "oligarchy_sidebar_collapsed";
   const iconMap = {
     overview: "fa-tachometer",
+    requests: "fa-ticket",
     valley: "fa-sitemap",
     users: "fa-users",
     roles: "fa-id-badge",

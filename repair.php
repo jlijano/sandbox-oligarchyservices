@@ -5,18 +5,25 @@ require_once __DIR__ . '/includes/installer.php';
 
 $lockPath = __DIR__ . '/includes/installed.lock';
 $configPath = __DIR__ . '/includes/config.php';
+$restoredFromBackup = false;
+if (!is_file($configPath)) {
+    $restoredFromBackup = installer_restore_config_from_backup($configPath);
+    if ($restoredFromBackup && !is_file($lockPath)) {
+        file_put_contents($lockPath, 'Installed at ' . gmdate('c') . PHP_EOL, LOCK_EX);
+    }
+}
 $hasLock = is_file($lockPath);
 $hasConfig = is_file($configPath);
 $errors = [];
-$success = false;
+$success = $restoredFromBackup;
 
-if ($hasConfig) {
+if ($hasConfig && !$restoredFromBackup) {
     http_response_code(403);
     echo 'Repair is not needed because includes/config.php already exists. Use /update.php while logged in as an admin if tables need updates.';
     exit;
 }
 
-if (!$hasLock) {
+if (!$hasLock && !$restoredFromBackup) {
     header('Location: /install.php', true, 302);
     exit;
 }
@@ -66,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </head>
   <body>
     <main class="login-page"><section class="login-hero" aria-labelledby="repair-heading"><a class="login-brand-logo" href="/" aria-label="Oligarchy Services home">OLIGARCHY</a><form class="login-panel" method="post"><div class="login-panel-heading"><p class="eyebrow">Portal repair</p><h1 id="repair-heading">Repair database config</h1><p>Recreate includes/config.php when the installer lock exists but the config file is missing. Existing tables and data are kept.</p></div>
-      <div class="form-alert is-visible is-error">includes/config.php was not found, so login cannot connect. Enter the Hostinger database details to recreate it.</div>
+      <?php if (!$success): ?><div class="form-alert is-visible is-error">includes/config.php was not found, so login cannot connect. Enter the Hostinger database details to recreate it.</div><?php endif; ?>
       <?php if ($success): ?><div class="form-alert is-visible is-success">Repair complete. Open <a href="/login.html">login</a>.</div><?php endif; ?>
       <?php foreach ($errors as $error): ?><div class="form-alert is-visible is-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endforeach; ?>
       <label class="field"><span>Database host</span><input name="db_host" value="<?= htmlspecialchars(installer_post_value('db_host', 'localhost'), ENT_QUOTES, 'UTF-8') ?>" required><small class="field-error">For Hostinger, use localhost unless hPanel shows a separate MySQL host.</small></label>

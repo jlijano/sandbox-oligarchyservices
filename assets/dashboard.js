@@ -23,19 +23,6 @@
     activity: "fa-history"
   };
 
-  const valleyLinks = [
-    { label: "Companies", href: "/companies.php" },
-    { label: "Departments", href: "/departments.php" },
-    { label: "Users", href: "/users.php" },
-    { label: "Roles", href: "/roles.php" }
-  ];
-  const playgroundLinks = [
-    { label: "Agents", href: "/agents.php" },
-    { label: "Pages", href: "/dashboard.php#pages", section: "pages" },
-    { label: "Blogs", href: "/admin-blogs.php" },
-    { label: "Navigation", href: "/dashboard.php#navigation", section: "navigation" }
-  ];
-
   const loadFontAwesome = () => {
     if (document.querySelector("link[data-font-awesome-sidebar]")) return;
     const link = document.createElement("link");
@@ -43,80 +30,6 @@
     link.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css";
     link.dataset.fontAwesomeSidebar = "true";
     document.head.appendChild(link);
-  };
-
-  const ensureValleyLinks = () => {
-    const subnav = document.querySelector("[data-valley-subnav]");
-    const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
-
-    if (subnav) {
-      valleyLinks.forEach((item) => {
-        let link = Array.from(subnav.querySelectorAll("a")).find((candidate) => {
-          const label = candidate.querySelector(".nav-label")?.textContent?.trim().toLowerCase();
-          return label === item.label.toLowerCase();
-        });
-        if (!link) {
-          link = document.createElement("a");
-          link.innerHTML = `<span class="nav-icon" aria-hidden="true">${item.label.charAt(0)}</span><span class="nav-label">${item.label}</span>`;
-          subnav.appendChild(link);
-        }
-        link.href = item.href;
-        link.removeAttribute("data-section-link");
-        subnav.appendChild(link);
-        const isActive = currentPath === item.href.replace(/\/+$/, "");
-        link.classList.toggle("is-active", isActive);
-        if (isActive) link.setAttribute("aria-current", "page");
-        if (!isActive) link.removeAttribute("aria-current");
-      });
-    }
-
-    let playgroundGroup = document.querySelector("[data-playground-group]");
-    if (!playgroundGroup) {
-      playgroundGroup = document.createElement("div");
-      playgroundGroup.className = "sidebar-group";
-      playgroundGroup.dataset.playgroundGroup = "true";
-      playgroundGroup.innerHTML = '<button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="false"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button><div class="sidebar-subnav" data-playground-subnav></div>';
-    }
-    const playgroundSubnav = playgroundGroup.querySelector("[data-playground-subnav]");
-    const currentHash = window.location.hash.replace("#", "").trim().toLowerCase();
-    const isPlaygroundPath = playgroundLinks.some((item) => item.section ? currentHash === item.section : currentPath === item.href.replace(/#.*$/, "").replace(/\/+$/, ""));
-    playgroundLinks.forEach((item) => {
-      let link = Array.from(document.querySelectorAll(".sidebar-nav a")).find((candidate) => {
-        const label = candidate.querySelector(".nav-label")?.textContent?.trim().toLowerCase();
-        return label === item.label.toLowerCase();
-      });
-      if (!link) {
-        link = document.createElement("a");
-        link.innerHTML = `<span class="nav-icon" aria-hidden="true">${item.label.charAt(0)}</span><span class="nav-label">${item.label}</span>`;
-      }
-      link.href = item.href;
-      if (item.section) link.dataset.sectionLink = item.section;
-      if (!item.section) link.removeAttribute("data-section-link");
-      playgroundSubnav.appendChild(link);
-      const isActive = item.section ? currentHash === item.section : currentPath === item.href.replace(/#.*$/, "").replace(/\/+$/, "");
-      link.classList.toggle("is-active", isActive);
-      if (isActive) link.setAttribute("aria-current", "page");
-      if (!isActive) link.removeAttribute("aria-current");
-    });
-    playgroundGroup.classList.toggle("is-active", isPlaygroundPath);
-    playgroundGroup.classList.toggle("is-open", isPlaygroundPath || playgroundGroup.classList.contains("is-open"));
-    playgroundGroup.querySelector("[data-playground-toggle]")?.setAttribute("aria-expanded", String(playgroundGroup.classList.contains("is-open")));
-    const settingsLink = Array.from(document.querySelectorAll(".sidebar-nav > a")).find((link) => {
-      return link.querySelector(".nav-label")?.textContent?.trim().toLowerCase() === "settings";
-    });
-    const valleyGroup = document.querySelector("[data-valley-group]");
-    const sidebarNav = document.querySelector(".sidebar-nav");
-    if (sidebarNav && !playgroundGroup.parentNode) {
-      sidebarNav.insertBefore(playgroundGroup, settingsLink || null);
-    } else if (valleyGroup?.parentNode && playgroundGroup.parentNode === valleyGroup.parentNode) {
-      valleyGroup.parentNode.insertBefore(playgroundGroup, settingsLink || valleyGroup.nextSibling);
-    }
-    if (valleyGroup) {
-      const isValleyPath = valleyLinks.some((item) => currentPath === item.href.replace(/\/+$/, ""));
-      valleyGroup.classList.toggle("is-active", isValleyPath || valleyGroup.classList.contains("is-active"));
-      valleyGroup.classList.toggle("is-open", isValleyPath || valleyGroup.classList.contains("is-open"));
-      valleyGroup.querySelector("[data-valley-toggle]")?.setAttribute("aria-expanded", String(valleyGroup.classList.contains("is-open")));
-    }
   };
 
   const applySidebarIcons = () => {
@@ -129,7 +42,55 @@
     });
   };
 
-  ensureValleyLinks();
+  const getLinkTarget = (link) => {
+    try {
+      const url = new URL(link.getAttribute("href") || "", window.location.href);
+      return {
+        path: url.pathname.replace(/\/+$/, "") || "/",
+        hash: url.hash.replace("#", "").trim().toLowerCase()
+      };
+    } catch (error) {
+      return { path: "", hash: "" };
+    }
+  };
+
+  const setLinkActive = (link, isActive) => {
+    link.classList.toggle("is-active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  };
+
+  const syncSidebarGroups = () => {
+    document.querySelectorAll("[data-valley-group], [data-playground-group]").forEach((group) => {
+      const hasActiveLink = Boolean(group.querySelector("a.is-active"));
+      group.classList.toggle("is-active", hasActiveLink);
+      if (hasActiveLink) group.classList.add("is-open");
+      const toggle = group.querySelector("[data-valley-toggle], [data-playground-toggle]");
+      if (toggle) toggle.setAttribute("aria-expanded", String(group.classList.contains("is-open")));
+    });
+  };
+
+  const syncSidebarActiveState = () => {
+    const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+    const currentHash = window.location.hash.replace("#", "").trim().toLowerCase();
+    const isDashboard = currentPath === "/dashboard.php";
+
+    document.querySelectorAll(".sidebar-nav a").forEach((link) => {
+      const target = getLinkTarget(link);
+      const sectionId = link.dataset.sectionLink?.trim().toLowerCase() || "";
+      const isSectionLink = Boolean(sectionId);
+      const isActive = isSectionLink
+        ? isDashboard && currentHash === sectionId
+        : currentPath === target.path && (!target.hash || currentHash === target.hash);
+      setLinkActive(link, isActive);
+    });
+
+    syncSidebarGroups();
+  };
+
   applySidebarIcons();
 
   document.addEventListener("click", (event) => {
@@ -185,7 +146,8 @@
       section.setAttribute("aria-hidden", String(!isActive));
       if (isActive && sectionTitle) sectionTitle.textContent = section.dataset.sectionLabel || section.id;
     });
-    links.forEach((link) => link.classList.toggle("is-active", link.dataset.sectionLink === id));
+    links.forEach((link) => setLinkActive(link, link.dataset.sectionLink === id));
+    syncSidebarGroups();
     setMobileOpen(false);
   };
 
@@ -202,7 +164,11 @@
   if (allowedIds.length) {
     window.addEventListener("hashchange", () => showSection(normalizeHash()));
     showSection(normalizeHash());
+  } else {
+    syncSidebarActiveState();
   }
+
+  window.addEventListener("hashchange", syncSidebarActiveState);
 
   document.querySelectorAll("form[data-confirm]").forEach((form) => {
     form.addEventListener("submit", (event) => {

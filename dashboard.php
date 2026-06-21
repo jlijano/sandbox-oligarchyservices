@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/access-management.php';
 
 $user = require_login();
 $pdo = db();
@@ -330,42 +331,7 @@ $csrf = csrf_token();
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>
-      <aside class="dashboard-sidebar" id="portal-sidebar" aria-label="Portal navigation">
-        <div class="sidebar-brand">
-          <a href="/dashboard.php#overview" aria-label="Oligarchy Services dashboard">OLIGARCHY</a>
-          <button class="sidebar-collapse" type="button" data-sidebar-collapse aria-label="Collapse sidebar" aria-expanded="true">‹</button>
-        </div>
-        <nav class="sidebar-nav">
-          <?php foreach ($visibleNav as $index => $item): ?>
-            <?php if ($item['id'] === 'users'): ?>
-              <div class="sidebar-group" data-valley-group>
-                <button class="sidebar-group-toggle" type="button" data-valley-toggle aria-expanded="false">
-                  <span class="nav-icon" aria-hidden="true">V</span>
-                  <span class="nav-label">Valley</span>
-                  <span class="sidebar-group-caret" aria-hidden="true">&gt;</span>
-                </button>
-                <div class="sidebar-subnav" data-valley-subnav>
-                  <a href="#<?= e($item['id']) ?>" data-section-link="<?= e($item['id']) ?>">
-                    <span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span>
-                    <span class="nav-label"><?= e($item['label']) ?></span>
-                  </a>
-                </div>
-              </div>
-            <?php elseif (!empty($item['href'])): ?>
-              <a href="<?= e($item['href']) ?>">
-                <span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span>
-                <span class="nav-label"><?= e($item['label']) ?></span>
-              </a>
-            <?php else: ?>
-              <a class="<?= $index === 0 ? 'is-active' : '' ?>" href="#<?= e($item['id']) ?>" data-section-link="<?= e($item['id']) ?>">
-                <span class="nav-icon" aria-hidden="true"><?= e(substr($item['label'], 0, 1)) ?></span>
-                <span class="nav-label"><?= e($item['label']) ?></span>
-              </a>
-            <?php endif; ?>
-          <?php endforeach; ?>
-        </nav>
-        <div class="sidebar-footer"><span class="sidebar-status">Role</span><strong><?= e($roleLabel) ?></strong></div>
-      </aside>
+      <?php access_sidebar('overview', $roleLabel, $role); ?>
 
       <div class="sidebar-backdrop" data-sidebar-backdrop></div>
 

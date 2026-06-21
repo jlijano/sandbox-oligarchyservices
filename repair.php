@@ -13,17 +13,18 @@ if (!is_file($configPath)) {
     }
 }
 $hasLock = is_file($lockPath);
-$hasConfig = is_file($configPath);
+$hasConfig = installer_existing_config_path($configPath) !== null;
 $errors = [];
+$warnings = [];
 $success = $restoredFromBackup;
 
-if ($hasConfig && !$restoredFromBackup) {
+if (is_file($configPath) && !$restoredFromBackup) {
     http_response_code(403);
     echo 'Repair is not needed because includes/config.php already exists. Use /update.php while logged in as an admin if tables need updates.';
     exit;
 }
 
-if (!$hasLock && !$restoredFromBackup) {
+if (!$hasLock && !$hasConfig) {
     header('Location: /install.php', true, 302);
     exit;
 }
@@ -54,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!$errors) {
-                installer_write_config($configPath, $dbHost, $dbName, $dbUser, $dbPassword);
+                $warnings = installer_config_write_warnings(installer_write_config($configPath, $dbHost, $dbName, $dbUser, $dbPassword));
                 file_put_contents($lockPath, 'Installed at ' . gmdate('c') . PHP_EOL, LOCK_EX);
                 $success = true;
             }
@@ -72,9 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons"><link rel="stylesheet" href="/assets/login.css?v=20260620-php-install">
   </head>
   <body>
-    <main class="login-page"><section class="login-hero" aria-labelledby="repair-heading"><a class="login-brand-logo" href="/" aria-label="Oligarchy Services home">OLIGARCHY</a><form class="login-panel" method="post"><div class="login-panel-heading"><p class="eyebrow">Portal repair</p><h1 id="repair-heading">Repair database config</h1><p>Recreate includes/config.php when the installer lock exists but the config file is missing. Existing tables and data are kept.</p></div>
-      <?php if (!$success): ?><div class="form-alert is-visible is-error">includes/config.php was not found, so login cannot connect. Enter the Hostinger database details to recreate it.</div><?php endif; ?>
+    <main class="login-page"><section class="login-hero" aria-labelledby="repair-heading"><a class="login-brand-logo" href="/" aria-label="Oligarchy Services home">OLIGARCHY</a><form class="login-panel" method="post"><div class="login-panel-heading"><p class="eyebrow">Portal repair</p><h1 id="repair-heading">Repair database config</h1><p>Reconnect the existing Hostinger database when the server-local config file is missing. Existing tables and data are kept.</p></div>
+      <?php if (!$success): ?><div class="form-alert is-visible is-error">The portal database tables still exist, but the website config file was not found. Enter the Hostinger database details to reconnect; do not reinstall or drop the database.</div><?php endif; ?>
       <?php if ($success): ?><div class="form-alert is-visible is-success">Repair complete. Open <a href="/login.html">login</a>.</div><?php endif; ?>
+      <?php foreach ($warnings as $warning): ?><div class="form-alert is-visible is-error"><?= htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') ?></div><?php endforeach; ?>
       <?php foreach ($errors as $error): ?><div class="form-alert is-visible is-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endforeach; ?>
       <label class="field"><span>Database host</span><input name="db_host" value="<?= htmlspecialchars(installer_post_value('db_host', 'localhost'), ENT_QUOTES, 'UTF-8') ?>" required><small class="field-error">For Hostinger, use localhost unless hPanel shows a separate MySQL host.</small></label>
       <label class="field"><span>Database name</span><input name="db_name" value="<?= htmlspecialchars(installer_post_value('db_name'), ENT_QUOTES, 'UTF-8') ?>" required></label>

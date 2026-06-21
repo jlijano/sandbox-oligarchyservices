@@ -1,6 +1,54 @@
 <?php
 declare(strict_types=1);
 
+function read_config_value(array $config, array $keys): string
+{
+    foreach ($keys as $key) {
+        if (array_key_exists($key, $config) && trim((string) $config[$key]) !== '') {
+            return trim((string) $config[$key]);
+        }
+    }
+
+    return '';
+}
+
+function db_config_from_constants(): array
+{
+    return [
+        'host' => defined('DB_HOST') ? (string) DB_HOST : '',
+        'database' => defined('DB_DATABASE') ? (string) DB_DATABASE : (defined('DB_NAME') ? (string) DB_NAME : ''),
+        'username' => defined('DB_USERNAME') ? (string) DB_USERNAME : (defined('DB_USER') ? (string) DB_USER : ''),
+        'password' => defined('DB_PASSWORD') ? (string) DB_PASSWORD : '',
+        'port' => defined('DB_PORT') ? (string) DB_PORT : '',
+    ];
+}
+
+function load_db_config(string $configPath): array
+{
+    if (!is_file($configPath)) {
+        throw new RuntimeException('Database config is missing at includes/config.php.');
+    }
+
+    $loaded = require $configPath;
+    $config = is_array($loaded) ? $loaded : db_config_from_constants();
+
+    $normalized = [
+        'host' => read_config_value($config, ['host', 'db_host', 'DB_HOST']),
+        'database' => read_config_value($config, ['database', 'dbname', 'db_name', 'DB_DATABASE', 'DB_NAME']),
+        'username' => read_config_value($config, ['username', 'user', 'db_user', 'DB_USERNAME', 'DB_USER']),
+        'password' => read_config_value($config, ['password', 'pass', 'db_password', 'DB_PASSWORD']),
+        'port' => read_config_value($config, ['port', 'db_port', 'DB_PORT']),
+    ];
+
+    foreach (['host', 'database', 'username'] as $required) {
+        if ($normalized[$required] === '') {
+            throw new RuntimeException('Database config is missing the required "' . $required . '" value.');
+        }
+    }
+
+    return $normalized;
+}
+
 function db(): PDO
 {
     static $pdo = null;
@@ -9,15 +57,11 @@ function db(): PDO
         return $pdo;
     }
 
-    $configPath = __DIR__ . '/config.php';
-    if (!is_file($configPath)) {
-        throw new RuntimeException('Database config is missing. Run install.php first.');
-    }
-
-    $config = require $configPath;
+    $config = load_db_config(__DIR__ . '/config.php');
     $dsn = sprintf(
-        'mysql:host=%s;dbname=%s;charset=utf8mb4',
+        'mysql:host=%s;%sdbname=%s;charset=utf8mb4',
         $config['host'],
+        $config['port'] !== '' ? 'port=' . $config['port'] . ';' : '',
         $config['database']
     );
 

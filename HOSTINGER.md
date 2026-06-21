@@ -12,6 +12,7 @@ Upload these repository files into the domain's `public_html` directory:
 - `login.php`
 - `dashboard.php`
 - `logout.php`
+- `account-confirmation.php` for account email confirmation links
 - `install.php` for first setup
 - `update.php` for admin-run database updates after deployments
 - `repair.php` for reconnecting a missing database config
@@ -37,7 +38,9 @@ cron jobs, or a long-running Node.js process for the public website.
 login UI with a CSRF token and submits to `api/login.php`.
 
 The PHP/MySQL backend stores password hashes only. It never stores plain-text
-passwords.
+passwords. Admin-created users must confirm their email address before signing
+in. The confirmation email includes both the account confirmation link and the
+stable `/login.html` link.
 
 ## PHP/MySQL setup
 
@@ -70,6 +73,11 @@ After deploying CMS changes:
 3. Click **Run update**.
 4. Return to `/dashboard.php` and test the changed section.
 
+After deploying account-confirmation changes, `/update.php` adds the email
+confirmation columns without deleting users. Existing older users are marked
+confirmed so they are not locked out. Newly created users receive a confirmation
+link and cannot sign in until that link is used.
+
 If login says the database config is missing:
 
 1. Do not reinstall, drop, empty, or recreate the database.
@@ -88,6 +96,22 @@ If Hostinger file permissions prevent the persistent config copy from being
 saved, the installer or repair page will show a warning. Login can still work,
 but a future full file sync may require opening `/repair.php` once to reconnect
 the existing database.
+
+## Account confirmation email
+
+The portal uses PHP `mail()` for account confirmation messages. Confirm Hostinger
+allows PHP mail for the domain before relying on this flow.
+
+Optional non-secret environment settings:
+
+- `PORTAL_BASE_URL`: absolute portal URL used in confirmation emails, for
+  example `https://sandbox.oligarchyservices.com`.
+- `PORTAL_MAIL_FROM`: sender address for confirmation emails, for example
+  `no-reply@oligarchyservices.com`.
+
+If `PORTAL_BASE_URL` is not set, the portal builds links from the current request
+host. If `PORTAL_MAIL_FROM` is not set, the sender defaults to a domain-based
+`no-reply` address.
 
 ## Sentinel mail orchestrator
 
@@ -113,7 +137,8 @@ portal still accepts the parent backup config or these environment variables:
 3. If the domain uses a subdirectory install, update absolute paths in
    `.htaccess` and the sitemap.
 4. Test `index.html`, `login.html`, `dashboard.php`, `logout.php`,
-   `privacy.html`, and a fake missing URL after upload.
+   `account-confirmation.php`, `privacy.html`, and a fake missing URL after
+   upload.
 
 ## Analytics
 

@@ -43,7 +43,7 @@ function account_confirmation_send_email(string $email, string $name, string $to
     $body = "Hi {$displayName},\n\n"
         . "Your Oligarchy Services account has been created. Confirm your email address before signing in:\n\n"
         . "{$confirmUrl}\n\n"
-        . "After confirming, log in here:\n\n"
+        . "After confirming, log in here and create your own password before opening the dashboard:\n\n"
         . "{$loginUrl}\n\n"
         . "This confirmation link expires in 48 hours.\n";
     $headers = [
@@ -101,7 +101,7 @@ function account_confirmation_finalize_dashboard_create(): void
 
         $token = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
-        $update = $pdo->prepare('UPDATE users SET email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), updated_at = NOW() WHERE id = ?');
+        $update = $pdo->prepare('UPDATE users SET email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 1, updated_at = NOW() WHERE id = ?');
         $update->execute([$tokenHash, (int) $createdUser['id']]);
 
         if (account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token)) {

@@ -37,9 +37,11 @@ function password_change_path(): string
     return '/change-password.php';
 }
 
-function request_path(): string
-{
-    return parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+if (!function_exists('request_path')) {
+    function request_path(): string
+    {
+        return parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    }
 }
 
 function password_change_is_allowed_path(): bool

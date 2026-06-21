@@ -248,8 +248,13 @@ function installer_upgrade_existing_schema(PDO $pdo): void
         installer_add_column_if_missing($pdo, 'users', 'role', "VARCHAR(50) NOT NULL DEFAULT 'client'");
         installer_add_column_if_missing($pdo, 'users', 'is_active', 'TINYINT(1) NOT NULL DEFAULT 1');
         installer_add_column_if_missing($pdo, 'users', 'last_login_at', 'DATETIME NULL');
+        installer_add_column_if_missing($pdo, 'users', 'email_confirmed_at', 'DATETIME NULL');
+        installer_add_column_if_missing($pdo, 'users', 'email_confirmation_token_hash', 'VARCHAR(255) NULL');
+        installer_add_column_if_missing($pdo, 'users', 'email_confirmation_expires_at', 'DATETIME NULL');
         installer_add_column_if_missing($pdo, 'users', 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
         installer_add_column_if_missing($pdo, 'users', 'updated_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+        installer_add_index_if_missing($pdo, 'users', 'idx_users_email_confirmation_token', '`email_confirmation_token_hash`');
+        $pdo->exec('UPDATE users SET email_confirmed_at = COALESCE(email_confirmed_at, created_at, NOW()) WHERE email_confirmed_at IS NULL AND email_confirmation_token_hash IS NULL AND created_at < (NOW() - INTERVAL 1 MINUTE)');
     }
 
     if (installer_table_exists($pdo, 'login_attempts')) {
@@ -322,8 +327,12 @@ function create_or_update_schema(PDO $pdo): void
         role VARCHAR(50) NOT NULL DEFAULT 'client',
         is_active TINYINT(1) NOT NULL DEFAULT 1,
         last_login_at DATETIME NULL,
+        email_confirmed_at DATETIME NULL,
+        email_confirmation_token_hash VARCHAR(255) NULL,
+        email_confirmation_expires_at DATETIME NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_users_email_confirmation_token (email_confirmation_token_hash)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (
@@ -411,7 +420,7 @@ function create_or_update_schema(PDO $pdo): void
 
 function installer_upsert_admin(PDO $pdo, string $adminEmail, string $adminPassword, string $adminName): void
 {
-    $stmt = $pdo->prepare('INSERT INTO users (email, password_hash, full_name, role, is_active) VALUES (?, ?, ?, ?, 1) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), role = VALUES(role), is_active = 1, updated_at = NOW()');
+    $stmt = $pdo->prepare('INSERT INTO users (email, password_hash, full_name, role, is_active, email_confirmed_at) VALUES (?, ?, ?, ?, 1, NOW()) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), role = VALUES(role), is_active = 1, email_confirmed_at = COALESCE(email_confirmed_at, NOW()), updated_at = NOW()');
     $stmt->execute([$adminEmail, password_hash($adminPassword, PASSWORD_DEFAULT), $adminName, 'admin']);
 }
 

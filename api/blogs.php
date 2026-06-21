@@ -29,8 +29,15 @@ try {
     }
 
     $limit = filter_var($_GET['limit'] ?? 6, FILTER_VALIDATE_INT);
-    $rows = blog_fetch_published($pdo, $limit === false ? 6 : (int) $limit);
-    echo json_encode(['ok' => true, 'posts' => array_map('blog_public_fields', $rows)]);
+    $limit = $limit === false ? 6 : (int) $limit;
+    $rows = blog_fetch_published($pdo, $limit);
+    $publishedCount = blog_fetch_published_count($pdo);
+    echo json_encode([
+        'ok' => true,
+        'posts' => array_map('blog_public_fields', $rows),
+        'total' => $publishedCount,
+        'hasMore' => $publishedCount > max(1, min(24, $limit)),
+    ]);
 } catch (Throwable $error) {
     error_log('Public blogs API error: ' . $error->getMessage());
     http_response_code(503);

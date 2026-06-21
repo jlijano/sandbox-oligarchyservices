@@ -65,16 +65,24 @@ try {
     $recentFailures->execute([$email]);
     if ((int) $recentFailures->fetchColumn() >= 5) login_response('Too many failed attempts. Try again in 15 minutes.', 429);
 
-    $stmt = $pdo->prepare('SELECT id, email, password_hash, is_active FROM users WHERE email = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, email, password_hash, is_active, email_confirmed_at FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $user = $stmt->fetch();
-    $success = $user && (int) $user['is_active'] === 1 && password_verify($password, $user['password_hash']);
+    $passwordMatches = $user && password_verify($password, $user['password_hash']);
+    $isConfirmed = $user && !empty($user['email_confirmed_at']);
+    $success = $user && (int) $user['is_active'] === 1 && $passwordMatches && $isConfirmed;
 
     $log = $pdo->prepare('INSERT INTO login_attempts (email, ip_address, success) VALUES (?, ?, ?)');
     $log->execute([$email, $ipAddress, $success ? 1 : 0]);
 
     if (!$success) {
-        audit_login($pdo, $user ? (int) $user['id'] : null, 'failed login', $email, $ipAddress);
+        $userId = $user ? (int) $user['id'] : null;
+        if ($user && (int) $user['is_active'] === 1 && $passwordMatches && !$isConfirmed) {
+            audit_login($pdo, $userId, 'unconfirmed login', $email, $ipAddress);
+            login_response('Please confirm your email address before signing in. Check the confirmation email for your account link.', 403);
+        }
+
+        audit_login($pdo, $userId, 'failed login', $email, $ipAddress);
         login_response('Invalid email or password.', 401);
     }
 

@@ -68,6 +68,160 @@ function installer_write_config(string $configPath, string $dbHost, string $dbNa
     }
 }
 
+function installer_restore_config_from_backup(string $configPath): bool
+{
+    if (is_file($configPath)) {
+        return true;
+    }
+
+    $backupPath = installer_backup_config_path($configPath);
+    if (!is_file($backupPath)) {
+        return false;
+    }
+
+    $loaded = require $backupPath;
+    if (!is_array($loaded)) {
+        error_log('Backup database config is not a PHP config array.');
+        return false;
+    }
+
+    foreach (['host', 'database', 'username'] as $requiredKey) {
+        if (trim((string) ($loaded[$requiredKey] ?? '')) === '') {
+            error_log('Backup database config is missing required key: ' . $requiredKey);
+            return false;
+        }
+    }
+
+    $config = file_get_contents($backupPath);
+    if ($config === false || file_put_contents($configPath, $config, LOCK_EX) === false) {
+        error_log('Could not restore includes/config.php from backup database config.');
+        return false;
+    }
+
+    return true;
+}
+
+function installer_sql_name(string $name): string
+{
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
+        throw new InvalidArgumentException('Invalid SQL identifier.');
+    }
+
+    return '`' . $name . '`';
+}
+
+function installer_column_exists(PDO $pdo, string $table, string $column): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?');
+    $stmt->execute([$table, $column]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function installer_add_column_if_missing(PDO $pdo, string $table, string $column, string $definition): void
+{
+    if (installer_column_exists($pdo, $table, $column)) {
+        return;
+    }
+
+    $pdo->exec('ALTER TABLE ' . installer_sql_name($table) . ' ADD COLUMN ' . installer_sql_name($column) . ' ' . $definition);
+}
+
+function installer_index_exists(PDO $pdo, string $table, string $index): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?');
+    $stmt->execute([$table, $index]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function installer_add_index_if_missing(PDO $pdo, string $table, string $index, string $columns): void
+{
+    if (installer_index_exists($pdo, $table, $index)) {
+        return;
+    }
+
+    $pdo->exec('ALTER TABLE ' . installer_sql_name($table) . ' ADD INDEX ' . installer_sql_name($index) . ' (' . $columns . ')');
+}
+
+function installer_table_exists(PDO $pdo, string $table): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?');
+    $stmt->execute([$table]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function installer_upgrade_existing_schema(PDO $pdo): void
+{
+    if (installer_table_exists($pdo, 'users')) {
+        installer_add_column_if_missing($pdo, 'users', 'email', "VARCHAR(190) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'users', 'password_hash', "VARCHAR(255) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'users', 'full_name', "VARCHAR(190) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'users', 'role', "VARCHAR(50) NOT NULL DEFAULT 'client'");
+        installer_add_column_if_missing($pdo, 'users', 'is_active', 'TINYINT(1) NOT NULL DEFAULT 1');
+        installer_add_column_if_missing($pdo, 'users', 'last_login_at', 'DATETIME NULL');
+        installer_add_column_if_missing($pdo, 'users', 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        installer_add_column_if_missing($pdo, 'users', 'updated_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+    }
+
+    if (installer_table_exists($pdo, 'login_attempts')) {
+        installer_add_column_if_missing($pdo, 'login_attempts', 'email', "VARCHAR(190) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'login_attempts', 'ip_address', "VARCHAR(45) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'login_attempts', 'success', 'TINYINT(1) NOT NULL DEFAULT 0');
+        installer_add_column_if_missing($pdo, 'login_attempts', 'attempted_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        installer_add_index_if_missing($pdo, 'login_attempts', 'idx_login_attempts_email_time', '`email`, `attempted_at`');
+        installer_add_index_if_missing($pdo, 'login_attempts', 'idx_login_attempts_ip_time', '`ip_address`, `attempted_at`');
+    }
+
+    if (installer_table_exists($pdo, 'password_resets')) {
+        installer_add_column_if_missing($pdo, 'password_resets', 'user_id', 'INT UNSIGNED NULL');
+        installer_add_column_if_missing($pdo, 'password_resets', 'token_hash', "VARCHAR(255) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'password_resets', 'expires_at', 'DATETIME NULL');
+        installer_add_column_if_missing($pdo, 'password_resets', 'used_at', 'DATETIME NULL');
+        installer_add_column_if_missing($pdo, 'password_resets', 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        installer_add_index_if_missing($pdo, 'password_resets', 'idx_password_resets_user', '`user_id`');
+    }
+
+    if (installer_table_exists($pdo, 'pages')) {
+        installer_add_column_if_missing($pdo, 'pages', 'title', "VARCHAR(190) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'pages', 'slug', "VARCHAR(190) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'pages', 'body', 'MEDIUMTEXT NULL');
+        installer_add_column_if_missing($pdo, 'pages', 'meta_description', "VARCHAR(255) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'pages', 'status', "ENUM('draft','published') NOT NULL DEFAULT 'draft'");
+        installer_add_column_if_missing($pdo, 'pages', 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        installer_add_column_if_missing($pdo, 'pages', 'updated_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+        installer_add_index_if_missing($pdo, 'pages', 'idx_pages_status', '`status`');
+        installer_add_index_if_missing($pdo, 'pages', 'idx_pages_slug_status', '`slug`, `status`');
+    }
+
+    if (installer_table_exists($pdo, 'navigation_items')) {
+        installer_add_column_if_missing($pdo, 'navigation_items', 'label', "VARCHAR(120) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'navigation_items', 'url', "VARCHAR(255) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'navigation_items', 'sort_order', 'INT NOT NULL DEFAULT 10');
+        installer_add_column_if_missing($pdo, 'navigation_items', 'is_visible', 'TINYINT(1) NOT NULL DEFAULT 1');
+        installer_add_column_if_missing($pdo, 'navigation_items', 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        installer_add_column_if_missing($pdo, 'navigation_items', 'updated_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+        installer_add_index_if_missing($pdo, 'navigation_items', 'idx_navigation_visible_sort', '`is_visible`, `sort_order`');
+    }
+
+    if (installer_table_exists($pdo, 'settings')) {
+        installer_add_column_if_missing($pdo, 'settings', 'setting_key', "VARCHAR(120) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'settings', 'setting_value', 'TEXT NULL');
+        installer_add_column_if_missing($pdo, 'settings', 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        installer_add_column_if_missing($pdo, 'settings', 'updated_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+    }
+
+    if (installer_table_exists($pdo, 'activity_log')) {
+        installer_add_column_if_missing($pdo, 'activity_log', 'user_id', 'INT UNSIGNED NULL');
+        installer_add_column_if_missing($pdo, 'activity_log', 'action', "VARCHAR(120) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'activity_log', 'target_type', "VARCHAR(80) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'activity_log', 'target_id', 'INT UNSIGNED NULL');
+        installer_add_column_if_missing($pdo, 'activity_log', 'details', 'TEXT NULL');
+        installer_add_column_if_missing($pdo, 'activity_log', 'ip_address', "VARCHAR(45) NOT NULL DEFAULT ''");
+        installer_add_column_if_missing($pdo, 'activity_log', 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        installer_add_index_if_missing($pdo, 'activity_log', 'idx_activity_created', '`created_at`');
+        installer_add_index_if_missing($pdo, 'activity_log', 'idx_activity_user', '`user_id`');
+    }
+}
+
 function create_or_update_schema(PDO $pdo): void
 {
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
@@ -148,6 +302,8 @@ function create_or_update_schema(PDO $pdo): void
         INDEX idx_activity_user (user_id),
         CONSTRAINT fk_activity_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    installer_upgrade_existing_schema($pdo);
 
     $settings = $pdo->prepare('INSERT INTO settings (`setting_key`, `setting_value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `setting_key` = `setting_key`');
     foreach (['site_name' => 'Oligarchy Services', 'contact_email' => '', 'analytics_enabled' => '0', 'analytics_provider' => 'plausible', 'analytics_domain' => ''] as $key => $value) {

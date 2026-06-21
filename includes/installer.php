@@ -39,17 +39,32 @@ function installer_pdo_from_credentials(string $dbHost, string $dbName, string $
     ]);
 }
 
-function installer_write_config(string $configPath, string $dbHost, string $dbName, string $dbUser, string $dbPassword): void
+function installer_config_contents(string $dbHost, string $dbName, string $dbUser, string $dbPassword): string
 {
-    $config = "<?php\nreturn " . var_export([
+    return "<?php\nreturn " . var_export([
         'host' => $dbHost,
         'database' => $dbName,
         'username' => $dbUser,
         'password' => $dbPassword,
     ], true) . ";\n";
+}
+
+function installer_backup_config_path(string $configPath): string
+{
+    return dirname($configPath, 3) . '/oligarchy-config.php';
+}
+
+function installer_write_config(string $configPath, string $dbHost, string $dbName, string $dbUser, string $dbPassword): void
+{
+    $config = installer_config_contents($dbHost, $dbName, $dbUser, $dbPassword);
 
     if (file_put_contents($configPath, $config, LOCK_EX) === false) {
         throw new RuntimeException('Could not write includes/config.php. Check file permissions.');
+    }
+
+    $backupPath = installer_backup_config_path($configPath);
+    if (@file_put_contents($backupPath, $config, LOCK_EX) === false) {
+        error_log('Could not write backup database config at ' . $backupPath);
     }
 }
 

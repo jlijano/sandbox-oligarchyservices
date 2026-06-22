@@ -2,9 +2,35 @@
 
 The portal sends new-user confirmation emails from the account-confirmation helper loaded by `includes/bootstrap.php`.
 
+## Hostinger config file fallback
+
+If the PHP host does not provide environment variables, create this file on the live Hostinger server:
+
+```text
+includes/mail-config.php
+```
+
+Use `includes/mail-config.sample.php` as the template:
+
+```php
+<?php
+return [
+    'portal_base_url' => 'https://sandbox.oligarchyservices.com',
+    'portal_mail_from' => 'sentinel@oligarchyservices.com',
+    'portal_mail_orchestrator_url' => 'https://your-orchestrator-service.example.com',
+    'portal_mail_orchestrator_token' => 'replace-with-the-orchestrator-token',
+];
+```
+
+Replace `portal_mail_orchestrator_url` with the deployed Node orchestrator base URL. Do not include `/send-email`; the PHP helper appends it automatically.
+
+Replace `portal_mail_orchestrator_token` with the same secret value as `ORCHESTRATOR_TOKEN` on the Node orchestrator service.
+
+The real `includes/mail-config.php` file is ignored by Git and must not be committed because it contains a live token.
+
 ## Portal environment variables
 
-Set these in the PHP hosting environment when routing account confirmation emails through the Sentinel mail orchestrator:
+If your PHP host supports environment variables, use these instead of `includes/mail-config.php`:
 
 ```env
 PORTAL_BASE_URL=https://sandbox.oligarchyservices.com

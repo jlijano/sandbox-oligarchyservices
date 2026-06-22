@@ -47,5 +47,6 @@ function request_path(): string
     return (string) ($_SERVER['SCRIPT_NAME'] ?? '');
 }
 
+require_once __DIR__ . '/mail-config-loader.php';
 require_once __DIR__ . '/account-confirmation.php';
 account_confirmation_register_dashboard_hook();

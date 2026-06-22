@@ -50,8 +50,9 @@ Before going live:
    reconnect the existing database. Do not reinstall, drop, empty, or recreate
    the database just because the config file is missing.
 7. Test `index.html`, `login.html`, `dashboard.php`, `requests.php`,
-   `logout.php`, `privacy.html`, `account-confirmation.php`,
-   `change-password.php`, and one missing URL after upload.
+   `logout.php`, `privacy.html`, `career-timeline.html`,
+   `account-confirmation.php`, `change-password.php`, and one missing URL after
+   upload.
 
 See `HOSTINGER.md` for the full checklist.
 
@@ -197,6 +198,7 @@ the service host or a local uncommitted environment file.
 
 ## Change notes
 
+- 2026-06-22: Added a polished `career-timeline.html` page for Jan Christian L.'s LinkedIn work history using the current site design system.
 - 2026-06-22: Added request timeline updates with client-visible comments and internal-only staff notes.
 - 2026-06-21: Added a Client Requests portal module for authenticated client submissions and admin/support/editor queue management.
 - 2026-06-21: Added generated temporary passwords to account confirmation emails for new portal users.

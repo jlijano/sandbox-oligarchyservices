@@ -312,6 +312,10 @@ $healthChecks = [
     ['label' => 'PHP runtime', 'ok' => version_compare(PHP_VERSION, '8.0.0', '>='), 'detail' => 'PHP ' . PHP_VERSION],
 ];
 
+$healthyCheckCount = count(array_filter($healthChecks, static function ($check) {
+    return !empty($check['ok']);
+}));
+
 $nav = [
     ['id' => 'overview', 'label' => 'Overview', 'roles' => ['admin','editor','support','client']],
     ['id' => 'users', 'label' => 'Users', 'roles' => ['admin']],
@@ -459,6 +463,38 @@ $csrf = csrf_token();
               <article><span>Active users</span><strong><?= e((string) $counts['active_users']) ?></strong></article>
               <article><span>Mail traces</span><strong><?= e((string) $counts['mail_trace_entries']) ?></strong></article>
               <article><span>Audit events</span><strong><?= e((string) $counts['activity_entries']) ?></strong></article>
+            </section>
+            <section class="health-bento-grid" aria-label="System health details">
+              <article class="health-card">
+                <p>Database</p>
+                <strong><?= e(db_has_config() ? 'Connected' : 'Configuration missing') ?></strong>
+                <span><?= e(db_has_config() ? 'Database configuration is available.' : 'Add a config file or run the installer.') ?></span>
+              </article>
+              <article class="health-card">
+                <p>Settings</p>
+                <strong><?= e((string) $counts['settings']) ?></strong>
+                <span><?= e($counts['settings'] === 1 ? 'One stored setting' : 'Saved portal settings') ?></span>
+              </article>
+              <article class="health-card">
+                <p>Mail trace</p>
+                <strong><?= e((string) $counts['mail_trace_failed']) ?> failed</strong>
+                <span><?= e($counts['mail_trace_entries'] === 1 ? 'One email attempt recorded' : (string) $counts['mail_trace_entries'] . ' attempts recorded') ?></span>
+              </article>
+              <article class="health-card">
+                <p>Audit log</p>
+                <strong><?= e((string) $counts['activity_entries']) ?></strong>
+                <span><?= e($counts['activity_entries'] === 1 ? 'Audit event recorded' : 'Audit events recorded') ?></span>
+              </article>
+              <article class="health-card">
+                <p>Runtime</p>
+                <strong>PHP <?= e(PHP_VERSION) ?></strong>
+                <span><?= e(version_compare(PHP_VERSION, '8.0.0', '>=') ? 'Supported runtime' : 'Requires PHP 8.0 or later') ?></span>
+              </article>
+              <article class="health-card">
+                <p>Health checks</p>
+                <strong><?= e((string) $healthyCheckCount) ?>/<?= e((string) count($healthChecks)) ?></strong>
+                <span><?= e($healthyCheckCount === count($healthChecks) ? 'All checks are green' : 'Some checks require review') ?></span>
+              </article>
             </section>
             <div class="admin-panel table-panel"><div class="table-heading"><h3>Health checks</h3><span><?= e((string) count($healthChecks)) ?> checks</span></div><div class="table-scroll"><table class="data-table compact-table"><thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead><tbody><?php foreach ($healthChecks as $check): ?><tr><td><strong><?= e($check['label']) ?></strong></td><td><span class="status-badge <?= e(health_badge_class((bool) $check['ok'])) ?>"><?= $check['ok'] ? 'Healthy' : 'Review' ?></span></td><td><?= e($check['detail']) ?></td></tr><?php endforeach; ?></tbody></table></div></div>
           </section>

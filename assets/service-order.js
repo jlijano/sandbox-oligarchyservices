@@ -2,7 +2,7 @@
   const desiredOrder = [
     ["AI & Automation", "/ai-automation.html"],
     ["Help Desk", "/help-desk.html"],
-    ["MSP", "/business-systems.html"],
+    ["MSP", "/msp.html"],
     ["ITAD", "/itad.html"],
     ["ITAM", "/itam.html"]
   ];
@@ -28,7 +28,7 @@
       number: "03",
       title: "MSP",
       body: "Managed IT support, monitoring, maintenance, vendor coordination, user onboarding, endpoint coordination, documentation, and dependable service routines.",
-      href: "/business-systems.html",
+      href: "/msp.html",
       cta: "Explore MSP support",
       image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&fm=jpg&q=70&w=1600"
     },

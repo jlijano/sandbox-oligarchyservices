@@ -2,7 +2,7 @@
   const desiredOrder = [
     ["AI & Automation", "/ai-automation.html"],
     ["Help Desk", "/help-desk.html"],
-    ["Business Systems", "/business-systems.html"],
+    ["MSP", "/business-systems.html"],
     ["ITAD", "/itad.html"],
     ["ITAM", "/itam.html"]
   ];
@@ -26,10 +26,10 @@
     },
     {
       number: "03",
-      title: "Business Systems",
-      body: "ERP, CRM, Odoo, workflow tools, migration planning, documentation, and adoption support for cleaner operations.",
+      title: "MSP",
+      body: "Managed IT support, monitoring, maintenance, vendor coordination, user onboarding, endpoint coordination, documentation, and dependable service routines.",
       href: "/business-systems.html",
-      cta: "Improve systems",
+      cta: "Explore MSP support",
       image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&fm=jpg&q=70&w=1600"
     },
     {
@@ -95,7 +95,7 @@
         <div class="about-preview__mark" aria-hidden="true"></div>
         <div class="about-preview__copy">
           <h2 id="about-preview-title">About Us</h2>
-          <p>Oligarchy Services helps organizations bring structure to technology operations, from asset lifecycle management and secure handling to user support, business systems, automation, and reporting.</p>
+          <p>Oligarchy Services helps organizations bring structure to technology operations, from asset lifecycle management and secure handling to user support, managed services, automation, and reporting.</p>
           <p>We work with teams that need practical execution, clearer visibility, and reliable follow-through across the tools and processes that keep the business moving.</p>
           <div class="about-preview__actions"><a class="button primary" href="/about.html" data-track="about_preview_learn_more">Learn More</a></div>
         </div>

@@ -35,7 +35,7 @@ one-time installer described in `HOSTINGER.md`.
 
 Before going live:
 
-1. Confirm `robots.txt` and `sitemap.xml` use the production domain.
+1. Confirm `robots.txt`, `sitemap.xml`, and `sitemap.php` use the production domain.
 2. Confirm SSL is active in Hostinger.
 3. Upload `.htaccess` along with the visible files. It is a hidden file, but it
    controls the default index page, 404 page, security headers, caching, HTTPS

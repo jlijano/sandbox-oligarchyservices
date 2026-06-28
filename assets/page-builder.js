@@ -17,6 +17,19 @@
   const legacyBody = form.querySelector('[data-legacy-body]');
   const previewModal = document.querySelector('[data-preview-modal]');
   const previewBody = document.querySelector('[data-preview-body]');
+  const sidebarPagesLink = document.querySelector('.sidebar-nav a[href="/dashboard.php#pages"]');
+
+  if (sidebarPagesLink) {
+    sidebarPagesLink.href = '/pages.php';
+    delete sidebarPagesLink.dataset.sectionLink;
+    sidebarPagesLink.classList.add('is-active');
+    sidebarPagesLink.setAttribute('aria-current', 'page');
+    const group = sidebarPagesLink.closest('[data-playground-group]');
+    if (group) {
+      group.classList.add('is-open', 'is-active');
+      group.querySelector('[data-playground-toggle]')?.setAttribute('aria-expanded', 'true');
+    }
+  }
 
   const definitions = {
     hero: { label: 'Hero section', fields: [['eyebrow', 'Eyebrow', 'text'], ['heading', 'Heading', 'text'], ['body', 'Body', 'textarea'], ['buttonLabel', 'Button label', 'text'], ['buttonUrl', 'Button URL', 'text']] },

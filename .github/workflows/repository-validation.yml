@@ -1,0 +1,173 @@
+name: Repository validation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-and-links:
+    name: Syntax and local reference checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' php_files < <(find . -type f -name '*.php' -not -path './.git/*' -print0)
+          if ((${#php_files[@]} == 0)); then
+            echo "No PHP files found."
+            exit 0
+          fi
+
+          for file in "${php_files[@]}"; do
+            php -l "$file"
+          done
+
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' js_files < <(find . -type f -name '*.js' -not -path './.git/*' -not -path './node_modules/*' -print0)
+          if ((${#js_files[@]} == 0)); then
+            echo "No JavaScript files found."
+            exit 0
+          fi
+
+          for file in "${js_files[@]}"; do
+            node --check "$file"
+          done
+
+      - name: Validate XML syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          for path in Path(".").rglob("*.xml"):
+              if ".git" in path.parts:
+                  continue
+              ET.parse(path)
+              print(f"XML OK: {path}")
+          PY
+
+      - name: Validate committed local references
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urlparse, unquote
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+
+          root = Path(".").resolve()
+          checked_attributes = {"href", "src", "poster"}
+          ignored_schemes = {"http", "https", "mailto", "tel", "data", "javascript"}
+          allowed_missing = {
+              "/client-portal/",
+          }
+
+          def is_generated_or_vendor(path: Path) -> bool:
+              return any(part in {".git", "node_modules", "vendor"} for part in path.parts)
+
+          def candidate_paths(reference: str, source: Path):
+              parsed = urlparse(reference.strip())
+              if parsed.scheme in ignored_schemes or parsed.netloc:
+                  return []
+              path = unquote(parsed.path)
+              if not path:
+                  return []
+              if path.startswith("#"):
+                  return []
+              if path.startswith("/"):
+                  if path in allowed_missing:
+                      return []
+                  normalized = path.lstrip("/")
+                  if normalized == "":
+                      normalized = "index.html"
+                  base = root / normalized
+              else:
+                  base = (source.parent / path).resolve()
+                  try:
+                      base.relative_to(root)
+                  except ValueError:
+                      return [base]
+
+              if str(path).endswith("/"):
+                  return [base / "index.html", base / "index.php"]
+              if base.suffix:
+                  return [base]
+              return [base, base.with_suffix(".html"), base.with_suffix(".php"), base / "index.html", base / "index.php"]
+
+          class ReferenceParser(HTMLParser):
+              def __init__(self, source: Path):
+                  super().__init__(convert_charrefs=True)
+                  self.source = source
+                  self.references = []
+
+              def handle_starttag(self, tag, attrs):
+                  for name, value in attrs:
+                      if name in checked_attributes and value:
+                          self.references.append((value, self.getpos()[0]))
+
+          failures = []
+
+          for source in sorted(root.rglob("*")):
+              if not source.is_file() or is_generated_or_vendor(source):
+                  continue
+              if source.suffix.lower() not in {".html", ".php"}:
+                  continue
+              parser = ReferenceParser(source)
+              parser.feed(source.read_text(encoding="utf-8", errors="ignore"))
+              for reference, line in parser.references:
+                  candidates = candidate_paths(reference, source)
+                  if candidates and not any(candidate.exists() for candidate in candidates):
+                      rel_source = source.relative_to(root)
+                      rel_candidates = ", ".join(str(candidate.relative_to(root)) if candidate.is_relative_to(root) else str(candidate) for candidate in candidates)
+                      failures.append(f"{rel_source}:{line}: {reference} -> missing ({rel_candidates})")
+
+          css_url_pattern = re.compile(r"url\((['\"]?)(.*?)\1\)")
+          for source in sorted(root.rglob("*.css")):
+              if is_generated_or_vendor(source):
+                  continue
+              for line_number, line in enumerate(source.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
+                  for match in css_url_pattern.finditer(line):
+                      reference = match.group(2).strip()
+                      candidates = candidate_paths(reference, source)
+                      if candidates and not any(candidate.exists() for candidate in candidates):
+                          rel_source = source.relative_to(root)
+                          rel_candidates = ", ".join(str(candidate.relative_to(root)) if candidate.is_relative_to(root) else str(candidate) for candidate in candidates)
+                          failures.append(f"{rel_source}:{line_number}: {reference} -> missing ({rel_candidates})")
+
+          sitemap = root / "sitemap.xml"
+          if sitemap.exists():
+              namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+              tree = ET.parse(sitemap)
+              for loc in tree.findall(".//sm:loc", namespace):
+                  if not loc.text:
+                      continue
+                  parsed = urlparse(loc.text)
+                  candidates = candidate_paths(parsed.path or "/", sitemap)
+                  if candidates and not any(candidate.exists() for candidate in candidates):
+                      failures.append(f"sitemap.xml: {loc.text} -> missing local file")
+
+          if failures:
+              print("Missing local references found:")
+              print("\n".join(failures))
+              sys.exit(1)
+
+          print("Local references OK.")
+          PY

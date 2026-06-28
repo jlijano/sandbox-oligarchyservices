@@ -88,7 +88,8 @@ jobs:
 
           root = Path(".").resolve()
           checked_attributes = {"href", "src", "poster"}
-          ignored_schemes = {"http", "https", "mailto", "tel", "data", "javascript"}
+          ignored_schemes = {"http", "https", "mailto", "tel", "data", "javascript", "blob"}
+          dynamic_reference_markers = ("<?", "?>", "{{", "}}", "${", "<%", "%>")
           allowed_missing = {
               "/client-portal/",
           }
@@ -96,21 +97,34 @@ jobs:
           def is_generated_or_vendor(path: Path) -> bool:
               return any(part in {".git", "node_modules", "vendor"} for part in path.parts)
 
+          def should_skip_reference(reference: str) -> bool:
+              value = reference.strip()
+              if not value or value.startswith("#"):
+                  return True
+              if any(marker in value for marker in dynamic_reference_markers):
+                  return True
+              if re.search(r"\s", value) and not value.startswith(("/", "./", "../")):
+                  return True
+              return False
+
           def candidate_paths(reference: str, source: Path):
+              if should_skip_reference(reference):
+                  return []
+
               parsed = urlparse(reference.strip())
               if parsed.scheme in ignored_schemes or parsed.netloc:
                   return []
               path = unquote(parsed.path)
               if not path:
                   return []
-              if path.startswith("#"):
+              if path in allowed_missing:
                   return []
+
+              if path == "/":
+                  return [root / "index.html", root / "index.php"]
+
               if path.startswith("/"):
-                  if path in allowed_missing:
-                      return []
                   normalized = path.lstrip("/")
-                  if normalized == "":
-                      normalized = "index.html"
                   base = root / normalized
               else:
                   base = (source.parent / path).resolve()

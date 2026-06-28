@@ -27,20 +27,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          temp_files=()
+          cleanup() {
+            rm -f "${temp_files[@]}"
+          }
+          trap cleanup EXIT
+
           request() {
             local path="$1"
             local expected_status="$2"
             local output_file
             output_file="$(mktemp)"
+            temp_files+=("$output_file")
 
             status="$(curl --silent --show-error --location --max-time 20 --retry 2 --retry-delay 3 --output "$output_file" --write-out "%{http_code}" "${BASE_URL}${path}")"
-            echo "${path} -> HTTP ${status}"
+            echo "${path} -> HTTP ${status}" >&2
 
             if [[ "$status" != "$expected_status" ]]; then
-              echo "Expected ${path} to return HTTP ${expected_status}, got HTTP ${status}."
-              echo "Response preview:"
-              head -c 500 "$output_file" || true
-              echo
+              echo "Expected ${path} to return HTTP ${expected_status}, got HTTP ${status}." >&2
+              echo "Response preview:" >&2
+              head -c 500 "$output_file" >&2 || true
+              echo >&2
               exit 1
             fi
 

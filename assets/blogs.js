@@ -90,8 +90,10 @@
       if (viewAll) viewAll.hidden = !payload.hasMore;
       section.hidden = false;
     } catch (error) {
+      grid.replaceChildren();
       if (status) status.textContent = "Latest blog posts are temporarily unavailable.";
-      section.hidden = true;
+      if (viewAll) viewAll.hidden = false;
+      section.hidden = false;
     }
   };
 

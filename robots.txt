@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://sandbox.oligarchyservices.com/sitemap.xml
+Sitemap: https://sandbox.oligarchyservices.com/sitemap.php

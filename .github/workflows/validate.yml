@@ -33,21 +33,46 @@ jobs:
           }
           trap cleanup EXIT
 
+          diagnose_request() {
+            local path="$1"
+            local host
+            host="${BASE_URL#https://}"
+            host="${host#http://}"
+            host="${host%%/*}"
+
+            echo "DNS lookup for ${host}:" >&2
+            getent hosts "$host" >&2 || true
+            echo "TLS/header probe for ${BASE_URL}${path}:" >&2
+            curl --verbose --head --location --connect-timeout 10 --max-time 20 "${BASE_URL}${path}" >&2 || true
+          }
+
           request() {
             local path="$1"
             local expected_status="$2"
             local output_file
+            local status
+            local curl_exit
             output_file="$(mktemp)"
             temp_files+=("$output_file")
 
-            status="$(curl --silent --show-error --location --max-time 20 --retry 2 --retry-delay 3 --output "$output_file" --write-out "%{http_code}" "${BASE_URL}${path}")"
-            echo "${path} -> HTTP ${status}" >&2
+            set +e
+            status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 3 --retry-connrefused --retry-all-errors --output "$output_file" --write-out "%{http_code}" "${BASE_URL}${path}")"
+            curl_exit=$?
+            set -e
+            echo "${path} -> HTTP ${status:-000} (curl exit ${curl_exit})" >&2
+
+            if (( curl_exit != 0 )); then
+              echo "curl failed while checking ${path}." >&2
+              diagnose_request "$path"
+              exit 1
+            fi
 
             if [[ "$status" != "$expected_status" ]]; then
               echo "Expected ${path} to return HTTP ${expected_status}, got HTTP ${status}." >&2
               echo "Response preview:" >&2
               head -c 500 "$output_file" >&2 || true
               echo >&2
+              diagnose_request "$path"
               exit 1
             fi
 

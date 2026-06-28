@@ -29,8 +29,7 @@ Upload these repository files into the domain's `public_html` directory:
 - `includes/` without committing or exposing generated credentials
 
 Do not upload local scratch folders, dependency folders, environment files, or
-`automation/`. The Sentinel mail orchestrator in `automation/` is a separate
-Node.js service and is not part of the Hostinger public website upload.
+other development-only files.
 
 This project does not require `node_modules`, `npm install`, a build command,
 cron jobs, or a long-running Node.js process for the public website.
@@ -130,22 +129,11 @@ Optional non-secret environment settings:
 - `PORTAL_BASE_URL`: absolute portal URL used in confirmation emails, for
   example `https://sandbox.oligarchyservices.com`.
 - `PORTAL_MAIL_FROM`: sender address for confirmation emails, for example
-  `no-reply@oligarchyservices.com`.
+  `sentinel@oligarchyservices.com`.
 
 If `PORTAL_BASE_URL` is not set, the portal builds links from the current request
-host. If `PORTAL_MAIL_FROM` is not set, the sender defaults to a domain-based
-`no-reply` address.
-
-## Sentinel mail orchestrator
-
-`automation/sentinel-mail-orchestrator/` is a separate Node.js service for
-sending Sentinel automation emails through `sentinel@oligarchyservices.com`.
-Deploy it on a Node-capable host such as Render, Fly.io, Railway, or Cloud Run.
-Do not upload it to Hostinger `public_html`.
-
-Store the mailbox password and orchestrator bearer token only in the deployment
-host's secret manager. Do not add those values to GitHub, docs, prompts, or
-local files that may be committed.
+host. If `PORTAL_MAIL_FROM` is not set, the sender defaults to
+`sentinel@oligarchyservices.com`.
 
 If a deployment replaces `public_html` and removes `includes/config.php`, the
 portal still accepts the parent backup config or these environment variables:
@@ -185,6 +173,3 @@ shared hosting plans:
 - no dependency installation;
 - no custom server process;
 - no build output required.
-
-The Sentinel mail orchestrator is intentionally outside that public website
-runtime and should be deployed separately only when email automation is needed.

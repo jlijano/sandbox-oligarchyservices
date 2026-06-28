@@ -23,6 +23,7 @@ Upload these repository files into the domain's `public_html` directory:
 - `.htaccess`
 - `robots.txt`
 - `sitemap.xml`
+- `sitemap.php` for dynamic published blog URLs
 - `assets/`
 - `api/`
 - `includes/` without committing or exposing generated credentials
@@ -111,6 +112,14 @@ saved, the installer or repair page will show a warning. Login can still work,
 but a future full file sync may require opening `/repair.php` once to reconnect
 the existing database.
 
+## Blog sitemap
+
+`robots.txt` references both the static `sitemap.xml` and dynamic `sitemap.php`.
+The dynamic sitemap keeps the same core public URLs as `sitemap.xml` and adds
+published blog detail URLs from the portal database. If the database is briefly
+unavailable, `sitemap.php` still returns the static public URLs and logs the blog
+lookup error server-side.
+
 ## Account confirmation email
 
 The portal uses PHP `mail()` for account confirmation messages. Confirm Hostinger
@@ -143,16 +152,22 @@ portal still accepts the parent backup config or these environment variables:
 `DB_HOST`, `DB_DATABASE` or `DB_NAME`, `DB_USERNAME` or `DB_USER`,
 `DB_PASSWORD`, and optional `DB_PORT`.
 
+Sentinel report archive expectations are documented in
+`docs/sentinel-report-archive.md`. Generated report archives should stay in
+Sentinel's private durable workspace or the automation host's private persistent
+storage, not in Hostinger `public_html`.
+
 ## Before going live
 
-1. Confirm `robots.txt` and `sitemap.xml` use the production domain.
+1. Confirm `robots.txt`, `sitemap.xml`, and `sitemap.php` use the production
+   domain.
 2. Confirm SSL is enabled in Hostinger before relying on the HTTPS redirect in
    `.htaccess`.
 3. If the domain uses a subdirectory install, update absolute paths in
-   `.htaccess` and the sitemap.
+   `.htaccess` and the sitemaps.
 4. Test `index.html`, `login.html`, `dashboard.php`, `requests.php`,
    `logout.php`, `account-confirmation.php`, `change-password.php`,
-   `privacy.html`, and a fake missing URL after upload.
+   `privacy.html`, `sitemap.php`, and a fake missing URL after upload.
 
 ## Analytics
 

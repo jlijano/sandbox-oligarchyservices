@@ -251,9 +251,13 @@ function account_confirmation_send_email(string $email, string $name, string $to
     $parts = account_confirmation_message_parts($name, $token, $temporaryPassword);
     $orchestratorResult = account_confirmation_send_via_orchestrator($email, $subject, $parts);
 
-    if ($orchestratorResult !== null) {
-        account_confirmation_record_mail_trace($email, $subject, 'orchestrator', $orchestratorResult, $orchestratorResult ? 'Accepted by Sentinel mail orchestrator.' : 'Sentinel mail orchestrator did not confirm delivery.');
-        return $orchestratorResult;
+    if ($orchestratorResult === true) {
+        account_confirmation_record_mail_trace($email, $subject, 'orchestrator', true, 'Accepted by Sentinel mail orchestrator.');
+        return true;
+    }
+
+    if ($orchestratorResult === false) {
+        account_confirmation_record_mail_trace($email, $subject, 'orchestrator', false, 'Sentinel mail orchestrator did not confirm delivery; falling back to PHP mail().');
     }
 
     $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);

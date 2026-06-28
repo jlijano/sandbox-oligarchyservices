@@ -67,6 +67,23 @@ try {
         <?php endif; ?>
       </section>
     </main>
-    <footer class="site-footer compact"><a class="footer-brand brand" href="/"><span class="brand-mark">OS</span><span>Oligarchy Services</span></a><a href="/privacy.html">Privacy Notice</a><span>&copy; 2026 Oligarchy Services</span></footer>
+    <footer class="site-footer site-footer-refined">
+      <div class="footer-main">
+        <div class="footer-left">
+          <a class="footer-center-brand" href="/" aria-label="Oligarchy Services home"><span class="footer-center-mark" aria-hidden="true">O</span><span>Oligarchy Services</span></a>
+          <ul class="footer-social" aria-label="Social links">
+            <li><a href="/contact.html" aria-label="LinkedIn">in</a></li>
+            <li><a href="/contact.html" aria-label="Facebook">f</a></li>
+            <li><a href="/contact.html" aria-label="Instagram">ig</a></li>
+            <li><a href="/contact.html" aria-label="YouTube">yt</a></li>
+          </ul>
+        </div>
+        <nav class="footer-column" aria-label="Footer services"><h2>Services</h2><a href="/ai-automation.html">AI &amp; Automation</a><a href="/help-desk.html">Help Desk</a><a href="/msp.html">MSP</a><a href="/business-systems.html">Business Systems</a><a href="/itad.html">ITAD</a><a href="/itam.html">ITAM</a></nav>
+        <nav class="footer-column" aria-label="Footer industries"><h2>Industries</h2><a href="/contact.html">For IT Teams</a><a href="/contact.html">For Operations Teams</a><a href="/contact.html">For Asset Managers</a><a href="/contact.html">For Growing Businesses</a><a href="/contact.html">See More Solutions</a></nav>
+        <nav class="footer-column" aria-label="Footer about"><h2>About</h2><a href="/about.html">Our Story</a><a href="/projects.html">Projects</a><a href="/career-timeline.html">Career Timeline</a><a href="/login.html">Client Login</a><a href="/blogs.php">Blog</a></nav>
+        <nav class="footer-column" aria-label="Footer legal"><h2>Legal</h2><a href="/privacy.html">Privacy Notice</a><a href="/privacy.html#analytics-opt-out">Cookie Preferences</a><a href="/privacy.html">Analytics Notice</a><a href="/contact.html">Terms Requests</a></nav>
+      </div>
+      <div class="footer-bottom"><span>&copy; 2026 Oligarchy Services. All rights reserved.</span><a href="mailto:connect@oligarchyservices.com">connect@oligarchyservices.com</a></div>
+    </footer>
   </body>
 </html>

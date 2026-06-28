@@ -90,115 +90,6 @@ function account_confirmation_message_parts(string $name, string $token, string 
     return ['text' => $text, 'html' => $html];
 }
 
-function account_confirmation_orchestrator_endpoint(): string
-{
-    $url = trim((string) getenv('PORTAL_MAIL_ORCHESTRATOR_URL'));
-    if ($url === '') {
-        $url = trim((string) getenv('SENTINEL_MAIL_ORCHESTRATOR_URL'));
-    }
-    if ($url === '') {
-        return '';
-    }
-
-    return rtrim($url, '/') . '/send-email';
-}
-
-function account_confirmation_orchestrator_token(): string
-{
-    $token = trim((string) getenv('PORTAL_MAIL_ORCHESTRATOR_TOKEN'));
-    if ($token === '') {
-        $token = trim((string) getenv('ORCHESTRATOR_TOKEN'));
-    }
-
-    return $token;
-}
-
-function account_confirmation_post_json(string $url, string $token, array $payload): ?array
-{
-    $body = json_encode($payload);
-    if ($body === false) {
-        return null;
-    }
-
-    if (function_exists('curl_init')) {
-        $curl = curl_init($url);
-        if ($curl === false) {
-            return null;
-        }
-        curl_setopt_array($curl, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $body,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $token,
-                'Content-Type: application/json',
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 12,
-        ]);
-        $response = curl_exec($curl);
-        $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-        if ($response === false) {
-            error_log('Account confirmation orchestrator request failed: ' . curl_error($curl));
-            curl_close($curl);
-            return null;
-        }
-        curl_close($curl);
-    } else {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => "Authorization: Bearer {$token}\r\nContent-Type: application/json\r\n",
-                'content' => $body,
-                'timeout' => 12,
-                'ignore_errors' => true,
-            ],
-        ]);
-        $response = @file_get_contents($url, false, $context);
-        $status = 0;
-        if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $matches)) {
-            $status = (int) $matches[1];
-        }
-        if ($response === false) {
-            error_log('Account confirmation orchestrator request failed.');
-            return null;
-        }
-    }
-
-    $decoded = json_decode((string) $response, true);
-    if ($status < 200 || $status >= 300 || !is_array($decoded)) {
-        error_log('Account confirmation orchestrator returned HTTP ' . $status . '.');
-        return null;
-    }
-
-    return $decoded;
-}
-
-function account_confirmation_send_via_orchestrator(string $email, string $subject, array $parts): ?bool
-{
-    $endpoint = account_confirmation_orchestrator_endpoint();
-    $token = account_confirmation_orchestrator_token();
-    if ($endpoint === '' || $token === '') {
-        return null;
-    }
-
-    $result = account_confirmation_post_json($endpoint, $token, [
-        'to' => $email,
-        'subject' => $subject,
-        'text' => $parts['text'],
-        'html' => $parts['html'],
-        'replyTo' => account_confirmation_from_address(),
-    ]);
-
-    if (!is_array($result) || empty($result['ok']) || !empty($result['dryRun'])) {
-        if (!empty($result['dryRun'])) {
-            error_log('Account confirmation orchestrator is still in DRY_RUN mode.');
-        }
-        return false;
-    }
-
-    return true;
-}
-
 function account_confirmation_send_via_php_mail(string $email, string $subject, array $parts): bool
 {
     $boundary = 'oligarchy-' . bin2hex(random_bytes(12));
@@ -264,17 +155,6 @@ function account_confirmation_send_email(string $email, string $name, string $to
 {
     $subject = 'Confirm your Oligarchy Services account';
     $parts = account_confirmation_message_parts($name, $token, $temporaryPassword);
-    $orchestratorResult = account_confirmation_send_via_orchestrator($email, $subject, $parts);
-
-    if ($orchestratorResult === true) {
-        account_confirmation_record_mail_trace($email, $subject, 'orchestrator', true, 'Accepted by Sentinel mail orchestrator.');
-        return true;
-    }
-
-    if ($orchestratorResult === false) {
-        account_confirmation_record_mail_trace($email, $subject, 'orchestrator', false, 'Sentinel mail orchestrator did not confirm delivery; falling back to PHP mail().');
-    }
-
     $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
     account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by PHP mail().' : 'PHP mail() returned false.');
     return $phpMailResult;
@@ -361,7 +241,7 @@ function account_confirmation_finalize_dashboard_create(): void
         if (account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword)) {
             account_confirmation_flash_notice('User created. Confirmation email and temporary password sent to ' . $email . '.');
         } else {
-            account_confirmation_flash_error('User created, but the confirmation email could not be sent. Check Mail Trace for orchestrator and PHP mail results, confirm Hostinger PHP mail is enabled, and make sure the Sentinel mail orchestrator is not in dry-run mode.');
+            account_confirmation_flash_error('User created, but the confirmation email could not be sent. Check Mail Trace for the PHP mail result and confirm Hostinger PHP mail is enabled for the sender address.');
         }
     } catch (Throwable $error) {
         error_log('Account confirmation setup failed: ' . $error->getMessage());

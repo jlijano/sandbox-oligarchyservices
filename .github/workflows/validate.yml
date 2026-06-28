@@ -58,7 +58,9 @@ jobs:
           robots_file="$(request "/robots.txt" "200")"
           sitemap_file="$(request "/sitemap.xml" "200")"
           login_file="$(request "/login.html" "200")"
+          request "/includes/" "403" >/dev/null
           request "/includes/config.php" "403" >/dev/null
+          request "/includes/bootstrap.php" "403" >/dev/null
 
           grep -qi "Oligarchy Services" "$home_file" || { echo "Homepage did not contain expected brand text."; exit 1; }
           grep -q "Sitemap: ${BASE_URL}/sitemap.xml" "$robots_file" || { echo "robots.txt did not reference the expected sitemap URL."; exit 1; }

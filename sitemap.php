@@ -57,7 +57,6 @@ foreach ($staticPaths as $path) {
 
 try {
     $pdo = db();
-    blog_ensure_schema($pdo);
     foreach (blog_fetch_published($pdo, 24) as $post) {
         $item = blog_public_fields($post);
         echo sitemap_entry(blog_canonical_url($item['url']), (string) ($post['updated_at'] ?? $post['published_at'] ?? '')) . "\n";

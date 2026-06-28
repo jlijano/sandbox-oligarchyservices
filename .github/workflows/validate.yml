@@ -57,12 +57,15 @@ jobs:
           home_file="$(request "/" "200")"
           robots_file="$(request "/robots.txt" "200")"
           sitemap_file="$(request "/sitemap.xml" "200")"
+          dynamic_sitemap_file="$(request "/sitemap.php" "200")"
           login_file="$(request "/login.html" "200")"
           request "/includes/" "403" >/dev/null
           request "/includes/config.php" "403" >/dev/null
           request "/includes/bootstrap.php" "403" >/dev/null
 
           grep -qi "Oligarchy Services" "$home_file" || { echo "Homepage did not contain expected brand text."; exit 1; }
-          grep -q "Sitemap: ${BASE_URL}/sitemap.xml" "$robots_file" || { echo "robots.txt did not reference the expected sitemap URL."; exit 1; }
+          grep -q "Sitemap: ${BASE_URL}/sitemap.xml" "$robots_file" || { echo "robots.txt did not reference the expected static sitemap URL."; exit 1; }
+          grep -q "Sitemap: ${BASE_URL}/sitemap.php" "$robots_file" || { echo "robots.txt did not reference the expected dynamic sitemap URL."; exit 1; }
           grep -q "<loc>${BASE_URL}/</loc>" "$sitemap_file" || { echo "sitemap.xml did not include the homepage URL."; exit 1; }
+          grep -q "<loc>${BASE_URL}/blogs.php</loc>" "$dynamic_sitemap_file" || { echo "sitemap.php did not include the blog listing URL."; exit 1; }
           grep -qi "Client Login\|Log in" "$login_file" || { echo "login.html did not contain expected login page text."; exit 1; }

@@ -9,7 +9,6 @@ header('Content-Type: application/json; charset=utf-8');
 
 try {
     $pdo = db();
-    blog_ensure_schema($pdo);
     $slug = blog_slugify((string) ($_GET['slug'] ?? ''));
 
     if ($slug !== '') {

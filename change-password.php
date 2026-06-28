@@ -18,8 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = (string) ($_POST['password'] ?? '');
         $confirmPassword = (string) ($_POST['confirm_password'] ?? '');
 
-        if (strlen($password) < 10) {
-            $errors[] = 'Password must be at least 10 characters.';
+        if (strlen($password) < 12) {
+            $errors[] = 'Password must be at least 12 characters.';
         }
         if ($password !== $confirmPassword) {
             $errors[] = 'Passwords do not match.';
@@ -73,11 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endforeach; ?>
             <label class="field" for="password">
               <span>New password</span>
-              <input id="password" name="password" type="password" autocomplete="new-password" minlength="10" required>
+              <input id="password" name="password" type="password" autocomplete="new-password" minlength="12" required>
             </label>
             <label class="field" for="confirm_password">
               <span>Confirm new password</span>
-              <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="10" required>
+              <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="12" required>
             </label>
             <button class="button primary login-submit" type="submit">Update password</button>
             <p class="login-note">This step is required after confirming a newly created account.</p>

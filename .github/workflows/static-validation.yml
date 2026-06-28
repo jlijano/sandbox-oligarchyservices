@@ -1,0 +1,85 @@
+name: Static syntax validation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: static-syntax-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  syntax:
+    name: PHP, JavaScript, JSON, and XML syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Validate PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t php_files < <(find . -path './.git' -prune -o -type f -name '*.php' -print | sort)
+          if (( ${#php_files[@]} == 0 )); then
+            echo 'No PHP files found.'
+            exit 0
+          fi
+          for file in "${php_files[@]}"; do
+            php -l "$file"
+          done
+
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t js_files < <(find . -path './.git' -prune -o -type f -name '*.js' -print | sort)
+          if (( ${#js_files[@]} == 0 )); then
+            echo 'No JavaScript files found.'
+            exit 0
+          fi
+          for file in "${js_files[@]}"; do
+            node --check "$file"
+          done
+
+      - name: Validate JSON files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t json_files < <(find . -path './.git' -prune -o -type f -name '*.json' -print | sort)
+          if (( ${#json_files[@]} == 0 )); then
+            echo 'No JSON files found.'
+            exit 0
+          fi
+          for file in "${json_files[@]}"; do
+            python3 -m json.tool "$file" >/dev/null
+          done
+
+      - name: Validate XML files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t xml_files < <(find . -path './.git' -prune -o -type f -name '*.xml' -print | sort)
+          if (( ${#xml_files[@]} == 0 )); then
+            echo 'No XML files found.'
+            exit 0
+          fi
+          for file in "${xml_files[@]}"; do
+            python3 - <<'PY' "$file"
+import sys
+import xml.etree.ElementTree as ET
+ET.parse(sys.argv[1])
+PY
+          done

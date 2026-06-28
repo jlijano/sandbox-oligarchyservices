@@ -38,6 +38,16 @@ function account_confirmation_from_header(): string
     return 'Oligarchy Services <' . account_confirmation_from_address() . '>';
 }
 
+function account_confirmation_mail_additional_parameters(): string
+{
+    $from = account_confirmation_from_address();
+    if (!preg_match('/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/', $from)) {
+        return '';
+    }
+
+    return '-f' . $from;
+}
+
 function account_confirmation_generate_temporary_password(): string
 {
     $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
@@ -214,6 +224,11 @@ function account_confirmation_send_via_php_mail(string $email, string $subject, 
         . '</td></tr></table></td></tr></table></body></html>'
         . "\r\n--{$boundary}--\r\n";
 
+    $additionalParameters = account_confirmation_mail_additional_parameters();
+    if ($additionalParameters !== '') {
+        return mail($email, $subject, $body, implode("\r\n", $headers), $additionalParameters);
+    }
+
     return mail($email, $subject, $body, implode("\r\n", $headers));
 }
 
@@ -346,7 +361,7 @@ function account_confirmation_finalize_dashboard_create(): void
         if (account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword)) {
             account_confirmation_flash_notice('User created. Confirmation email and temporary password sent to ' . $email . '.');
         } else {
-            account_confirmation_flash_error('User created, but the confirmation email could not be sent. Confirm mail settings and make sure the Sentinel mail orchestrator is not in dry-run mode.');
+            account_confirmation_flash_error('User created, but the confirmation email could not be sent. Check Mail Trace for orchestrator and PHP mail results, confirm Hostinger PHP mail is enabled, and make sure the Sentinel mail orchestrator is not in dry-run mode.');
         }
     } catch (Throwable $error) {
         error_log('Account confirmation setup failed: ' . $error->getMessage());

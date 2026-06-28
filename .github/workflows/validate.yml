@@ -1,0 +1,59 @@
+name: Validate site availability
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-site-availability
+  cancel-in-progress: false
+
+jobs:
+  availability:
+    name: Production availability checks
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: https://sandbox.oligarchyservices.com
+    steps:
+      - name: Check public and protected routes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          request() {
+            local path="$1"
+            local expected_status="$2"
+            local output_file
+            output_file="$(mktemp)"
+
+            status="$(curl --silent --show-error --location --max-time 20 --retry 2 --retry-delay 3 --output "$output_file" --write-out "%{http_code}" "${BASE_URL}${path}")"
+            echo "${path} -> HTTP ${status}"
+
+            if [[ "$status" != "$expected_status" ]]; then
+              echo "Expected ${path} to return HTTP ${expected_status}, got HTTP ${status}."
+              echo "Response preview:"
+              head -c 500 "$output_file" || true
+              echo
+              exit 1
+            fi
+
+            printf '%s' "$output_file"
+          }
+
+          home_file="$(request "/" "200")"
+          robots_file="$(request "/robots.txt" "200")"
+          sitemap_file="$(request "/sitemap.xml" "200")"
+          login_file="$(request "/login.html" "200")"
+          request "/includes/config.php" "403" >/dev/null
+
+          grep -qi "Oligarchy Services" "$home_file" || { echo "Homepage did not contain expected brand text."; exit 1; }
+          grep -q "Sitemap: ${BASE_URL}/sitemap.xml" "$robots_file" || { echo "robots.txt did not reference the expected sitemap URL."; exit 1; }
+          grep -q "<loc>${BASE_URL}/</loc>" "$sitemap_file" || { echo "sitemap.xml did not include the homepage URL."; exit 1; }
+          grep -qi "Client Login\|Log in" "$login_file" || { echo "login.html did not contain expected login page text."; exit 1; }

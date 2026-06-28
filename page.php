@@ -3,12 +3,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/pages.php';
 
 function public_slug(string $value): string
 {
-    $slug = strtolower(trim($value));
-    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?: '';
-    return trim($slug, '-');
+    return cms_slugify($value);
 }
 
 $slug = public_slug((string) ($_GET['slug'] ?? ''));
@@ -34,8 +33,11 @@ if (!$page) {
 }
 
 $title = (string) $page['title'];
-$description = (string) ($page['meta_description'] ?: substr(trim(strip_tags((string) $page['body'])), 0, 155));
-$body = nl2br(e((string) $page['body']));
+$rawBody = (string) $page['body'];
+$plainBody = cms_page_plain_text($rawBody);
+$description = (string) ($page['meta_description'] ?: substr($plainBody, 0, 155));
+$isBuilderPage = cms_page_is_builder($rawBody);
+$body = cms_render_builder($rawBody);
 ?>
 <!doctype html>
 <html lang="en">
@@ -45,6 +47,7 @@ $body = nl2br(e((string) $page['body']));
     <title><?= e($title) ?> | Oligarchy Services</title>
     <meta name="description" content="<?= e($description) ?>">
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
+    <?php if ($isBuilderPage): ?><link rel="stylesheet" href="/assets/page-builder.css?v=20260628-pages-builder"><?php endif; ?>
   </head>
   <body>
     <header class="site-header">
@@ -52,14 +55,18 @@ $body = nl2br(e((string) $page['body']));
       <nav class="nav-links is-open" aria-label="Primary navigation"><a href="/">Home</a><a href="/contact.html">Contact</a><a class="nav-cta" href="/login.html">Client login</a></nav>
     </header>
     <main>
+      <?php if (!$isBuilderPage): ?>
       <section class="page-hero">
         <p class="eyebrow">Oligarchy Services</p>
         <h1><?= e($title) ?></h1>
         <?php if ($description !== ''): ?><p><?= e($description) ?></p><?php endif; ?>
       </section>
       <section class="section policy-section">
-        <div class="cms-content"><?= $body ?></div>
+        <?= $body ?>
       </section>
+      <?php else: ?>
+        <?= $body ?>
+      <?php endif; ?>
     </main>
   </body>
 </html>

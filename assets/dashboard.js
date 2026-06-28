@@ -52,6 +52,22 @@
     }
   };
 
+  const movePagesToDedicatedManager = () => {
+    const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+    document.querySelectorAll("a[data-section-link='pages'], a[href='/dashboard.php#pages'], a[href='#pages']").forEach((link) => {
+      link.href = "/pages.php";
+      delete link.dataset.sectionLink;
+      if (currentPath === "/pages.php") {
+        link.classList.add("is-active");
+        link.setAttribute("aria-current", "page");
+      }
+    });
+    const inlinePagesSection = document.getElementById("pages");
+    if (inlinePagesSection && currentPath === "/dashboard.php") {
+      inlinePagesSection.remove();
+    }
+  };
+
   const applySidebarIcons = () => {
     loadFontAwesome();
     document.querySelectorAll(".sidebar-nav .nav-icon").forEach((icon) => {
@@ -112,6 +128,7 @@
   };
 
   ensureProspectsNavigation();
+  movePagesToDedicatedManager();
   applySidebarIcons();
 
   document.addEventListener("click", (event) => {

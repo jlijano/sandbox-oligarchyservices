@@ -91,7 +91,10 @@ function automation_ensure_schema(PDO $pdo): void
     automation_add_index_if_missing($pdo, 'automation_recipes', 'idx_automation_recipes_updated', '`updated_at`');
 }
 
-function automation_schema_ready(PDO $pdo): bool { return automation_table_exists($pdo, 'automation_recipes'); }
+function automation_schema_ready(PDO $pdo): bool
+{
+    return automation_table_exists($pdo, 'automation_recipes') && automation_table_exists($pdo, 'automation_runs');
+}
 
 function automation_clean_text(string $key, int $maxLength, string $default = ''): string
 {
@@ -124,6 +127,20 @@ function automation_insert_recipe(PDO $pdo, array $payload, int $actorId): int
     $stmt = $pdo->prepare('INSERT INTO automation_recipes (name, trigger_event, condition_rules, action_steps, importance, status, owner, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute([$payload['name'], $payload['trigger_event'], $payload['condition_rules'], $payload['action_steps'], $payload['importance'], $payload['status'], $payload['owner'], $actorId, $actorId]);
     return (int) $pdo->lastInsertId();
+}
+
+function automation_update_recipe(PDO $pdo, int $recipeId, array $payload, int $actorId): void
+{
+    $stmt = $pdo->prepare('UPDATE automation_recipes SET name = ?, trigger_event = ?, condition_rules = ?, action_steps = ?, importance = ?, status = ?, owner = ?, updated_by = ?, updated_at = NOW() WHERE id = ?');
+    $stmt->execute([$payload['name'], $payload['trigger_event'], $payload['condition_rules'], $payload['action_steps'], $payload['importance'], $payload['status'], $payload['owner'], $actorId, $recipeId]);
+}
+
+function automation_fetch_recipe(PDO $pdo, int $recipeId): ?array
+{
+    $stmt = $pdo->prepare('SELECT * FROM automation_recipes WHERE id = ? LIMIT 1');
+    $stmt->execute([$recipeId]);
+    $recipe = $stmt->fetch();
+    return is_array($recipe) ? $recipe : null;
 }
 
 function automation_log_activity(PDO $pdo, int $actorId, string $action, ?int $targetId = null, string $details = ''): void

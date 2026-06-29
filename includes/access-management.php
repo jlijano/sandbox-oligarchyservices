@@ -9,6 +9,8 @@ function access_modules(): array
         'roles' => 'Roles',
         'companies' => 'Companies',
         'departments' => 'Departments',
+        'prospects' => 'Prospects',
+        'carrier' => 'Carrier',
         'pages' => 'Pages',
         'blogs' => 'Blogs',
         'navigation' => 'Navigation',
@@ -131,7 +133,7 @@ function access_management_ensure_schema(PDO $pdo): void
     $seed = $pdo->prepare('INSERT INTO roles (name, description, is_active, module_permissions) VALUES (?, ?, 1, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)');
     $all = array_keys(access_modules());
     $seed->execute(['admin', 'Full administrative access.', access_encode_modules($all)]);
-    $seed->execute(['editor', 'Content manager access.', access_encode_modules(['overview', 'pages', 'blogs', 'navigation', 'automation', 'system_settings', 'activity', 'system_health', 'mail_trace'])]);
+    $seed->execute(['editor', 'Content manager access.', access_encode_modules(['overview', 'prospects', 'carrier', 'pages', 'blogs', 'navigation', 'automation', 'system_settings', 'activity', 'system_health', 'mail_trace'])]);
     $seed->execute(['support', 'Support and activity review access.', access_encode_modules(['overview', 'users', 'activity', 'system_health', 'mail_trace'])]);
     $seed->execute(['client', 'Client dashboard access.', access_encode_modules(['overview'])]);
 }
@@ -259,13 +261,15 @@ function access_sidebar(string $active, string $roleLabel, string $role = 'admin
         </div>
         <?php endif; ?>
         <?php if ($isAdmin || $canManageContent): ?>
-        <div class="sidebar-group <?= in_array($active, ['agents', 'pages', 'blogs', 'navigation', 'automation'], true) ? 'is-open is-active' : '' ?>" data-playground-group>
-          <button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="<?= in_array($active, ['agents', 'pages', 'blogs', 'navigation', 'automation'], true) ? 'true' : 'false' ?>"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
+        <div class="sidebar-group <?= in_array($active, ['agents', 'prospects', 'carrier', 'pages', 'blogs', 'navigation', 'automation'], true) ? 'is-open is-active' : '' ?>" data-playground-group>
+          <button class="sidebar-group-toggle" type="button" data-playground-toggle aria-expanded="<?= in_array($active, ['agents', 'prospects', 'carrier', 'pages', 'blogs', 'navigation', 'automation'], true) ? 'true' : 'false' ?>"><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Playground</span><span class="sidebar-group-caret" aria-hidden="true">&gt;</span></button>
           <div class="sidebar-subnav" data-playground-subnav>
             <?php if ($isAdmin): ?>
             <a class="<?= $active === 'agents' ? 'is-active' : '' ?>" href="/agents.php" <?= $active === 'agents' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">A</span><span class="nav-label">Agents</span></a>
             <?php endif; ?>
             <?php if ($canManageContent): ?>
+            <a class="<?= $active === 'prospects' ? 'is-active' : '' ?>" href="/prospects.php" <?= $active === 'prospects' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Prospects</span></a>
+            <a class="<?= $active === 'carrier' ? 'is-active' : '' ?>" href="/carrier" <?= $active === 'carrier' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">C</span><span class="nav-label">Carrier</span></a>
             <a class="<?= $active === 'pages' ? 'is-active' : '' ?>" href="/dashboard.php#pages" data-section-link="pages" <?= $active === 'pages' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Pages</span></a>
             <a class="<?= $active === 'blogs' ? 'is-active' : '' ?>" href="/admin-blogs.php" <?= $active === 'blogs' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">B</span><span class="nav-label">Blogs</span></a>
             <a class="<?= $active === 'navigation' ? 'is-active' : '' ?>" href="/dashboard.php#navigation" data-section-link="navigation" <?= $active === 'navigation' ? 'aria-current="page"' : '' ?>><span class="nav-icon" aria-hidden="true">N</span><span class="nav-label">Navigation</span></a>
@@ -546,7 +550,7 @@ function access_render_entity_page(string $entity): void
       body.access-modal-open { overflow: hidden; }
       @media (max-width: 680px) { .access-toolbar { align-items: stretch; } .access-toolbar .primary-action { width: 100%; } .module-grid { grid-template-columns: 1fr; } .access-modal { align-items: end; padding: 12px; } .access-modal-dialog { width: 100%; max-height: calc(100dvh - 24px); } }
     </style>
-    <script defer src="/assets/dashboard.js?v=20260621-automation"></script>
+    <script defer src="/assets/dashboard.js?v=20260630-carrier-nav"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>

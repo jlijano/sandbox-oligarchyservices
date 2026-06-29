@@ -8,6 +8,7 @@ require_once __DIR__ . '/includes/blogs.php';
 require_once __DIR__ . '/includes/requests.php';
 require_once __DIR__ . '/includes/prospects.php';
 require_once __DIR__ . '/includes/carrier.php';
+require_once __DIR__ . '/includes/switchboard.php';
 require_once __DIR__ . '/includes/automation.php';
 
 $lockPath = db_install_lock_path();
@@ -53,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             request_ensure_schema($pdo);
             prospect_ensure_schema($pdo);
             carrier_ensure_schema($pdo);
+            switchboard_ensure_schema($pdo);
             automation_ensure_schema($pdo);
             installer_upsert_admin($pdo, $adminEmail, $adminPassword, $adminName);
             $warnings = installer_config_write_warnings(installer_write_config($configPath, $dbHost, $dbName, $dbUser, $dbPassword));

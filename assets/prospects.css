@@ -503,6 +503,16 @@ body.prospect-modal-open {
 
 .widget-actions {
   justify-content: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.prospect-view.is-customizing .widget-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .widget-actions button {
@@ -521,8 +531,19 @@ body.prospect-modal-open {
   background: rgba(49, 196, 189, 0.08);
 }
 
+.prospect-widget.is-configuring {
+  border-color: rgba(49, 196, 189, 0.72);
+  box-shadow: 0 0 0 2px rgba(49, 196, 189, 0.12), var(--prospect-shadow-soft);
+}
+
 .prospect-widget.is-muted {
   opacity: 0.45;
+}
+
+[data-customize-dashboard].is-active {
+  border-color: rgba(49, 196, 189, 0.58);
+  background: rgba(49, 196, 189, 0.12);
+  color: #d9fffc;
 }
 
 .empty-state {

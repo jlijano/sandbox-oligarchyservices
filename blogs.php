@@ -10,7 +10,6 @@ $loadError = false;
 
 try {
     $pdo = db();
-    blog_ensure_schema($pdo);
     $posts = blog_fetch_published($pdo, 24);
 } catch (Throwable $error) {
     error_log('Blog listing error: ' . $error->getMessage());

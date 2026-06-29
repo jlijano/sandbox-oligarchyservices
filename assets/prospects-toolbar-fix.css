@@ -1,0 +1,21 @@
+/* Restore compact Prospects toolbar buttons after the layout standardization pass. */
+.prospects-header > div.prospect-toolbar-actions:first-child,
+.prospects-header > div.hero-actions:first-child {
+  display: flex !important;
+}
+
+.prospects-header > .prospect-toolbar-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--prospect-gap-xs, 8px);
+  width: 100%;
+  justify-content: flex-start !important;
+}
+
+@media (max-width: 720px) {
+  .prospects-header > div.prospect-toolbar-actions:first-child,
+  .prospects-header > div.hero-actions:first-child {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+}

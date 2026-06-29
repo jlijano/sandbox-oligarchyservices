@@ -127,21 +127,45 @@
     control?.addEventListener("change", applyFilters);
   });
 
-  document.querySelector("[data-customize-dashboard]")?.addEventListener("click", () => {
-    document.querySelectorAll("[data-prospect-widget]").forEach((widget) => {
-      widget.classList.toggle("is-configuring");
-    });
-  });
+  const customizeButton = document.querySelector("[data-customize-dashboard]");
+  const dashboardView = document.querySelector("[data-prospect-view='dashboard']");
+  const widgetGrid = document.querySelector(".prospect-widget-grid");
+  const widgets = Array.from(document.querySelectorAll("[data-prospect-widget]"));
+  let isCustomizing = false;
+
+  const setCustomizing = (enabled) => {
+    isCustomizing = enabled;
+    dashboardView?.classList.toggle("is-customizing", enabled);
+    customizeButton?.classList.toggle("is-active", enabled);
+    if (customizeButton) {
+      customizeButton.textContent = enabled ? "Done customizing" : "Customize dashboard";
+      customizeButton.setAttribute("aria-pressed", String(enabled));
+    }
+    if (!enabled) {
+      widgets.forEach((widget) => widget.classList.remove("is-configuring"));
+    }
+  };
+
+  customizeButton?.setAttribute("aria-pressed", "false");
+  customizeButton?.addEventListener("click", () => setCustomizing(!isCustomizing));
 
   document.querySelectorAll("[data-prospect-widget] .widget-actions button").forEach((button) => {
     button.addEventListener("click", () => {
+      if (!isCustomizing) return;
       const widget = button.closest("[data-prospect-widget]");
-      if (!widget) return;
-      if (button.textContent.trim().toLowerCase() === "remove") {
+      if (!widget || !widgetGrid) return;
+      const action = button.textContent.trim().toLowerCase();
+      if (action === "remove") {
         widget.classList.toggle("is-muted");
-      } else {
-        widget.classList.toggle("is-configuring");
+        button.textContent = widget.classList.contains("is-muted") ? "Restore" : "Remove";
+        return;
       }
+      if (action === "move") {
+        widgetGrid.insertBefore(widget, widgetGrid.firstElementChild);
+        widget.classList.add("is-configuring");
+        return;
+      }
+      widget.classList.toggle("is-configuring");
     });
   });
 })();

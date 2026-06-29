@@ -127,6 +127,149 @@
     control?.addEventListener("change", applyFilters);
   });
 
+  const board = document.querySelector(".prospect-board");
+  const csrfToken = document.querySelector("input[name='csrf_token']")?.value || "";
+
+  if (board) {
+    let draggedCard = null;
+    let originalColumn = null;
+    let originalNextSibling = null;
+    let originalStatus = "";
+
+    const message = document.createElement("div");
+    message.className = "kanban-status-message";
+    message.setAttribute("role", "status");
+    message.hidden = true;
+    board.insertAdjacentElement("beforebegin", message);
+
+    const setMessage = (text, isError = false) => {
+      message.textContent = text;
+      message.hidden = text === "";
+      message.classList.toggle("is-error", isError);
+      if (text !== "") window.setTimeout(() => setMessage(""), 3500);
+    };
+
+    const cardId = (card) => {
+      const href = card.querySelector("a[href*='open=']")?.getAttribute("href") || "";
+      try {
+        return new URL(href, window.location.origin).searchParams.get("open") || "";
+      } catch (error) {
+        return "";
+      }
+    };
+
+    const columnStatus = (column) => column?.querySelector(".kanban-column-header h3")?.textContent.trim() || "";
+    const updateColumnCount = (column) => {
+      const countBadge = column?.querySelector(".kanban-column-header span");
+      if (countBadge) countBadge.textContent = String(column.querySelectorAll(".kanban-card").length);
+    };
+    const updateAllCounts = () => document.querySelectorAll(".kanban-column").forEach(updateColumnCount);
+    const clearDropTargets = () => document.querySelectorAll(".kanban-column.is-drop-target").forEach((column) => column.classList.remove("is-drop-target"));
+
+    const moveCardBack = () => {
+      if (!draggedCard || !originalColumn) return;
+      if (originalNextSibling && originalNextSibling.parentElement === originalColumn) {
+        originalColumn.insertBefore(draggedCard, originalNextSibling);
+      } else {
+        originalColumn.appendChild(draggedCard);
+      }
+      draggedCard.dataset.kanbanStatus = originalStatus;
+      updateAllCounts();
+    };
+
+    const saveStatus = async (card, statusValue) => {
+      const prospectId = card.dataset.prospectId || cardId(card);
+      if (!prospectId || !csrfToken) throw new Error("Missing prospect update token. Refresh and try again.");
+      const form = new FormData();
+      form.append("csrf_token", csrfToken);
+      form.append("prospect_id", prospectId);
+      form.append("status", statusValue);
+      const response = await fetch("/prospect-status.php", {
+        method: "POST",
+        body: form,
+        credentials: "same-origin",
+        headers: { "Accept": "application/json" },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok !== true) {
+        throw new Error(payload.message || "Could not update prospect status.");
+      }
+      return payload;
+    };
+
+    document.querySelectorAll(".kanban-column").forEach((column) => {
+      column.dataset.kanbanStatus = columnStatus(column);
+      column.setAttribute("aria-label", `${column.dataset.kanbanStatus} prospects`);
+
+      column.addEventListener("dragover", (event) => {
+        if (!draggedCard) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      });
+      column.addEventListener("dragenter", () => {
+        if (draggedCard) column.classList.add("is-drop-target");
+      });
+      column.addEventListener("dragleave", (event) => {
+        if (!column.contains(event.relatedTarget)) column.classList.remove("is-drop-target");
+      });
+      column.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        clearDropTargets();
+        if (!draggedCard) return;
+        const newStatus = column.dataset.kanbanStatus || columnStatus(column);
+        if (!newStatus || newStatus === originalStatus) return;
+
+        const activeCard = draggedCard;
+        column.appendChild(activeCard);
+        activeCard.dataset.kanbanStatus = newStatus;
+        activeCard.classList.add("is-saving");
+        updateAllCounts();
+
+        try {
+          await saveStatus(activeCard, newStatus);
+          setMessage(`Status updated to ${newStatus}.`);
+        } catch (error) {
+          moveCardBack();
+          setMessage(error.message || "Could not update prospect status.", true);
+        } finally {
+          activeCard.classList.remove("is-saving");
+        }
+      });
+    });
+
+    document.querySelectorAll(".kanban-card").forEach((card) => {
+      const id = cardId(card);
+      if (!id) return;
+      card.dataset.prospectId = id;
+      card.dataset.kanbanStatus = columnStatus(card.closest(".kanban-column"));
+      card.setAttribute("draggable", "true");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-grabbed", "false");
+      card.title = "Drag to another status column";
+
+      card.addEventListener("dragstart", (event) => {
+        draggedCard = card;
+        originalColumn = card.closest(".kanban-column");
+        originalNextSibling = card.nextElementSibling;
+        originalStatus = card.dataset.kanbanStatus || columnStatus(originalColumn);
+        card.classList.add("is-dragging");
+        card.setAttribute("aria-grabbed", "true");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", id);
+      });
+
+      card.addEventListener("dragend", () => {
+        card.classList.remove("is-dragging");
+        card.setAttribute("aria-grabbed", "false");
+        clearDropTargets();
+        draggedCard = null;
+        originalColumn = null;
+        originalNextSibling = null;
+        originalStatus = "";
+      });
+    });
+  }
+
   const customizeButton = document.querySelector("[data-customize-dashboard]");
   const dashboardView = document.querySelector("[data-prospect-view='dashboard']");
   const widgetGrid = document.querySelector(".prospect-widget-grid");

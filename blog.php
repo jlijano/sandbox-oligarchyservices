@@ -14,7 +14,6 @@ if ($slug === '') {
 
 try {
     $pdo = db();
-    blog_ensure_schema($pdo);
     $post = blog_fetch_published_by_slug($pdo, $slug);
     $latest = blog_fetch_published($pdo, 4);
 } catch (Throwable $error) {

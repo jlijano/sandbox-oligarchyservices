@@ -551,6 +551,66 @@ body.prospect-modal-open {
   background: rgba(255, 255, 255, 0.035);
 }
 
+/* Compact CRM index: keep the list scannable and reserve full details for the Open view. */
+.prospects-table {
+  min-width: 1080px;
+  table-layout: fixed;
+}
+
+.prospects-table th:nth-child(3),
+.prospects-table td:nth-child(3),
+.prospects-table th:nth-child(5),
+.prospects-table td:nth-child(5),
+.prospects-table th:nth-child(7),
+.prospects-table td:nth-child(7),
+.prospects-table th:nth-child(9),
+.prospects-table td:nth-child(9),
+.prospects-table th:nth-child(10),
+.prospects-table td:nth-child(10),
+.prospects-table th:nth-child(11),
+.prospects-table td:nth-child(11),
+.prospects-table th:nth-child(13),
+.prospects-table td:nth-child(13),
+.prospects-table th:nth-child(15),
+.prospects-table td:nth-child(15),
+.prospects-table th:nth-child(17),
+.prospects-table td:nth-child(17),
+.prospects-table th:nth-child(19),
+.prospects-table td:nth-child(19) {
+  display: none;
+}
+
+.prospects-table th:nth-child(1) { width: 22%; }
+.prospects-table th:nth-child(2) { width: 110px; }
+.prospects-table th:nth-child(4) { width: 15%; }
+.prospects-table th:nth-child(6) { width: 86px; }
+.prospects-table th:nth-child(8) { width: 14%; }
+.prospects-table th:nth-child(12) { width: 13%; }
+.prospects-table th:nth-child(14) { width: 20%; }
+.prospects-table th:nth-child(16) { width: 94px; }
+.prospects-table th:nth-child(18) { width: 18%; }
+
+.prospects-table td:nth-child(1),
+.prospects-table td:nth-child(4),
+.prospects-table td:nth-child(8),
+.prospects-table td:nth-child(12),
+.prospects-table td:nth-child(14),
+.prospects-table td:nth-child(18) {
+  white-space: normal;
+}
+
+.prospects-table td:nth-child(14),
+.prospects-table td:nth-child(18) {
+  color: #d8dee8;
+  line-height: 1.45;
+}
+
+.prospects-table td:first-child small {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 @media (max-width: 1180px) {
   .prospect-filters,
   .prospect-widget-grid {
@@ -592,5 +652,18 @@ body.prospect-modal-open {
 
   .timeline-item {
     grid-template-columns: 1fr;
+  }
+
+  .prospects-table {
+    min-width: 860px;
+  }
+
+  .prospects-table th:nth-child(4),
+  .prospects-table td:nth-child(4),
+  .prospects-table th:nth-child(8),
+  .prospects-table td:nth-child(8),
+  .prospects-table th:nth-child(12),
+  .prospects-table td:nth-child(12) {
+    display: none;
   }
 }

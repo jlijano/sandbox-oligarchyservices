@@ -1,4 +1,13 @@
 (function () {
+  const loadNavigation = () => {
+    if (document.querySelector("script[data-shared-navigation]")) return;
+    const script = document.createElement("script");
+    script.defer = true;
+    script.src = "/assets/navigation.js?v=20260630";
+    script.dataset.sharedNavigation = "true";
+    document.head.appendChild(script);
+  };
+
   const formatDate = (value) => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
@@ -112,6 +121,7 @@
     });
   };
 
+  loadNavigation();
   renderLatestBlogs();
   setupCopyButtons();
 })();

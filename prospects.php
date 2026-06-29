@@ -134,7 +134,7 @@ $csrf = csrf_token();
     <title>Prospects | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
-    <link rel="stylesheet" href="/assets/prospects.css?v=20260629-live-crm">
+    <link rel="stylesheet" href="/assets/prospects.css?v=20260629-prospect-polish">
     <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
     <script defer src="/assets/prospects.js?v=20260629-live-crm"></script>
   </head>

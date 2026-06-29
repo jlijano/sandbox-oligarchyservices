@@ -10,11 +10,16 @@
   const passwordError = form.querySelector("#password-error");
   const passwordToggle = form.querySelector(".password-toggle");
   const storageKey = "oligarchy_client_email";
+  const passwordMinimumLength = 12;
 
   const savedEmail = window.localStorage.getItem(storageKey);
   if (savedEmail) {
     email.value = savedEmail;
     rememberEmail.checked = true;
+  }
+
+  if (password) {
+    password.minLength = passwordMinimumLength;
   }
 
   const setFieldError = (field, errorElement, text) => {
@@ -48,8 +53,8 @@
     if (!passwordValue) {
       setFieldError(password, passwordError, "Enter your password.");
       isValid = false;
-    } else if (passwordValue.length < 8) {
-      setFieldError(password, passwordError, "Password must be at least 8 characters.");
+    } else if (passwordValue.length < passwordMinimumLength) {
+      setFieldError(password, passwordError, `Password must be at least ${passwordMinimumLength} characters.`);
       isValid = false;
     } else {
       setFieldError(password, passwordError, "");

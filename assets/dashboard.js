@@ -18,6 +18,7 @@
     playground: "fa-flask",
     agents: "fa-android",
     prospects: "fa-address-card-o",
+    carrier: "fa-envelope-o",
     pages: "fa-file-text-o",
     blogs: "fa-newspaper-o",
     navigation: "fa-bars",
@@ -38,17 +39,23 @@
     document.head.appendChild(link);
   };
 
-  const ensureProspectsNavigation = () => {
+  const ensurePlaygroundNavigation = () => {
     const playgroundSubnav = document.querySelector("[data-playground-subnav]");
-    if (!playgroundSubnav || playgroundSubnav.querySelector("a[href='/prospects.php']")) return;
-    const link = document.createElement("a");
-    link.href = "/prospects.php";
-    link.innerHTML = '<span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Prospects</span>';
-    const navigationLink = playgroundSubnav.querySelector("a[href='/dashboard.php#navigation']");
-    if (navigationLink) {
-      playgroundSubnav.insertBefore(link, navigationLink);
-    } else {
-      playgroundSubnav.appendChild(link);
+    if (!playgroundSubnav) return;
+    let prospectsLink = playgroundSubnav.querySelector("a[href='/prospects.php']");
+    if (!prospectsLink) {
+      prospectsLink = document.createElement("a");
+      prospectsLink.href = "/prospects.php";
+      prospectsLink.innerHTML = '<span class="nav-icon" aria-hidden="true">P</span><span class="nav-label">Prospects</span>';
+      const navigationLink = playgroundSubnav.querySelector("a[href='/dashboard.php#navigation']");
+      if (navigationLink) playgroundSubnav.insertBefore(prospectsLink, navigationLink);
+      else playgroundSubnav.appendChild(prospectsLink);
+    }
+    if (!playgroundSubnav.querySelector("a[href='/carrier']")) {
+      const carrierLink = document.createElement("a");
+      carrierLink.href = "/carrier";
+      carrierLink.innerHTML = '<span class="nav-icon" aria-hidden="true">C</span><span class="nav-label">Carrier</span>';
+      prospectsLink.insertAdjacentElement("afterend", carrierLink);
     }
   };
 
@@ -127,7 +134,7 @@
     syncSidebarGroups();
   };
 
-  ensureProspectsNavigation();
+  ensurePlaygroundNavigation();
   movePagesToDedicatedManager();
   applySidebarIcons();
 

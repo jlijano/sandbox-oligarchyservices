@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             blog_ensure_schema($pdo);
             request_ensure_schema($pdo);
             prospect_ensure_schema($pdo);
+            prospect_add_column_if_missing($pdo, 'prospects', 'recommended_services', 'TEXT NULL');
             automation_ensure_schema($pdo);
             try {
                 $stmt = $pdo->prepare('INSERT INTO activity_log (user_id, action, target_type, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)');

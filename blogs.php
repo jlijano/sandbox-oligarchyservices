@@ -29,6 +29,7 @@ try {
     <link rel="stylesheet" href="/assets/styles.css?v=20260621-blogs">
     <link rel="stylesheet" href="/assets/blogs.css?v=20260621-blogs">
     <link rel="stylesheet" href="/assets/footer.css?v=20260618-crawford-layout">
+    <script defer src="/assets/navigation.js?v=20260630"></script>
   </head>
   <body>
     <header class="site-header"><a class="brand" href="/" aria-label="Oligarchy Services home"><span class="brand-mark" aria-hidden="true"></span></a><button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">Menu</button><nav id="primary-navigation" class="nav-links" aria-label="Primary navigation"><a href="/">Home</a><a href="/about.html">About Us</a><div class="nav-dropdown"><button class="nav-dropdown-toggle" type="button" aria-expanded="false">Services</button><div class="nav-dropdown-menu"><a href="/ai-automation.html">AI &amp; Automation</a><a href="/help-desk.html">Help Desk</a><a href="/msp.html">MSP</a><a href="/business-systems.html">Business Systems</a><a href="/itad.html">ITAD</a><a href="/itam.html">ITAM</a></div></div><a href="/blogs.php" aria-current="page">Blogs</a><a href="/contact.html">Contact Us</a><a class="nav-cta" href="/contact.html">Get Quote</a></nav></header>

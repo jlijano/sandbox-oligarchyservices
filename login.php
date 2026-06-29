@@ -20,7 +20,7 @@ unset($_SESSION['login_error']);
     <link rel="stylesheet" href="/assets/login.css?v=20260620-php-login">
     <script>window.OLIGARCHY_ANALYTICS={enabled:false,provider:"plausible",domain:"",respectDoNotTrack:true};</script>
     <script defer src="/assets/analytics.js?v=20260620-centered-login"></script>
-    <script defer src="/assets/login.js?v=20260621-json-login"></script>
+    <script defer src="/assets/login.js?v=20260629-password-policy"></script>
   </head>
   <body>
     <main class="login-page">
@@ -45,7 +45,7 @@ unset($_SESSION['login_error']);
           <label class="field" for="password">
             <span>Password</span>
             <span class="password-control">
-              <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required>
+              <input id="password" name="password" type="password" autocomplete="current-password" minlength="12" required>
               <button class="password-toggle" type="button" aria-controls="password" aria-pressed="false">Show</button>
             </span>
             <small class="field-error" id="password-error"></small>

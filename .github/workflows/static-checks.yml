@@ -59,7 +59,7 @@ jobs:
             echo "No XML files found."
             exit 0
           fi
-          python3 - "$@" <<'PY' "${files[@]}"
+          python3 - "${files[@]}" <<'PY'
           import sys
           import xml.etree.ElementTree as ET
 
@@ -83,7 +83,7 @@ jobs:
             echo "No HTML files found."
             exit 0
           fi
-          python3 - "$@" <<'PY' "${files[@]}"
+          python3 - "${files[@]}" <<'PY'
           import sys
           from html.parser import HTMLParser
 

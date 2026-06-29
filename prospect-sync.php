@@ -28,15 +28,16 @@ $schemaMessage = '';
 
 try {
     $pdo = db();
+    prospect_ensure_schema($pdo);
     $schemaReady = prospect_schema_ready($pdo);
 } catch (Throwable $dbError) {
     error_log('Prospect sync database unavailable: ' . $dbError->getMessage());
-    $schemaMessage = 'Prospect sync cannot connect to the portal database yet. Check the Hostinger database config or run repair.php if the config is missing.';
+    $schemaMessage = 'Prospect sync cannot prepare the portal database yet. Check the Hostinger database config, then run /update.php if needed.';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$pdo instanceof PDO || !$schemaReady) {
-        $error = 'Prospects database tables are not ready. Log in as an admin and run /update.php after deployment.';
+        $error = 'Prospects database tables are not ready. Check the database config, then run /update.php if needed.';
     } elseif (!csrf_verify($_POST['csrf_token'] ?? null)) {
         $error = 'Your session expired. Please refresh and try again.';
     } else {
@@ -81,7 +82,7 @@ $csrf = csrf_token();
         <main class="dashboard-content prospects-workspace">
           <?php if ($notice !== ''): ?><div class="dashboard-alert is-success" role="status"><?= e($notice) ?></div><?php endif; ?>
           <?php if ($error !== ''): ?><div class="dashboard-alert is-error" role="alert"><?= e($error) ?></div><?php endif; ?>
-          <?php if (!$schemaReady): ?><div class="dashboard-alert is-error" role="alert"><?= e($schemaMessage ?: 'Prospects database tables are not ready. Log in as an admin and run /update.php after deployment.') ?></div><?php endif; ?>
+          <?php if (!$schemaReady): ?><div class="dashboard-alert is-error" role="alert"><?= e($schemaMessage ?: 'Prospects database tables are not ready. Check the database config, then run /update.php if needed.') ?></div><?php endif; ?>
           <header class="dashboard-hero compact-hero prospects-header">
             <div><p class="eyebrow">Google Sheet staging</p><h2>Sync Sheet Rows Into The Portal Database</h2><p>This sync reads the configured Google Sheet CSV tabs, maps the tracker fields to the live prospects table, and upserts records by website, email, or business name/location.</p></div>
             <div class="hero-actions"><a class="secondary-action" href="/prospects.php">Back to prospects</a></div>

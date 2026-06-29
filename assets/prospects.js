@@ -1,4 +1,5 @@
 (function () {
+  const importTemplateHref = "/assets/prospects-import-template.csv";
   const playgroundSubnav = document.querySelector("[data-playground-subnav]");
   if (playgroundSubnav && !playgroundSubnav.querySelector("a[href='/prospects.php']")) {
     const link = document.createElement("a");
@@ -13,12 +14,30 @@
   }
 
   const heroActions = document.querySelector(".prospects-header .hero-actions");
+  if (heroActions && !heroActions.querySelector(`a[href='${importTemplateHref}']`)) {
+    const templateLink = document.createElement("a");
+    templateLink.href = importTemplateHref;
+    templateLink.className = "secondary-action";
+    templateLink.download = "prospects-import-template.csv";
+    templateLink.textContent = "Export CSV Template";
+    heroActions.appendChild(templateLink);
+  }
   if (heroActions && !heroActions.querySelector("a[href='/prospect-sync.php']")) {
     const syncLink = document.createElement("a");
     syncLink.href = "/prospect-sync.php";
     syncLink.className = "secondary-action";
     syncLink.textContent = "Sync Google Sheet";
     heroActions.appendChild(syncLink);
+  }
+
+  const importHeading = document.querySelector("#prospect-import .table-heading");
+  if (importHeading && !importHeading.querySelector(`a[href='${importTemplateHref}']`)) {
+    const templateLink = document.createElement("a");
+    templateLink.href = importTemplateHref;
+    templateLink.className = "secondary-action";
+    templateLink.download = "prospects-import-template.csv";
+    templateLink.textContent = "Export CSV Template";
+    importHeading.appendChild(templateLink);
   }
 
   const modalIds = ["prospect-form", "prospect-import", "prospect-detail"];

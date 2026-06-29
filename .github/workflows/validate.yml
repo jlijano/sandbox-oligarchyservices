@@ -70,11 +70,17 @@ jobs:
           def normalize_url(raw):
               if not raw or raw.startswith('#'):
                   return None
+              if '<?' in raw or '?>' in raw:
+                  return None
+              if raw.startswith(('{{', '{%', '${')):
+                  return None
               parsed = urlsplit(raw)
               if parsed.scheme.lower() in external_schemes or parsed.netloc:
                   return None
               path = unquote(parsed.path or '')
               if not path or path.startswith('#'):
+                  return None
+              if '<?' in path or '?>' in path:
                   return None
               return path
 

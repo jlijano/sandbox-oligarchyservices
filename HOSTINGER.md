@@ -12,6 +12,11 @@ Upload these repository files into the domain's `public_html` directory:
 - `login.php`
 - `dashboard.php`
 - `requests.php` for authenticated client service requests
+- `carrier.php` and `switchboard.php` for admin/editor operational workspaces
+- `pages.php`, `page.php`, `admin-blogs.php`, `blogs.php`, and `blog.php` for CMS and blog content
+- `prospects.php`, `prospect-status.php`, `prospect-sync.php`, and `prospect-sync-job.php` for prospect management and optional sheet sync
+- `users.php`, `roles.php`, `companies.php`, `departments.php`, and `agents.php` for portal access management
+- `automation.php` for portal automation controls
 - `logout.php`
 - `account-confirmation.php` for account email confirmation links
 - `change-password.php` for required first-login password changes
@@ -28,8 +33,7 @@ Upload these repository files into the domain's `public_html` directory:
 - `api/`
 - `includes/` without committing or exposing generated credentials
 
-Do not upload local scratch folders, dependency folders, environment files, or
-other development-only files.
+Do not upload local scratch folders, dependency folders, environment files, generated Sentinel report archives, or other development-only files.
 
 This project does not require `node_modules`, `npm install`, a build command,
 cron jobs, or a long-running Node.js process for the public website.
@@ -53,8 +57,8 @@ Use the setup page that matches the job:
   required tables, and the first admin account. If the portal is already
   installed, this page stays locked.
 - `/update.php`: logged-in admin updates only. It applies safe, non-destructive
-  table updates after new CMS, blog, access-management, or client request code is
-  deployed.
+  table updates after new CMS, blog, access-management, prospect, Carrier,
+  Switchboard, or client request code is deployed.
 - `/repair.php`: config repair only. It reconnects the existing database when
   `includes/config.php` is missing. Existing tables and data are kept. If a
   persistent `oligarchy-config.php` backup exists, repair restores from it
@@ -70,7 +74,7 @@ First install:
 6. Confirm the installer completes successfully.
 7. Log in through `/login.html`.
 
-After deploying CMS or client request changes:
+After deploying CMS, prospect, Carrier, Switchboard, or client request changes:
 
 1. Log in as an admin.
 2. Open `/update.php`.
@@ -146,6 +150,21 @@ portal still accepts the parent backup config or these environment variables:
 `DB_HOST`, `DB_DATABASE` or `DB_NAME`, `DB_USERNAME` or `DB_USER`,
 `DB_PASSWORD`, and optional `DB_PORT`.
 
+## Prospect sheet sync
+
+Prospect management works without a scheduled sync job. To enable the optional
+Google Sheet sync, configure only non-secret identifiers in documentation and put
+actual private values in the hosting environment:
+
+- `PROSPECTS_SYNC_CSV_URL`: optional direct HTTPS CSV export URL.
+- `PROSPECTS_SYNC_SPREADSHEET_ID`: optional spreadsheet ID used by the default tab exports.
+- `PROSPECTS_SYNC_JOB_TOKEN`: required only for `/prospect-sync-job.php` scheduled sync calls.
+
+Use `/prospect-sync.php` while logged in as an admin or editor for a manual sync.
+If `/prospect-sync-job.php` is exposed to a scheduler, send the token over a
+private scheduler configuration and rotate it if it has been shared in logs,
+bookmarks, or support tickets.
+
 Sentinel report archive expectations are documented in
 `docs/sentinel-report-archive.md`. Generated report archives should stay in
 Sentinel's private durable workspace or the automation host's private persistent
@@ -169,8 +188,9 @@ as down.
 3. If the domain uses a subdirectory install, update absolute paths in
    `.htaccess` and the sitemaps.
 4. Test `index.html`, `login.html`, `dashboard.php`, `requests.php`,
-   `logout.php`, `account-confirmation.php`, `change-password.php`,
-   `privacy.html`, `sitemap.php`, and a fake missing URL after upload.
+   `carrier.php`, `switchboard.php`, `prospects.php`, `logout.php`,
+   `account-confirmation.php`, `change-password.php`, `privacy.html`,
+   `sitemap.php`, and a fake missing URL after upload.
 
 ## Analytics
 

@@ -56,6 +56,17 @@ function prospect_column_exists(PDO $pdo, string $table, string $column): bool
     $stmt->execute([$table, $column]);
     return (int) $stmt->fetchColumn() > 0;
 }
+function prospect_required_columns(): array
+{
+    return [
+        'id', 'company', 'status', 'website', 'industry_category', 'recommended_services', 'conversion_percentage', 'notes',
+        'contact', 'email', 'phone', 'social_media_links', 'location', 'reason_relevant', 'pain_point_trigger', 'outreach_angle',
+        'priority', 'last_contact', 'next_step', 'additional_notes', 'decision_maker_title', 'decision_maker_department',
+        'decision_maker_profile_url', 'decision_maker_source', 'contact_confidence', 'company_source_url', 'last_verified',
+        'data_gaps_validation_notes', 'source', 'value', 'owner', 'follow_up', 'last_activity', 'created_by', 'updated_by',
+        'created_at', 'updated_at',
+    ];
+}
 function prospect_add_column_if_missing(PDO $pdo, string $table, string $column, string $definition): void
 {
     if (!prospect_column_exists($pdo, $table, $column)) {
@@ -180,7 +191,14 @@ function prospect_ensure_schema(PDO $pdo): void
     prospect_add_index_if_missing($pdo, 'prospects', 'idx_prospects_last_contact', '`last_contact`');
     prospect_add_index_if_missing($pdo, 'prospects', 'idx_prospects_updated', '`updated_at`');
 }
-function prospect_schema_ready(PDO $pdo): bool { return prospect_table_exists($pdo, 'prospects'); }
+function prospect_schema_ready(PDO $pdo): bool
+{
+    if (!prospect_table_exists($pdo, 'prospects')) return false;
+    foreach (prospect_required_columns() as $column) {
+        if (!prospect_column_exists($pdo, 'prospects', $column)) return false;
+    }
+    return true;
+}
 function prospect_log_activity(PDO $pdo, int $actorId, string $action, ?int $targetId = null, string $details = ''): void
 {
     try {
@@ -351,12 +369,20 @@ function prospect_import_csv_rows(string $raw): array
     fclose($handle);
     return $rows;
 }
+function prospect_import_has_recommended_services(array $fields): bool
+{
+    if (count($fields) >= 27) return true;
+    $recommendedServices = trim((string) ($fields[4] ?? ''));
+    $percentage = trim((string) ($fields[5] ?? ''));
+    if ($recommendedServices === '') return false;
+    return !is_numeric(str_replace('%', '', $recommendedServices)) && ($percentage === '' || is_numeric(str_replace('%', '', $percentage)));
+}
 function prospect_payload_from_import_fields(array $fields): ?array
 {
     $firstHeader = strtolower(trim((string) ($fields[0] ?? '')));
     if ($firstHeader === '' || in_array($firstHeader, ['company', 'business name'], true)) return null;
 
-    $hasRecommendedServices = count($fields) >= 27;
+    $hasRecommendedServices = prospect_import_has_recommended_services($fields);
     $percentageIndex = $hasRecommendedServices ? 5 : 4;
     $offset = $hasRecommendedServices ? 1 : 0;
     $company = prospect_clean_import_text($fields, 0, 190);

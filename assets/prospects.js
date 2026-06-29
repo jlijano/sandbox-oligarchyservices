@@ -12,6 +12,42 @@
     group?.querySelector("[data-playground-toggle]")?.setAttribute("aria-expanded", "true");
   }
 
+  const modalIds = ["prospect-form", "prospect-import", "prospect-detail"];
+  const modals = modalIds.map((id) => document.getElementById(id)).filter(Boolean);
+  const closeModal = () => {
+    if (!modalIds.includes(window.location.hash.slice(1))) return;
+    history.pushState("", document.title, window.location.pathname + window.location.search);
+    document.body.classList.remove("prospect-modal-open");
+  };
+  const syncModalState = () => {
+    const activeId = window.location.hash.slice(1);
+    document.body.classList.toggle("prospect-modal-open", modalIds.includes(activeId));
+  };
+
+  modals.forEach((modal) => {
+    if (!modal.querySelector("[data-prospect-modal-close]")) {
+      const close = document.createElement("a");
+      close.href = window.location.pathname + window.location.search.replace(/([?&])open=[^&]*&?/, "$1").replace(/[?&]$/, "");
+      close.className = "prospect-modal-close";
+      close.setAttribute("aria-label", "Close dialog");
+      close.setAttribute("data-prospect-modal-close", "");
+      close.textContent = "×";
+      modal.insertBefore(close, modal.firstChild);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+  document.addEventListener("click", (event) => {
+    const activeId = window.location.hash.slice(1);
+    if (!modalIds.includes(activeId)) return;
+    const activeModal = document.getElementById(activeId);
+    if (activeModal && !activeModal.contains(event.target) && !event.target.closest("a[href^='#prospect-']")) closeModal();
+  });
+  window.addEventListener("hashchange", syncModalState);
+  syncModalState();
+
   const viewButtons = Array.from(document.querySelectorAll("[data-prospect-view-button]"));
   const views = Array.from(document.querySelectorAll("[data-prospect-view]"));
 

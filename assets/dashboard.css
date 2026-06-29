@@ -269,3 +269,11 @@ td form { display: inline-flex; margin: 0; }
     grid-template-columns: 1fr;
   }
 }
+
+/* Keep the Prospects actions inline without an enclosing outlined box. */
+.dashboard-content .prospect-toolbar.prospects-header {
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}

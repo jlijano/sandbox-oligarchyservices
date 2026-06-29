@@ -2,9 +2,16 @@
 declare(strict_types=1);
 
 function prospect_statuses(): array { return ['New Lead', 'InProgress', 'Warm', 'Converted', 'Client', 'Closed / Lost']; }
+function prospect_legacy_statuses(): array { return ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost']; }
+function prospect_status_enum_sql(): string { return "ENUM('New','Contacted','Qualified','Proposal','Negotiation','Won','Lost','New Lead','InProgress','Warm','Converted','Client','Closed / Lost') NOT NULL DEFAULT 'New Lead'"; }
 function prospect_kanban_statuses(): array { return ['New Lead', 'InProgress', 'Warm', 'Converted', 'Client']; }
 function prospect_priorities(): array { return ['High', 'Medium', 'Low']; }
-function prospect_status(string $value): string { return in_array($value, prospect_statuses(), true) ? $value : 'New Lead'; }
+function prospect_status(string $value): string
+{
+    $aliases = ['New' => 'New Lead', 'Contacted' => 'InProgress', 'Qualified' => 'Warm', 'Proposal' => 'Warm', 'Negotiation' => 'Warm', 'Won' => 'Converted', 'Lost' => 'Closed / Lost'];
+    $value = $aliases[$value] ?? $value;
+    return in_array($value, prospect_statuses(), true) ? $value : 'New Lead';
+}
 function prospect_priority(string $value): string { return in_array($value, prospect_priorities(), true) ? $value : 'Medium'; }
 function prospect_money(int $value): string { return '$' . number_format($value); }
 function prospect_excerpt(string $value, int $length = 120): string
@@ -49,7 +56,15 @@ function prospect_column_exists(PDO $pdo, string $table, string $column): bool
 }
 function prospect_add_column_if_missing(PDO $pdo, string $table, string $column, string $definition): void
 {
-    if (!prospect_column_exists($pdo, $table, $column)) $pdo->exec('ALTER TABLE ' . prospect_sql_name($table) . ' ADD COLUMN ' . prospect_sql_name($column) . ' ' . $definition);
+    if (!prospect_column_exists($pdo, $table, $column)) {
+        $pdo->exec('ALTER TABLE ' . prospect_sql_name($table) . ' ADD COLUMN ' . prospect_sql_name($column) . ' ' . $definition);
+    }
+}
+function prospect_modify_column_if_exists(PDO $pdo, string $table, string $column, string $definition): void
+{
+    if (prospect_column_exists($pdo, $table, $column)) {
+        $pdo->exec('ALTER TABLE ' . prospect_sql_name($table) . ' MODIFY COLUMN ' . prospect_sql_name($column) . ' ' . $definition);
+    }
 }
 function prospect_index_exists(PDO $pdo, string $table, string $index): bool
 {
@@ -63,10 +78,11 @@ function prospect_add_index_if_missing(PDO $pdo, string $table, string $index, s
 }
 function prospect_ensure_schema(PDO $pdo): void
 {
+    $statusDefinition = prospect_status_enum_sql();
     $pdo->exec("CREATE TABLE IF NOT EXISTS prospects (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         company VARCHAR(190) NOT NULL,
-        status ENUM('New Lead','InProgress','Warm','Converted','Client','Closed / Lost') NOT NULL DEFAULT 'New Lead',
+        status " . $statusDefinition . ",
         website VARCHAR(255) NOT NULL DEFAULT '',
         industry_category VARCHAR(190) NOT NULL DEFAULT '',
         conversion_percentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
@@ -102,7 +118,9 @@ function prospect_ensure_schema(PDO $pdo): void
         CONSTRAINT fk_prospects_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     prospect_add_column_if_missing($pdo, 'prospects', 'company', "VARCHAR(190) NOT NULL DEFAULT ''");
-    prospect_add_column_if_missing($pdo, 'prospects', 'status', "ENUM('New Lead','InProgress','Warm','Converted','Client','Closed / Lost') NOT NULL DEFAULT 'New Lead'");
+    prospect_add_column_if_missing($pdo, 'prospects', 'status', $statusDefinition);
+    prospect_modify_column_if_exists($pdo, 'prospects', 'status', $statusDefinition);
+    $pdo->exec("UPDATE prospects SET status = CASE status WHEN 'New' THEN 'New Lead' WHEN 'Contacted' THEN 'InProgress' WHEN 'Qualified' THEN 'Warm' WHEN 'Proposal' THEN 'Warm' WHEN 'Negotiation' THEN 'Warm' WHEN 'Won' THEN 'Converted' WHEN 'Lost' THEN 'Closed / Lost' ELSE status END");
     prospect_add_column_if_missing($pdo, 'prospects', 'website', "VARCHAR(255) NOT NULL DEFAULT ''");
     prospect_add_column_if_missing($pdo, 'prospects', 'industry_category', "VARCHAR(190) NOT NULL DEFAULT ''");
     prospect_add_column_if_missing($pdo, 'prospects', 'conversion_percentage', 'DECIMAL(5,2) NOT NULL DEFAULT 0.00');
@@ -116,6 +134,7 @@ function prospect_ensure_schema(PDO $pdo): void
     prospect_add_column_if_missing($pdo, 'prospects', 'pain_point_trigger', 'TEXT NULL');
     prospect_add_column_if_missing($pdo, 'prospects', 'outreach_angle', 'TEXT NULL');
     prospect_add_column_if_missing($pdo, 'prospects', 'priority', "ENUM('High','Medium','Low') NOT NULL DEFAULT 'Medium'");
+    prospect_modify_column_if_exists($pdo, 'prospects', 'priority', "ENUM('High','Medium','Low') NOT NULL DEFAULT 'Medium'");
     prospect_add_column_if_missing($pdo, 'prospects', 'last_contact', 'DATE NULL');
     prospect_add_column_if_missing($pdo, 'prospects', 'next_step', "VARCHAR(255) NOT NULL DEFAULT ''");
     prospect_add_column_if_missing($pdo, 'prospects', 'additional_notes', 'TEXT NULL');
@@ -173,32 +192,11 @@ function prospect_valid_email(string $email): string
 }
 function prospect_conversion_percentage(array $payload, float $fallbackBase = 30.0): float
 {
-    $statusBase = [
-        'New Lead' => 30.0,
-        'InProgress' => 55.0,
-        'Warm' => 75.0,
-        'Converted' => 95.0,
-        'Client' => 95.0,
-        'Closed / Lost' => 5.0,
-    ];
+    $statusBase = ['New Lead' => 30.0, 'InProgress' => 55.0, 'Warm' => 75.0, 'Converted' => 95.0, 'Client' => 95.0, 'Closed / Lost' => 5.0];
     $score = $statusBase[(string) ($payload['status'] ?? '')] ?? $fallbackBase;
     $priority = strtolower((string) ($payload['priority'] ?? ''));
     $score += $priority === 'high' ? 12.0 : ($priority === 'medium' ? 6.0 : ($priority === 'low' ? 2.0 : 0.0));
-    foreach ([
-        'website' => 4.0,
-        'industry_category' => 5.0,
-        'notes' => 3.0,
-        'contact' => 5.0,
-        'email' => 8.0,
-        'phone' => 5.0,
-        'social_media_links' => 3.0,
-        'location' => 3.0,
-        'reason_relevant' => 7.0,
-        'pain_point_trigger' => 8.0,
-        'outreach_angle' => 7.0,
-        'next_step' => 6.0,
-        'additional_notes' => 3.0,
-    ] as $field => $points) {
+    foreach (['website' => 4.0, 'industry_category' => 5.0, 'notes' => 3.0, 'contact' => 5.0, 'email' => 8.0, 'phone' => 5.0, 'social_media_links' => 3.0, 'location' => 3.0, 'reason_relevant' => 7.0, 'pain_point_trigger' => 8.0, 'outreach_angle' => 7.0, 'next_step' => 6.0, 'additional_notes' => 3.0] as $field => $points) {
         if (trim((string) ($payload[$field] ?? '')) !== '') $score += $points;
     }
     $lastContact = (string) ($payload['last_contact'] ?? '');

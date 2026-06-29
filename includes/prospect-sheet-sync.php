@@ -57,22 +57,27 @@ function prospect_sheet_fetch_csv(string $url): string
         if ($body === false || $status >= 400) {
             throw new RuntimeException('Could not fetch the Google Sheet CSV export' . ($error !== '' ? ': ' . $error : '.'));
         }
-        return (string) $body;
+        $body = (string) $body;
+    } else {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 25,
+                'header' => "User-Agent: OligarchyProspectSync/1.0\r\n",
+            ],
+        ]);
+        $body = @file_get_contents($url, false, $context);
+        if ($body === false) {
+            throw new RuntimeException('Could not fetch the Google Sheet CSV export.');
+        }
     }
 
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'GET',
-            'timeout' => 25,
-            'header' => "User-Agent: OligarchyProspectSync/1.0\r\n",
-        ],
-    ]);
-    $body = @file_get_contents($url, false, $context);
-    if ($body === false) {
-        throw new RuntimeException('Could not fetch the Google Sheet CSV export.');
+    $trimmed = ltrim((string) $body);
+    if (stripos($trimmed, '<!doctype') === 0 || stripos($trimmed, '<html') === 0) {
+        throw new RuntimeException('Google Sheet CSV export returned an HTML page instead of CSV. Publish the sheet/tab or configure PROSPECTS_SYNC_CSV_URL with an accessible CSV export.');
     }
 
-    return $body;
+    return (string) $body;
 }
 
 function prospect_sheet_csv_rows(string $csv): array
@@ -194,6 +199,47 @@ function prospect_sheet_payload_from_fields(array $fields, string $defaultStatus
     return $payload['company'] !== '' ? $payload : null;
 }
 
+function prospect_sheet_user_exists(PDO $pdo, int $userId): bool
+{
+    if ($userId <= 0 || !prospect_table_exists($pdo, 'users')) {
+        return false;
+    }
+
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE id = ?');
+    $stmt->execute([$userId]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function prospect_sheet_sync_actor_id(PDO $pdo, int $preferredActorId = 0): int
+{
+    if (prospect_sheet_user_exists($pdo, $preferredActorId)) {
+        return $preferredActorId;
+    }
+
+    $configuredActorId = (int) (getenv('PROSPECTS_SYNC_ACTOR_ID') ?: 0);
+    if (prospect_sheet_user_exists($pdo, $configuredActorId)) {
+        return $configuredActorId;
+    }
+
+    if (!prospect_table_exists($pdo, 'users')) {
+        throw new RuntimeException('No users table was found for prospect sync attribution. Run /update.php or create an admin user first.');
+    }
+
+    $stmt = $pdo->query("SELECT id FROM users WHERE LOWER(role) IN ('admin', 'editor') ORDER BY id ASC LIMIT 1");
+    $fallbackId = $stmt ? $stmt->fetchColumn() : false;
+    if ($fallbackId !== false && (int) $fallbackId > 0) {
+        return (int) $fallbackId;
+    }
+
+    $stmt = $pdo->query('SELECT id FROM users ORDER BY id ASC LIMIT 1');
+    $fallbackId = $stmt ? $stmt->fetchColumn() : false;
+    if ($fallbackId !== false && (int) $fallbackId > 0) {
+        return (int) $fallbackId;
+    }
+
+    throw new RuntimeException('No portal user was found for prospect sync attribution. Create an admin/editor user or set PROSPECTS_SYNC_ACTOR_ID.');
+}
+
 function prospect_find_existing_id(PDO $pdo, array $payload): ?int
 {
     $lookups = [];
@@ -224,6 +270,7 @@ function prospect_find_existing_id(PDO $pdo, array $payload): ?int
 
 function prospect_sheet_sync_upsert(PDO $pdo, array $payload, int $actorId): string
 {
+    $actorId = prospect_sheet_sync_actor_id($pdo, $actorId);
     $existingId = prospect_find_existing_id($pdo, $payload);
     if ($existingId !== null) {
         prospect_update($pdo, $existingId, $payload, $actorId);
@@ -243,6 +290,8 @@ function prospect_sheet_sync(PDO $pdo, int $actorId): array
         'sources' => [],
         'errors' => [],
     ];
+
+    $actorId = prospect_sheet_sync_actor_id($pdo, $actorId);
 
     foreach (prospect_sheet_sync_sources() as $source) {
         $sourceLabel = (string) $source['label'];

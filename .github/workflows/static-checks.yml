@@ -1,0 +1,105 @@
+name: Static syntax checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    name: HTML, PHP, JavaScript, and XML syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Check PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.php')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No PHP files found."
+            exit 0
+          fi
+          for file in "${files[@]}"; do
+            php -l "$file"
+          done
+
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.js')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No JavaScript files found."
+            exit 0
+          fi
+          for file in "${files[@]}"; do
+            node --check "$file"
+          done
+
+      - name: Check XML syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.xml')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No XML files found."
+            exit 0
+          fi
+          python3 - "$@" <<'PY' "${files[@]}"
+          import sys
+          import xml.etree.ElementTree as ET
+
+          failed = False
+          for path in sys.argv[1:]:
+              try:
+                  ET.parse(path)
+                  print(f"OK XML: {path}")
+              except ET.ParseError as exc:
+                  print(f"XML parse error in {path}: {exc}", file=sys.stderr)
+                  failed = True
+          raise SystemExit(1 if failed else 0)
+          PY
+
+      - name: Check HTML parseability
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.html')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No HTML files found."
+            exit 0
+          fi
+          python3 - "$@" <<'PY' "${files[@]}"
+          import sys
+          from html.parser import HTMLParser
+
+          class Parser(HTMLParser):
+              pass
+
+          failed = False
+          for path in sys.argv[1:]:
+              parser = Parser()
+              try:
+                  with open(path, 'r', encoding='utf-8') as handle:
+                      parser.feed(handle.read())
+                  parser.close()
+                  print(f"OK HTML: {path}")
+              except Exception as exc:
+                  print(f"HTML parse error in {path}: {exc}", file=sys.stderr)
+                  failed = True
+          raise SystemExit(1 if failed else 0)
+          PY

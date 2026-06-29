@@ -3,74 +3,16 @@
   const qs = (selector, root = document) => root.querySelector(selector);
   const qsa = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const storageKey = "oligarchy.prospects.dashboard.v2";
-  const chartColors = ["#6d8cff", "#f59e0b", "#8b5cf6", "#ec4899", "#10b981", "#64748b"];
+  const chartColors = ["#c8172b", "#31c4bd", "#e3b653", "#5b8cff", "#36c275", "#64748b"];
 
-  const injectDashboardStyles = () => {
-    if (document.getElementById("prospect-dashboard-customizer-styles")) return;
-    const style = document.createElement("style");
-    style.id = "prospect-dashboard-customizer-styles";
-    style.textContent = `
-      #prospect-dashboard{background:#16142a;border:1px solid rgba(159,150,210,.22);border-radius:8px;padding:12px;box-shadow:0 24px 80px rgba(0,0,0,.34)}
-      #prospect-dashboard .section-heading-row{border-bottom:1px solid rgba(159,150,210,.2);padding-bottom:12px;margin-bottom:0}
-      #prospect-dashboard .section-heading-row h2{color:#f8f7ff;font-size:1.1rem;letter-spacing:0}
-      #prospect-dashboard .eyebrow{color:#b9b3df}
-      .dashboard-customizer-bar{display:none;grid-template-columns:minmax(220px,1fr) auto auto;gap:10px;align-items:center;border:1px solid rgba(159,150,210,.26);border-radius:8px;padding:10px;background:#1b1833}
-      .prospect-view.is-customizing .dashboard-customizer-bar{display:grid}
-      .dashboard-customizer-bar select,.dashboard-customizer-bar input{min-height:38px;border:1px solid rgba(159,150,210,.32);border-radius:6px;background:#100f22;color:#f7f5ff;padding:8px 10px}
-      .dashboard-customizer-bar button,.widget-actions button{min-height:32px;border:1px solid rgba(159,150,210,.32);border-radius:6px;background:rgba(255,255,255,.04);color:#fff;font-weight:850;cursor:pointer}
-      .dashboard-customizer-bar button:hover,.widget-actions button:hover{border-color:rgba(139,92,246,.7);background:rgba(139,92,246,.16)}
-      .prospect-widget-grid{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-flow:dense;grid-auto-rows:minmax(90px,auto);gap:8px}
-      .prospect-widget{grid-column:span var(--widget-cols,1);grid-row:span var(--widget-rows,1);min-height:calc(96px * var(--widget-rows,1));touch-action:none;border-color:rgba(159,150,210,.25);background:#1a1830;box-shadow:none}
-      .prospect-widget::before{display:none}
-      .prospect-widget span[data-widget-title]{color:#d8d3f6;font-size:.72rem;text-transform:none}
-      .prospect-widget strong[data-widget-value]{color:#f7f5ff;font-size:1.8rem;font-weight:800}
-      .prospect-widget p[data-widget-note]{color:#9f98c8;font-size:.78rem;line-height:1.4}
-      .prospect-widget.dashboard-analytic{display:grid;align-content:start;gap:10px;overflow:hidden;background:#1a1830}
-      .prospect-widget.dashboard-analytic strong[data-widget-value]{display:none}
-      .dashboard-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#f7f5ff;font-weight:850;font-size:.78rem}
-      .dashboard-card-tools{display:flex;gap:8px;color:#9f98c8;font-size:.8rem}
-      .dashboard-progress-stack{display:flex;height:64px;align-items:stretch;border-radius:6px;overflow:hidden;background:#100f22;border:1px solid rgba(159,150,210,.2)}
-      .dashboard-progress-segment{display:grid;place-items:center;min-width:12px;color:#fff;font-size:.68rem;font-weight:900}
-      .dashboard-legend{display:flex;flex-wrap:wrap;gap:8px 12px;color:#c9c3ec;font-size:.7rem;font-weight:800}
-      .dashboard-legend span{display:inline-flex;align-items:center;gap:6px;color:inherit;font-size:inherit;text-transform:none}
-      .dashboard-dot{width:8px;height:8px;border-radius:999px;background:var(--dot)}
-      .dashboard-pie-wrap{display:grid;grid-template-columns:140px minmax(0,1fr);gap:14px;align-items:center}
-      .dashboard-pie{width:132px;aspect-ratio:1;border-radius:50%;background:var(--pie);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-      .dashboard-chart{display:grid;gap:8px;margin-top:4px}
-      .dashboard-bar{display:grid;grid-template-columns:minmax(76px,.8fr) minmax(90px,1.5fr) 38px;gap:8px;align-items:center;color:#c9c3ec;font-size:.72rem;font-weight:850}
-      .dashboard-bar-track{height:12px;border-radius:4px;background:#100f22;overflow:hidden;border:1px solid rgba(159,150,210,.16)}
-      .dashboard-bar-fill{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#8b5cf6,#22d3ee)}
-      .dashboard-stacked{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end;min-height:132px;padding:4px 4px 0}
-      .dashboard-stack-column{display:grid;align-content:end;gap:5px;text-align:center;color:#9f98c8;font-size:.7rem;font-weight:850}
-      .dashboard-stack{display:flex;height:96px;align-items:flex-end;justify-content:center;gap:2px;border-bottom:1px solid rgba(159,150,210,.18)}
-      .dashboard-stack-piece{width:24px;border-radius:4px 4px 0 0;background:var(--piece);min-height:8px}
-      .dashboard-report-list{display:grid;gap:8px;margin-top:4px;color:#c9c3ec;font-size:.82rem}
-      .dashboard-report-list span{display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(159,150,210,.16);padding-top:8px}
-      .dashboard-report-list strong{color:#fff;font-size:.92rem}
-      .dashboard-timeline{display:grid;gap:10px;margin-top:4px;overflow:auto;max-height:260px;padding-right:4px}
-      .dashboard-timeline-row{display:grid;grid-template-columns:140px minmax(0,1fr);gap:12px;align-items:center;color:#c9c3ec;font-size:.72rem}
-      .dashboard-timeline-label{display:grid;gap:3px}.dashboard-timeline-label strong{font-size:.76rem;color:#fff}.dashboard-timeline-label span{font-size:.68rem;color:#9f98c8;text-transform:none}
-      .dashboard-timeline-track{height:22px;border-radius:4px;background:#100f22;position:relative;overflow:hidden;border:1px solid rgba(159,150,210,.16)}
-      .dashboard-timeline-fill{position:absolute;inset:4px auto 4px var(--start);width:var(--width);border-radius:4px;background:linear-gradient(90deg,var(--line),#f472b6)}
-      .prospect-view.is-customizing .prospect-widget{outline:1px dashed rgba(139,92,246,.55);outline-offset:3px;cursor:grab}
-      .prospect-widget.is-dashboard-dragging{opacity:.55;transform:scale(.985);cursor:grabbing}
-      .prospect-widget.is-drop-before{box-shadow:-5px 0 0 rgba(139,92,246,.85)}
-      .prospect-widget.is-drop-after{box-shadow:5px 0 0 rgba(139,92,246,.85)}
-      .widget-actions{z-index:2;flex-wrap:wrap;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity 140ms ease,transform 140ms ease}
-      .prospect-view.is-customizing .widget-actions{opacity:1;pointer-events:auto;transform:translateY(0)}
-      .widget-actions button[data-dashboard-size]{min-width:34px;padding:0 8px}
-      .dashboard-resize-handle{display:none;position:absolute;right:8px;bottom:8px;width:18px;height:18px;border-right:2px solid rgba(139,92,246,.9);border-bottom:2px solid rgba(139,92,246,.9);cursor:nwse-resize;z-index:3}
-      .prospect-view.is-customizing .dashboard-resize-handle{display:block}
-      .dashboard-editor{position:fixed;inset:0;z-index:140;display:grid;place-items:center;background:rgba(0,0,0,.68);padding:16px}
-      .dashboard-editor[hidden]{display:none}
-      .dashboard-editor form{display:grid;gap:12px;width:min(520px,100%);border:1px solid rgba(159,150,210,.45);border-radius:8px;padding:16px;background:#17152b;box-shadow:0 24px 80px rgba(0,0,0,.52)}
-      .dashboard-editor label{display:grid;gap:7px;color:#f7f5ff;font-weight:850;font-size:.84rem}
-      .dashboard-editor input,.dashboard-editor textarea{border:1px solid rgba(159,150,210,.34);border-radius:6px;background:#100f22;color:#f7f5ff;padding:10px}
-      .dashboard-editor-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-      @media(max-width:1180px){.prospect-widget-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.prospect-widget{grid-column:span min(var(--widget-cols,1),2)}}
-      @media(max-width:720px){#prospect-dashboard{padding:10px}.dashboard-customizer-bar{grid-template-columns:1fr}.prospect-widget-grid{grid-template-columns:1fr}.prospect-widget{grid-column:span 1!important;grid-row:span 1!important;min-height:150px}.dashboard-pie-wrap{grid-template-columns:1fr}.dashboard-timeline-row{grid-template-columns:1fr}}
-    `;
-    document.head.appendChild(style);
+  const addActionLink = (parent, href, text, downloadName) => {
+    if (!parent || qs(`a[href='${href}']`, parent)) return;
+    const link = document.createElement("a");
+    link.href = href;
+    link.className = "secondary-action";
+    link.textContent = text;
+    if (downloadName) link.download = downloadName;
+    parent.appendChild(link);
   };
 
   const playgroundSubnav = qs("[data-playground-subnav]");
@@ -86,18 +28,6 @@
     qs("[data-playground-toggle]", group)?.setAttribute("aria-expanded", "true");
   }
 
-  const addActionLink = (parent, href, text, downloadName) => {
-    if (!parent || qs(`a[href='${href}']`, parent)) return;
-    const link = document.createElement("a");
-    link.href = href;
-    link.className = "secondary-action";
-    link.textContent = text;
-    if (downloadName) link.download = downloadName;
-    parent.appendChild(link);
-  };
-
-  addActionLink(qs(".prospects-header .hero-actions"), importTemplateHref, "Export CSV Template", "prospects-import-template.csv");
-  addActionLink(qs(".prospects-header .hero-actions"), "/prospect-sync.php", "Sync Google Sheet");
   addActionLink(qs("#prospect-import .table-heading"), importTemplateHref, "Export CSV Template", "prospects-import-template.csv");
 
   const modalIds = ["prospect-form", "prospect-import", "prospect-detail"];
@@ -186,6 +116,7 @@
     message.setAttribute("role", "status");
     message.hidden = true;
     board.insertAdjacentElement("beforebegin", message);
+
     const setMessage = (text, isError = false) => {
       message.textContent = text;
       message.hidden = text === "";
@@ -223,6 +154,7 @@
       if (!response.ok || payload.ok !== true) throw new Error(payload.message || "Could not update prospect status.");
       return payload;
     };
+
     qsa(".kanban-column").forEach((column) => {
       column.dataset.kanbanStatus = columnStatus(column);
       column.setAttribute("aria-label", `${column.dataset.kanbanStatus} prospects`);
@@ -255,6 +187,7 @@
         }
       });
     });
+
     qsa(".kanban-card").forEach((card) => {
       const id = cardId(card);
       if (!id) return;
@@ -283,7 +216,6 @@
     });
   }
 
-  injectDashboardStyles();
   const customizeButton = qs("[data-customize-dashboard]");
   const dashboardView = qs("[data-prospect-view='dashboard']");
   const widgetGrid = qs(".prospect-widget-grid");

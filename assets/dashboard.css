@@ -247,3 +247,25 @@ td form { display: inline-flex; margin: 0; }
     flex-direction: column;
   }
 }
+
+/* Prospects toolbar repair: override the legacy hero rule that hid the action container. */
+.dashboard-content .prospects-header > div.prospect-toolbar-actions:first-child,
+.dashboard-content .prospects-header > div.hero-actions:first-child {
+  display: flex !important;
+}
+
+.dashboard-content .prospects-header > .prospect-toolbar-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-start !important;
+}
+
+@media (max-width: 720px) {
+  .dashboard-content .prospects-header > div.prospect-toolbar-actions:first-child,
+  .dashboard-content .prospects-header > div.hero-actions:first-child {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+}

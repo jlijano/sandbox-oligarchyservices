@@ -22,7 +22,22 @@ function switchboard_flash_error(string $message): void { $_SESSION['switchboard
 function switchboard_redirect(array $params = []): void { redirect_to('/switchboard' . ($params ? '?' . http_build_query($params) : '')); }
 function switchboard_status_class(string $value): string { return strtolower(str_replace([' ', '/'], '-', $value)); }
 function switchboard_display_date(?string $value): string { if (!$value) return 'No activity'; $time = strtotime($value); return $time ? date('M j, g:i A', $time) : $value; }
-function switchboard_sidebar(string $roleLabel, string $role): void { ob_start(); access_sidebar('switchboard', $roleLabel, $role); $html = ob_get_clean(); $insert = '<a class="is-active" href="/switchboard" aria-current="page"><span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Switchboard</span></a>'; $html = preg_replace('/(<a class="[^"]*" href="\/carrier"[^>]*>.*?<span class="nav-label">Carrier<\/span><\/a>)/s', '$1' . $insert, $html, 1) ?? $html; $html = str_replace('<div class="sidebar-group " data-playground-group>', '<div class="sidebar-group is-open is-active" data-playground-group>', $html); $html = str_replace('data-playground-toggle aria-expanded="false"', 'data-playground-toggle aria-expanded="true"', $html); echo $html; }
+function switchboard_sidebar(string $roleLabel, string $role): void
+{
+    ob_start();
+    access_sidebar('switchboard', $roleLabel, $role);
+    $html = ob_get_clean();
+    $insert = <<<'HTML'
+<a class="is-active" href="/switchboard" aria-current="page"><span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Switchboard</span></a>
+HTML;
+    $pattern = <<<'REGEX'
+/(<a class="[^"]*" href="\/carrier"[^>]*>.*?<span class="nav-label">Carrier<\/span><\/a>)/s
+REGEX;
+    $html = preg_replace($pattern, '$1' . $insert, $html, 1) ?? $html;
+    $html = str_replace('<div class="sidebar-group " data-playground-group>', '<div class="sidebar-group is-open is-active" data-playground-group>', $html);
+    $html = str_replace('data-playground-toggle aria-expanded="false"', 'data-playground-toggle aria-expanded="true"', $html);
+    echo $html;
+}
 
 $pdo = null; $schemaReady = false; $schemaMessage = '';
 try { $pdo = db(); switchboard_ensure_schema($pdo); $schemaReady = switchboard_schema_ready($pdo); } catch (Throwable $dbError) { error_log('Switchboard database unavailable: ' . $dbError->getMessage()); $schemaMessage = 'Switchboard cannot connect to the portal database yet. Check the database config or run /update.php after deployment.'; }

@@ -48,7 +48,9 @@ function automation_filter_url(array $overrides = []): string
         'automation_status' => automation_get_string('automation_status'),
         'automation_importance' => automation_get_string('automation_importance'),
         'automation_owner' => automation_get_string('automation_owner'),
-    ], $overrides), static fn($value): bool => trim((string) $value) !== '');
+    ], $overrides), static function ($value): bool {
+        return trim((string) $value) !== '';
+    });
     return '/automation.php' . ($params ? '?' . http_build_query($params) : '');
 }
 
@@ -215,12 +217,12 @@ $csrf = csrf_token();
               <div class="table-heading"><h3>Automations</h3><span><?= e((string) count($recipes)) ?> shown</span></div>
               <?php if (!$schemaReady): ?><p class="empty-state">Run /update.php to enable saved automation recipes and run history.</p><?php elseif (!$recipes): ?><p class="empty-state">No automations match this view. Create a recipe or clear filters to see the full list.</p><?php else: ?>
               <div class="automation-list">
-                <?php foreach ($recipes as $recipe): $owner = (string) ($recipe['owner'] ?: $recipe['creator_name'] ?: $recipe['creator_email'] ?: 'Unassigned'); ?>
+                <?php foreach ($recipes as $recipe): $owner = (string) ($recipe['owner'] ?: $recipe['creator_name'] ?: $recipe['creator_email'] ?: 'Unassigned'); $editUrl = automation_filter_url(['open' => (string) $recipe['id']]) . '#automation-builder'; ?>
                 <article class="automation-row">
                   <div class="automation-title">
                     <strong><?= e((string) $recipe['name']) ?></strong>
                     <small><?= e($owner) ?> &middot; Updated <?= e((string) $recipe['updated_at']) ?></small>
-                    <a class="table-action" href="<?= e(automation_filter_url(['open' => (string) $recipe['id'])) ?>#automation-builder">Open/Edit</a>
+                    <a class="table-action" href="<?= e($editUrl) ?>">Open/Edit</a>
                   </div>
                   <div class="automation-cell"><b>When</b><span><?= e(automation_excerpt((string) $recipe['trigger_event'])) ?></span></div>
                   <div class="automation-cell"><b>Then</b><span><?= e(automation_excerpt((string) $recipe['action_steps'])) ?></span></div>

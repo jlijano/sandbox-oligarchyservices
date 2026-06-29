@@ -745,3 +745,31 @@ body.prospect-modal-open {
     display: none;
   }
 }
+
+/* Compact prospects action toolbar: hide the large hero copy and keep only actions. */
+.prospects-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.prospects-header::after,
+.prospects-header > div:first-child {
+  display: none !important;
+}
+
+.prospects-header .hero-actions {
+  width: 100%;
+  justify-content: flex-start !important;
+}
+
+.prospects-header .primary-action,
+.prospects-header .secondary-action {
+  min-height: 36px;
+  padding: 8px 12px;
+}

@@ -1,4 +1,4 @@
-name: Validate site availability
+name: Validate site quality
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: validate-site-availability
+  group: validate-site-quality
   cancel-in-progress: false
 
 jobs:
@@ -46,9 +46,6 @@ jobs:
               '/includes/installed.lock',
               '/oligarchy-config.php',
           }
-          runtime_allowlist = {
-              '/privacy.html#analytics-opt-out',
-          }
           external_schemes = {'http', 'https', 'mailto', 'tel', 'sms', 'javascript', 'data'}
 
           class RefParser(HTMLParser):
@@ -79,8 +76,6 @@ jobs:
               path = unquote(parsed.path or '')
               if not path or path.startswith('#'):
                   return None
-              if path in runtime_allowlist:
-                  return None
               return path
 
           def candidate_paths(source, url_path):
@@ -88,9 +83,13 @@ jobs:
                   return [root / 'index.html']
               if url_path.startswith('/'):
                   relative = url_path.lstrip('/')
+                  base = root / relative
               else:
-                  relative = str((source.parent / url_path).relative_to(root))
-              base = root / relative
+                  base = (source.parent / url_path).resolve()
+                  try:
+                      base.relative_to(root)
+                  except ValueError:
+                      return []
               candidates = [base]
               if url_path.endswith('/'):
                   candidates.append(base / 'index.html')
@@ -198,34 +197,45 @@ jobs:
 
           soft_failures=0
 
+          capture_request() {
+            local variable_name="$1"
+            local path="$2"
+            local expected_status="$3"
+            local output_file
+            local code
+
+            set +e
+            output_file="$(request "$path" "$expected_status")"
+            code=$?
+            set -e
+
+            printf -v "$variable_name" '%s' "$output_file"
+            if (( code == 2 )); then
+              soft_failures=$((soft_failures + 1))
+              return 0
+            fi
+            if (( code != 0 )); then
+              exit "$code"
+            fi
+          }
+
           home_file=""
-          if ! home_file="$(request "/" "200")"; then
-            code=$?
-            if (( code == 2 )); then soft_failures=$((soft_failures + 1)); else exit "$code"; fi
-          fi
           robots_file=""
-          if ! robots_file="$(request "/robots.txt" "200")"; then
-            code=$?
-            if (( code == 2 )); then soft_failures=$((soft_failures + 1)); else exit "$code"; fi
-          fi
           sitemap_file=""
-          if ! sitemap_file="$(request "/sitemap.xml" "200")"; then
-            code=$?
-            if (( code == 2 )); then soft_failures=$((soft_failures + 1)); else exit "$code"; fi
-          fi
           dynamic_sitemap_file=""
-          if ! dynamic_sitemap_file="$(request "/sitemap.php" "200")"; then
-            code=$?
-            if (( code == 2 )); then soft_failures=$((soft_failures + 1)); else exit "$code"; fi
-          fi
           login_file=""
-          if ! login_file="$(request "/login.html" "200")"; then
-            code=$?
-            if (( code == 2 )); then soft_failures=$((soft_failures + 1)); else exit "$code"; fi
-          fi
-          request "/includes/" "403" >/dev/null || exit $?
-          request "/includes/config.php" "403" >/dev/null || exit $?
-          request "/includes/bootstrap.php" "403" >/dev/null || exit $?
+          includes_file=""
+          config_file=""
+          bootstrap_file=""
+
+          capture_request home_file "/" "200"
+          capture_request robots_file "/robots.txt" "200"
+          capture_request sitemap_file "/sitemap.xml" "200"
+          capture_request dynamic_sitemap_file "/sitemap.php" "200"
+          capture_request login_file "/login.html" "200"
+          capture_request includes_file "/includes/" "403"
+          capture_request config_file "/includes/config.php" "403"
+          capture_request bootstrap_file "/includes/bootstrap.php" "403"
 
           if (( soft_failures > 0 )); then
             echo "::warning::Production availability checks produced ${soft_failures} runner/network diagnostics. Verify from a browser or Hostinger-side logs before declaring production unavailable." >&2

@@ -200,42 +200,11 @@ function prospect_sheet_sync_actor_id(PDO $pdo, int $preferredActorId = 0): int
     throw new RuntimeException('No portal user was found for prospect sync attribution. Create an admin/editor user or set PROSPECTS_SYNC_ACTOR_ID.');
 }
 
-function prospect_find_existing_id(PDO $pdo, array $payload): ?int
-{
-    $lookups = [];
-    if (trim((string) ($payload['website'] ?? '')) !== '') $lookups[] = ['SELECT id FROM prospects WHERE website = ? LIMIT 1', [$payload['website']]];
-    if (trim((string) ($payload['email'] ?? '')) !== '') $lookups[] = ['SELECT id FROM prospects WHERE email = ? LIMIT 1', [$payload['email']]];
-    if (trim((string) ($payload['company'] ?? '')) !== '' && trim((string) ($payload['location'] ?? '')) !== '') $lookups[] = ['SELECT id FROM prospects WHERE LOWER(company) = LOWER(?) AND LOWER(location) = LOWER(?) LIMIT 1', [$payload['company'], $payload['location']]];
-    if (trim((string) ($payload['company'] ?? '')) !== '') $lookups[] = ['SELECT id FROM prospects WHERE LOWER(company) = LOWER(?) LIMIT 1', [$payload['company']]];
-
-    foreach ($lookups as [$sql, $params]) {
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $id = $stmt->fetchColumn();
-        if ($id !== false) return (int) $id;
-    }
-    return null;
-}
-
-function prospect_sheet_apply_recommended_services(PDO $pdo, int $prospectId, array $payload): void
-{
-    $stmt = $pdo->prepare('UPDATE prospects SET recommended_services = ? WHERE id = ?');
-    $stmt->execute([(string) ($payload['recommended_services'] ?? ''), $prospectId]);
-}
-
 function prospect_sheet_sync_upsert(PDO $pdo, array $payload, int $actorId): string
 {
     $actorId = prospect_sheet_sync_actor_id($pdo, $actorId);
-    $existingId = prospect_find_existing_id($pdo, $payload);
-    if ($existingId !== null) {
-        prospect_update($pdo, $existingId, $payload, $actorId);
-        prospect_sheet_apply_recommended_services($pdo, $existingId, $payload);
-        return 'updated';
-    }
-
-    $prospectId = prospect_insert($pdo, $payload, $actorId);
-    prospect_sheet_apply_recommended_services($pdo, $prospectId, $payload);
-    return 'created';
+    $result = prospect_upsert($pdo, $payload, $actorId);
+    return (string) $result['action'];
 }
 
 function prospect_sheet_sync(PDO $pdo, int $actorId): array

@@ -88,6 +88,7 @@ function prospect_ensure_schema(PDO $pdo): void
         status " . $statusDefinition . ",
         website VARCHAR(255) NOT NULL DEFAULT '',
         industry_category VARCHAR(190) NOT NULL DEFAULT '',
+        recommended_services TEXT NULL,
         conversion_percentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
         notes TEXT NULL,
         contact VARCHAR(190) NOT NULL DEFAULT '',
@@ -136,6 +137,7 @@ function prospect_ensure_schema(PDO $pdo): void
     $pdo->exec("UPDATE prospects SET status = CASE status WHEN 'New' THEN 'New Lead' WHEN 'Contacted' THEN 'InProgress' WHEN 'Qualified' THEN 'Warm' WHEN 'Proposal' THEN 'Warm' WHEN 'Negotiation' THEN 'Warm' WHEN 'Won' THEN 'Converted' WHEN 'Lost' THEN 'Closed / Lost' ELSE status END");
     prospect_add_column_if_missing($pdo, 'prospects', 'website', "VARCHAR(255) NOT NULL DEFAULT ''");
     prospect_add_column_if_missing($pdo, 'prospects', 'industry_category', "VARCHAR(190) NOT NULL DEFAULT ''");
+    prospect_add_column_if_missing($pdo, 'prospects', 'recommended_services', 'TEXT NULL');
     prospect_add_column_if_missing($pdo, 'prospects', 'conversion_percentage', 'DECIMAL(5,2) NOT NULL DEFAULT 0.00');
     prospect_add_column_if_missing($pdo, 'prospects', 'notes', 'TEXT NULL');
     prospect_add_column_if_missing($pdo, 'prospects', 'contact', "VARCHAR(190) NOT NULL DEFAULT ''");
@@ -220,7 +222,7 @@ function prospect_conversion_percentage(array $payload, float $fallbackBase = 30
     $score = $statusBase[(string) ($payload['status'] ?? '')] ?? $fallbackBase;
     $priority = strtolower((string) ($payload['priority'] ?? ''));
     $score += $priority === 'high' ? 12.0 : ($priority === 'medium' ? 6.0 : ($priority === 'low' ? 2.0 : 0.0));
-    foreach (['website' => 4.0, 'industry_category' => 5.0, 'notes' => 3.0, 'contact' => 5.0, 'email' => 8.0, 'phone' => 5.0, 'social_media_links' => 3.0, 'location' => 3.0, 'reason_relevant' => 7.0, 'pain_point_trigger' => 8.0, 'outreach_angle' => 7.0, 'next_step' => 6.0, 'additional_notes' => 3.0, 'decision_maker_title' => 4.0, 'decision_maker_profile_url' => 4.0, 'decision_maker_source' => 3.0, 'company_source_url' => 4.0] as $field => $points) {
+    foreach (['website' => 4.0, 'industry_category' => 5.0, 'recommended_services' => 5.0, 'notes' => 3.0, 'contact' => 5.0, 'email' => 8.0, 'phone' => 5.0, 'social_media_links' => 3.0, 'location' => 3.0, 'reason_relevant' => 7.0, 'pain_point_trigger' => 8.0, 'outreach_angle' => 7.0, 'next_step' => 6.0, 'additional_notes' => 3.0, 'decision_maker_title' => 4.0, 'decision_maker_profile_url' => 4.0, 'decision_maker_source' => 3.0, 'company_source_url' => 4.0] as $field => $points) {
         if (trim((string) ($payload[$field] ?? '')) !== '') $score += $points;
     }
     $confidence = (string) ($payload['contact_confidence'] ?? '');
@@ -241,6 +243,7 @@ function prospect_payload_from_post(): array
         'status' => prospect_status(prospect_clean_text('status', 40, 'New Lead')),
         'website' => prospect_clean_text('website', 255),
         'industry_category' => prospect_clean_text('industry_category', 190),
+        'recommended_services' => prospect_clean_text('recommended_services', 5000),
         'notes' => prospect_clean_text('notes', 5000),
         'contact' => prospect_clean_text('contact', 190),
         'email' => prospect_valid_email(prospect_clean_text('email', 190)),
@@ -280,65 +283,128 @@ function prospect_fetch(PDO $pdo, int $id): ?array
 }
 function prospect_insert(PDO $pdo, array $payload, int $actorId): int
 {
-    $stmt = $pdo->prepare('INSERT INTO prospects (company, status, website, industry_category, conversion_percentage, notes, contact, email, phone, social_media_links, location, reason_relevant, pain_point_trigger, outreach_angle, priority, last_contact, next_step, additional_notes, decision_maker_title, decision_maker_department, decision_maker_profile_url, decision_maker_source, contact_confidence, company_source_url, last_verified, data_gaps_validation_notes, source, value, owner, follow_up, last_activity, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    $stmt->execute([$payload['company'], $payload['status'], $payload['website'], $payload['industry_category'], $payload['conversion_percentage'], $payload['notes'], $payload['contact'], $payload['email'], $payload['phone'], $payload['social_media_links'], $payload['location'], $payload['reason_relevant'], $payload['pain_point_trigger'], $payload['outreach_angle'], $payload['priority'], $payload['last_contact'], $payload['next_step'], $payload['additional_notes'], $payload['decision_maker_title'], $payload['decision_maker_department'], $payload['decision_maker_profile_url'], $payload['decision_maker_source'], $payload['contact_confidence'], $payload['company_source_url'], $payload['last_verified'], $payload['data_gaps_validation_notes'], $payload['source'], $payload['value'], $payload['owner'], $payload['follow_up'], $payload['last_activity'], $actorId, $actorId]);
+    $stmt = $pdo->prepare('INSERT INTO prospects (company, status, website, industry_category, recommended_services, conversion_percentage, notes, contact, email, phone, social_media_links, location, reason_relevant, pain_point_trigger, outreach_angle, priority, last_contact, next_step, additional_notes, decision_maker_title, decision_maker_department, decision_maker_profile_url, decision_maker_source, contact_confidence, company_source_url, last_verified, data_gaps_validation_notes, source, value, owner, follow_up, last_activity, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$payload['company'], $payload['status'], $payload['website'], $payload['industry_category'], $payload['recommended_services'] ?? '', $payload['conversion_percentage'], $payload['notes'], $payload['contact'], $payload['email'], $payload['phone'], $payload['social_media_links'], $payload['location'], $payload['reason_relevant'], $payload['pain_point_trigger'], $payload['outreach_angle'], $payload['priority'], $payload['last_contact'], $payload['next_step'], $payload['additional_notes'], $payload['decision_maker_title'], $payload['decision_maker_department'], $payload['decision_maker_profile_url'], $payload['decision_maker_source'], $payload['contact_confidence'], $payload['company_source_url'], $payload['last_verified'], $payload['data_gaps_validation_notes'], $payload['source'], $payload['value'], $payload['owner'], $payload['follow_up'], $payload['last_activity'], $actorId, $actorId]);
     return (int) $pdo->lastInsertId();
 }
 function prospect_update(PDO $pdo, int $id, array $payload, int $actorId): void
 {
-    $stmt = $pdo->prepare('UPDATE prospects SET company = ?, status = ?, website = ?, industry_category = ?, conversion_percentage = ?, notes = ?, contact = ?, email = ?, phone = ?, social_media_links = ?, location = ?, reason_relevant = ?, pain_point_trigger = ?, outreach_angle = ?, priority = ?, last_contact = ?, next_step = ?, additional_notes = ?, decision_maker_title = ?, decision_maker_department = ?, decision_maker_profile_url = ?, decision_maker_source = ?, contact_confidence = ?, company_source_url = ?, last_verified = ?, data_gaps_validation_notes = ?, source = ?, value = ?, owner = ?, follow_up = ?, last_activity = ?, updated_by = ?, updated_at = NOW() WHERE id = ?');
-    $stmt->execute([$payload['company'], $payload['status'], $payload['website'], $payload['industry_category'], $payload['conversion_percentage'], $payload['notes'], $payload['contact'], $payload['email'], $payload['phone'], $payload['social_media_links'], $payload['location'], $payload['reason_relevant'], $payload['pain_point_trigger'], $payload['outreach_angle'], $payload['priority'], $payload['last_contact'], $payload['next_step'], $payload['additional_notes'], $payload['decision_maker_title'], $payload['decision_maker_department'], $payload['decision_maker_profile_url'], $payload['decision_maker_source'], $payload['contact_confidence'], $payload['company_source_url'], $payload['last_verified'], $payload['data_gaps_validation_notes'], $payload['source'], $payload['value'], $payload['owner'], $payload['follow_up'], $payload['last_activity'], $actorId, $id]);
+    $stmt = $pdo->prepare('UPDATE prospects SET company = ?, status = ?, website = ?, industry_category = ?, recommended_services = ?, conversion_percentage = ?, notes = ?, contact = ?, email = ?, phone = ?, social_media_links = ?, location = ?, reason_relevant = ?, pain_point_trigger = ?, outreach_angle = ?, priority = ?, last_contact = ?, next_step = ?, additional_notes = ?, decision_maker_title = ?, decision_maker_department = ?, decision_maker_profile_url = ?, decision_maker_source = ?, contact_confidence = ?, company_source_url = ?, last_verified = ?, data_gaps_validation_notes = ?, source = ?, value = ?, owner = ?, follow_up = ?, last_activity = ?, updated_by = ?, updated_at = NOW() WHERE id = ?');
+    $stmt->execute([$payload['company'], $payload['status'], $payload['website'], $payload['industry_category'], $payload['recommended_services'] ?? '', $payload['conversion_percentage'], $payload['notes'], $payload['contact'], $payload['email'], $payload['phone'], $payload['social_media_links'], $payload['location'], $payload['reason_relevant'], $payload['pain_point_trigger'], $payload['outreach_angle'], $payload['priority'], $payload['last_contact'], $payload['next_step'], $payload['additional_notes'], $payload['decision_maker_title'], $payload['decision_maker_department'], $payload['decision_maker_profile_url'], $payload['decision_maker_source'], $payload['contact_confidence'], $payload['company_source_url'], $payload['last_verified'], $payload['data_gaps_validation_notes'], $payload['source'], $payload['value'], $payload['owner'], $payload['follow_up'], $payload['last_activity'], $actorId, $id]);
+}
+function prospect_find_existing_id(PDO $pdo, array $payload, ?int $excludeId = null): ?int
+{
+    $lookups = [];
+    if (trim((string) ($payload['website'] ?? '')) !== '') $lookups[] = ['SELECT id FROM prospects WHERE website = ?', [$payload['website']]];
+    if (trim((string) ($payload['email'] ?? '')) !== '') $lookups[] = ['SELECT id FROM prospects WHERE email = ?', [$payload['email']]];
+    if (trim((string) ($payload['company'] ?? '')) !== '' && trim((string) ($payload['location'] ?? '')) !== '') $lookups[] = ['SELECT id FROM prospects WHERE LOWER(company) = LOWER(?) AND LOWER(location) = LOWER(?)', [$payload['company'], $payload['location']]];
+    if (trim((string) ($payload['company'] ?? '')) !== '') $lookups[] = ['SELECT id FROM prospects WHERE LOWER(company) = LOWER(?)', [$payload['company']]];
+
+    foreach ($lookups as [$sql, $params]) {
+        if ($excludeId !== null) {
+            $sql .= ' AND id <> ?';
+            $params[] = $excludeId;
+        }
+        $stmt = $pdo->prepare($sql . ' LIMIT 1');
+        $stmt->execute($params);
+        $id = $stmt->fetchColumn();
+        if ($id !== false) return (int) $id;
+    }
+    return null;
+}
+function prospect_upsert(PDO $pdo, array $payload, int $actorId): array
+{
+    $existingId = prospect_find_existing_id($pdo, $payload);
+    if ($existingId !== null) {
+        prospect_update($pdo, $existingId, $payload, $actorId);
+        return ['action' => 'updated', 'id' => $existingId];
+    }
+    $prospectId = prospect_insert($pdo, $payload, $actorId);
+    return ['action' => 'created', 'id' => $prospectId];
+}
+function prospect_clean_import_text(array $fields, int $index, int $maxLength): string
+{
+    $value = trim((string) ($fields[$index] ?? ''));
+    $value = preg_replace('/[^\P{C}\t\r\n]/u', '', $value) ?? '';
+    return strlen($value) > $maxLength ? substr($value, 0, $maxLength) : $value;
+}
+function prospect_clean_import_date(array $fields, int $index): ?string
+{
+    $value = trim((string) ($fields[$index] ?? ''));
+    if ($value === '') return null;
+    $date = DateTimeImmutable::createFromFormat('Y-m-d', $value);
+    if (!$date || $date->format('Y-m-d') !== $value) throw new RuntimeException('Import date fields must use YYYY-MM-DD format.');
+    return $value;
+}
+function prospect_import_csv_rows(string $raw): array
+{
+    $rows = [];
+    $handle = fopen('php://temp', 'r+');
+    if ($handle === false) throw new RuntimeException('Could not open a temporary CSV buffer.');
+    fwrite($handle, trim($raw));
+    rewind($handle);
+    while (($row = fgetcsv($handle)) !== false) {
+        if (count($row) === 1 && trim((string) $row[0]) === '') continue;
+        $row[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) ($row[0] ?? '')) ?? (string) ($row[0] ?? '');
+        $rows[] = $row;
+    }
+    fclose($handle);
+    return $rows;
+}
+function prospect_payload_from_import_fields(array $fields): ?array
+{
+    $firstHeader = strtolower(trim((string) ($fields[0] ?? '')));
+    if ($firstHeader === '' || in_array($firstHeader, ['company', 'business name'], true)) return null;
+
+    $hasRecommendedServices = count($fields) >= 27;
+    $percentageIndex = $hasRecommendedServices ? 5 : 4;
+    $offset = $hasRecommendedServices ? 1 : 0;
+    $company = prospect_clean_import_text($fields, 0, 190);
+    if ($company === '') return null;
+
+    $payload = [
+        'company' => $company,
+        'status' => prospect_status(prospect_clean_import_text($fields, 1, 40) ?: 'New Lead'),
+        'website' => prospect_clean_import_text($fields, 2, 255),
+        'industry_category' => prospect_clean_import_text($fields, 3, 190),
+        'recommended_services' => $hasRecommendedServices ? prospect_clean_import_text($fields, 4, 5000) : '',
+        'notes' => prospect_clean_import_text($fields, 5 + $offset, 5000),
+        'contact' => prospect_clean_import_text($fields, 6 + $offset, 190),
+        'email' => prospect_valid_email(prospect_clean_import_text($fields, 7 + $offset, 190)),
+        'phone' => prospect_clean_import_text($fields, 8 + $offset, 80),
+        'social_media_links' => prospect_clean_import_text($fields, 9 + $offset, 5000),
+        'location' => prospect_clean_import_text($fields, 10 + $offset, 190),
+        'reason_relevant' => prospect_clean_import_text($fields, 11 + $offset, 5000),
+        'pain_point_trigger' => prospect_clean_import_text($fields, 12 + $offset, 5000),
+        'outreach_angle' => prospect_clean_import_text($fields, 13 + $offset, 5000),
+        'priority' => prospect_priority(prospect_clean_import_text($fields, 14 + $offset, 40) ?: 'Medium'),
+        'last_contact' => prospect_clean_import_date($fields, 15 + $offset),
+        'next_step' => prospect_clean_import_text($fields, 16 + $offset, 255),
+        'additional_notes' => prospect_clean_import_text($fields, 17 + $offset, 5000),
+        'decision_maker_title' => prospect_clean_import_text($fields, 18 + $offset, 190),
+        'decision_maker_department' => prospect_clean_import_text($fields, 19 + $offset, 190),
+        'decision_maker_profile_url' => prospect_clean_import_text($fields, 20 + $offset, 255),
+        'decision_maker_source' => prospect_clean_import_text($fields, 21 + $offset, 5000),
+        'contact_confidence' => prospect_contact_confidence(prospect_clean_import_text($fields, 22 + $offset, 40) ?: 'Not Verified'),
+        'company_source_url' => prospect_clean_import_text($fields, 23 + $offset, 255),
+        'last_verified' => prospect_clean_import_date($fields, 24 + $offset),
+        'data_gaps_validation_notes' => prospect_clean_import_text($fields, 25 + $offset, 5000),
+        'source' => 'Sheet Import',
+        'value' => 0,
+        'owner' => '',
+        'follow_up' => null,
+        'last_activity' => 'Imported lead',
+    ];
+    $percentage = trim((string) ($fields[$percentageIndex] ?? ''));
+    $payload['conversion_percentage'] = is_numeric(str_replace('%', '', $percentage)) ? min(99.0, max(1.0, (float) str_replace('%', '', $percentage))) : prospect_conversion_percentage($payload);
+    return $payload;
 }
 function prospect_parse_import_rows(string $raw): array
 {
     $rows = [];
-    $lines = preg_split('/\r\n|\r|\n/', trim($raw)) ?: [];
-    foreach ($lines as $index => $line) {
-        if (trim($line) === '') continue;
-        $fields = str_getcsv($line);
-        $firstHeader = strtolower(trim((string) ($fields[0] ?? '')));
-        if ($index === 0 && in_array($firstHeader, ['company', 'business name'], true)) continue;
-        $company = substr(trim((string) ($fields[0] ?? '')), 0, 190);
-        if ($company === '') continue;
-        $payload = [
-            'company' => $company,
-            'status' => prospect_status(trim((string) ($fields[1] ?? 'New Lead'))),
-            'website' => substr(trim((string) ($fields[2] ?? '')), 0, 255),
-            'industry_category' => substr(trim((string) ($fields[3] ?? '')), 0, 190),
-            'notes' => substr(trim((string) ($fields[5] ?? '')), 0, 5000),
-            'contact' => substr(trim((string) ($fields[6] ?? '')), 0, 190),
-            'email' => prospect_valid_email(substr(trim((string) ($fields[7] ?? '')), 0, 190)),
-            'phone' => substr(trim((string) ($fields[8] ?? '')), 0, 80),
-            'social_media_links' => substr(trim((string) ($fields[9] ?? '')), 0, 5000),
-            'location' => substr(trim((string) ($fields[10] ?? '')), 0, 190),
-            'reason_relevant' => substr(trim((string) ($fields[11] ?? '')), 0, 5000),
-            'pain_point_trigger' => substr(trim((string) ($fields[12] ?? '')), 0, 5000),
-            'outreach_angle' => substr(trim((string) ($fields[13] ?? '')), 0, 5000),
-            'priority' => prospect_priority(trim((string) ($fields[14] ?? 'Medium'))),
-            'last_contact' => null,
-            'next_step' => substr(trim((string) ($fields[16] ?? '')), 0, 255),
-            'additional_notes' => substr(trim((string) ($fields[17] ?? '')), 0, 5000),
-            'decision_maker_title' => substr(trim((string) ($fields[18] ?? '')), 0, 190),
-            'decision_maker_department' => substr(trim((string) ($fields[19] ?? '')), 0, 190),
-            'decision_maker_profile_url' => substr(trim((string) ($fields[20] ?? '')), 0, 255),
-            'decision_maker_source' => substr(trim((string) ($fields[21] ?? '')), 0, 5000),
-            'contact_confidence' => prospect_contact_confidence(trim((string) ($fields[22] ?? 'Not Verified'))),
-            'company_source_url' => substr(trim((string) ($fields[23] ?? '')), 0, 255),
-            'last_verified' => null,
-            'data_gaps_validation_notes' => substr(trim((string) ($fields[25] ?? '')), 0, 5000),
-            'source' => 'Sheet Import',
-            'value' => 0,
-            'owner' => '',
-            'follow_up' => null,
-            'last_activity' => 'Imported lead',
-        ];
-        $date = trim((string) ($fields[15] ?? ''));
-        if ($date !== '' && DateTimeImmutable::createFromFormat('Y-m-d', $date)) $payload['last_contact'] = $date;
-        $lastVerified = trim((string) ($fields[24] ?? ''));
-        if ($lastVerified !== '' && DateTimeImmutable::createFromFormat('Y-m-d', $lastVerified)) $payload['last_verified'] = $lastVerified;
-        $percentage = trim((string) ($fields[4] ?? ''));
-        $payload['conversion_percentage'] = is_numeric(str_replace('%', '', $percentage)) ? min(99.0, max(1.0, (float) str_replace('%', '', $percentage))) : prospect_conversion_percentage($payload);
-        $rows[] = $payload;
+    foreach (prospect_import_csv_rows($raw) as $fields) {
+        $payload = prospect_payload_from_import_fields($fields);
+        if ($payload !== null) $rows[] = $payload;
     }
     return $rows;
 }

@@ -7,6 +7,7 @@ require_once __DIR__ . '/includes/blogs.php';
 require_once __DIR__ . '/includes/requests.php';
 require_once __DIR__ . '/includes/prospects.php';
 require_once __DIR__ . '/includes/carrier.php';
+require_once __DIR__ . '/includes/switchboard.php';
 require_once __DIR__ . '/includes/automation.php';
 require_once __DIR__ . '/includes/db.php';
 
@@ -49,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             prospect_ensure_schema($pdo);
             prospect_add_column_if_missing($pdo, 'prospects', 'recommended_services', 'TEXT NULL');
             carrier_ensure_schema($pdo);
+            switchboard_ensure_schema($pdo);
             automation_ensure_schema($pdo);
             try {
                 $stmt = $pdo->prepare('INSERT INTO activity_log (user_id, action, target_type, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)');
@@ -72,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons"><link rel="stylesheet" href="/assets/login.css?v=20260620-php-install">
   </head>
   <body>
-    <main class="login-page"><section class="login-hero" aria-labelledby="update-heading"><a class="login-brand-logo" href="/dashboard.php" aria-label="Back to dashboard">OLIGARCHY</a><form class="login-panel" method="post"><div class="login-panel-heading"><p class="eyebrow">Portal update</p><h1 id="update-heading">Update database tables</h1><p>Run safe, non-destructive table updates for the current CMS, access-management, blog, client request, prospects, Carrier, and automation code. Existing users, pages, settings, activity, blogs, companies, departments, roles, requests, prospects, carrier emails, and automation recipes are kept.</p></div>
+    <main class="login-page"><section class="login-hero" aria-labelledby="update-heading"><a class="login-brand-logo" href="/dashboard.php" aria-label="Back to dashboard">OLIGARCHY</a><form class="login-panel" method="post"><div class="login-panel-heading"><p class="eyebrow">Portal update</p><h1 id="update-heading">Update database tables</h1><p>Run safe, non-destructive table updates for the current CMS, access-management, blog, client request, prospects, Carrier, Switchboard, and automation code. Existing users, pages, settings, activity, blogs, companies, departments, roles, requests, prospects, carrier emails, Switchboard conversations, and automation recipes are kept.</p></div>
       <?php if ($success): ?><div class="form-alert is-visible is-success">Update complete. Return to <a href="/dashboard.php">dashboard</a>.</div><?php endif; ?>
       <?php foreach ($errors as $error): ?><div class="form-alert is-visible is-error"><?= e($error) ?></div><?php endforeach; ?>
       <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">

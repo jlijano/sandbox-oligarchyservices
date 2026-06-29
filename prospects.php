@@ -26,9 +26,14 @@ function prospects_flash_success(string $message): void { $_SESSION['prospects_n
 function prospects_flash_error(string $message): void { $_SESSION['prospects_error'] = $message; }
 function prospects_redirect(array $params = []): void { redirect_to('/prospects.php' . ($params ? '?' . http_build_query($params) : '')); }
 function prospects_post_string(string $key, string $default = ''): string { return trim((string) ($_POST[$key] ?? $default)); }
-function prospects_post_int(string $key, int $default = 0): int { return filter_var($_POST[$key] ?? $default, FILTER_VALIDATE_INT) !== false ? (int) $_POST[$key] : $default; }
+function prospects_post_int(string $key, int $default = 0): int { return filter_var($_POST[$key] ?? $default, FILTER_VALIDATE_INT) !== false ? (int) ($_POST[$key] ?? $default) : $default; }
 function prospects_percent($value): string { return number_format((float) $value, 0) . '%'; }
-function prospects_get_int(string $key, int $default = 1): int { return filter_var($_GET[$key] ?? $default, FILTER_VALIDATE_INT) !== false ? (int) $_GET[$key] : $default; }
+function prospects_get_int(string $key, int $default = 1): int
+{
+    $value = $_GET[$key] ?? $default;
+    $validated = filter_var($value, FILTER_VALIDATE_INT);
+    return $validated !== false ? (int) $validated : $default;
+}
 
 $pdo = null;
 $schemaReady = false;

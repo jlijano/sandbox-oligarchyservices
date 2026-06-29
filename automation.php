@@ -25,6 +25,16 @@ unset($_SESSION['automation_notice'], $_SESSION['automation_error']);
 function automation_flash_success(string $message): void { $_SESSION['automation_notice'] = $message; }
 function automation_flash_error(string $message): void { $_SESSION['automation_error'] = $message; }
 function automation_redirect(array $params = []): void { redirect_to('/automation.php' . ($params ? '?' . http_build_query($params) : '')); }
+function automation_excerpt(string $value, int $length = 120): string
+{
+    $value = trim(preg_replace('/\s+/', ' ', $value) ?? '');
+    if (strlen($value) <= $length) return $value;
+    return substr($value, 0, $length - 3) . '...';
+}
+function automation_status_class(string $value): string
+{
+    return strtolower(str_replace(' ', '-', $value));
+}
 
 $pdo = null;
 $schemaReady = false;
@@ -86,13 +96,73 @@ $csrf = csrf_token();
     <title>Automation | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
+    <link rel="stylesheet" href="/assets/prospects.css?v=20260630-layout-system">
     <style>
-      .automation-form { display: grid; gap: 14px; }
-      .automation-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-      .automation-form label { display: grid; gap: 7px; color: #e6e6e8; font-size: .86rem; font-weight: 800; }
-      .automation-form .wide-field { grid-column: 1 / -1; }
-      .automation-note { color: var(--muted); font-size: .9rem; line-height: 1.5; }
-      @media (max-width: 760px) { .automation-form-grid { grid-template-columns: 1fr; } .automation-form .wide-field { grid-column: auto; } }
+      .automation-workspace { max-width: 1760px; gap: 20px; }
+      .automation-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      .automation-toolbar .hero-actions { justify-content: flex-start; }
+      .automation-list-panel { overflow: hidden; border-color: rgba(158, 167, 184, 0.28); background: #0f1012; box-shadow: 0 18px 70px rgba(0,0,0,0.42); }
+      .automation-list { display: grid; gap: 10px; }
+      .automation-row { display: grid; grid-template-columns: minmax(220px, 1.05fr) minmax(0, 1.35fr) minmax(0, 1.35fr) minmax(120px, .45fr); gap: 12px; align-items: stretch; border: 1px solid rgba(158,167,184,.22); border-radius: 8px; padding: 12px; background: #15171b; }
+      .automation-row:hover { border-color: rgba(49,196,189,.48); background: #191d22; }
+      .automation-title { display: grid; align-content: start; gap: 8px; min-width: 0; }
+      .automation-title strong { color: #fff; font-size: .98rem; line-height: 1.25; }
+      .automation-title small, .automation-cell span { color: var(--prospect-muted); line-height: 1.45; }
+      .automation-cell { display: grid; gap: 6px; min-width: 0; }
+      .automation-cell b { color: #dce2eb; font-size: .74rem; text-transform: uppercase; }
+      .automation-cell span { overflow-wrap: anywhere; }
+      .automation-statuses { display: flex; flex-wrap: wrap; gap: 7px; align-content: start; justify-content: flex-end; }
+      .automation-pill { display: inline-flex; min-height: 26px; align-items: center; justify-content: center; border: 1px solid rgba(158,167,184,.38); border-radius: 6px; padding: 4px 9px; color: #fff; font-size: .74rem; font-weight: 900; line-height: 1; white-space: nowrap; }
+      .automation-pill.status-ready { background: #16a34a; border-color: rgba(54,194,117,.5); }
+      .automation-pill.status-draft { background: #1f8bff; border-color: rgba(91,140,255,.5); }
+      .automation-pill.status-paused { background: #d88924; border-color: rgba(227,182,83,.5); }
+      .automation-pill.status-retired { background: #4b5563; border-color: rgba(124,132,146,.5); }
+      .automation-pill.importance-critical, .automation-pill.importance-high { background: #eb3b63; border-color: rgba(235,59,99,.62); }
+      .automation-pill.importance-medium { background: #8b5cf6; border-color: rgba(139,92,246,.62); }
+      .automation-pill.importance-low { background: #eab308; border-color: rgba(234,179,8,.62); color: #241a04; }
+      .automation-builder-modal { display: none; }
+      .automation-builder-modal:target { position: fixed; inset: 50% auto auto 50%; z-index: 100; display: grid; width: min(1120px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; transform: translate(-50%, -50%); border: 1px solid rgba(158,167,184,.46); border-radius: 8px; padding: 16px; background: linear-gradient(145deg, rgba(24,28,35,.99), rgba(9,10,13,.99)); box-shadow: 0 0 0 100vmax rgba(0,0,0,.72), 0 28px 90px rgba(0,0,0,.56); }
+      .automation-modal-close { position: sticky; top: 0; justify-self: end; display: inline-grid; width: 38px; height: 38px; margin: -4px -2px -8px 0; place-items: center; border: 1px solid rgba(158,167,184,.44); border-radius: 8px; background: #101217; color: #fff; font-size: 1.35rem; line-height: 1; text-decoration: none; }
+      .block-builder { display: grid; grid-template-columns: minmax(210px, .38fr) minmax(0, 1fr); gap: 14px; }
+      .block-palette, .block-canvas { border: 1px solid rgba(158,167,184,.28); border-radius: 8px; background: #101114; }
+      .block-palette { align-content: start; padding: 12px; }
+      .block-palette h3, .block-canvas h3 { margin: 0; }
+      .palette-blocks { display: grid; gap: 8px; margin-top: 12px; }
+      .palette-chip { display: inline-flex; min-height: 34px; align-items: center; border-radius: 7px; padding: 7px 10px; color: #fff; font-size: .82rem; font-weight: 900; }
+      .palette-chip.when { background: #c36a24; }
+      .palette-chip.if { background: #2f75d6; }
+      .palette-chip.then { background: #8e5bbd; }
+      .palette-chip.owner { background: #1c9f8e; }
+      .block-canvas { position: relative; overflow: hidden; min-height: 560px; padding: 14px; background: #2f2f2f; }
+      .block-canvas::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px); background-size: 28px 28px; pointer-events: none; }
+      .block-form { position: relative; z-index: 1; display: grid; gap: 10px; max-width: 760px; }
+      .block-stack { display: grid; gap: 0; margin-top: 6px; }
+      .logic-block { position: relative; display: grid; gap: 8px; width: min(100%, 680px); border-radius: 8px 8px 8px 3px; padding: 10px 12px 12px 18px; color: #fff; box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), 0 8px 20px rgba(0,0,0,.2); }
+      .logic-block + .logic-block { margin-top: -2px; }
+      .logic-block::before { content: ""; position: absolute; left: 0; top: 20px; width: 14px; height: 18px; border-radius: 0 999px 999px 0; background: rgba(255,255,255,.16); }
+      .logic-block label { display: grid; gap: 7px; font-size: .78rem; font-weight: 900; letter-spacing: 0; text-transform: uppercase; }
+      .logic-block input, .logic-block select, .logic-block textarea { border: 1px solid rgba(255,255,255,.28); border-radius: 6px; background: rgba(255,255,255,.96); color: #171717; font-weight: 750; }
+      .logic-block textarea { min-height: 78px; resize: vertical; }
+      .logic-block .block-inline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, .35fr); gap: 10px; }
+      .logic-block.event { background: #c56d24; }
+      .logic-block.condition { margin-left: 32px; background: #2f72d2; }
+      .logic-block.action { margin-left: 64px; background: #8153a5; }
+      .logic-block.meta { margin-left: 32px; background: #1c9f8e; }
+      .builder-note { max-width: 760px; margin: 0; color: #d6d9df; line-height: 1.5; }
+      .builder-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+      @media (max-width: 1060px) {
+        .automation-row { grid-template-columns: 1fr; }
+        .automation-statuses { justify-content: flex-start; }
+        .block-builder { grid-template-columns: 1fr; }
+        .block-canvas { min-height: auto; }
+      }
+      @media (max-width: 720px) {
+        .automation-toolbar { align-items: flex-start; flex-direction: column; }
+        .automation-toolbar .hero-actions, .builder-actions { display: grid; grid-template-columns: 1fr; width: 100%; }
+        .logic-block, .logic-block.condition, .logic-block.action, .logic-block.meta { margin-left: 0; }
+        .logic-block .block-inline { grid-template-columns: 1fr; }
+        .automation-builder-modal:target { align-content: start; padding: 12px; }
+      }
     </style>
     <script defer src="/assets/dashboard.js?v=20260621-automation"></script>
   </head>
@@ -105,63 +175,96 @@ $csrf = csrf_token();
           <div class="topbar-left"><button class="mobile-menu" type="button" data-mobile-menu aria-controls="portal-sidebar" aria-expanded="false">☰</button><div><p class="eyebrow">Playground</p><h1 data-section-title>Automation</h1></div></div>
           <div class="topbar-actions"><span class="role-pill"><?= e($roleLabel) ?></span><div class="user-chip" title="<?= e($user['email']) ?>"><span><?= e($initials) ?></span><div><strong><?= e($displayName) ?></strong><small><?= e($user['email']) ?></small></div></div><a class="logout-link" href="/logout.php">Log out</a></div>
         </header>
-        <main class="dashboard-content">
+        <main class="dashboard-content automation-workspace">
           <?php if ($notice): ?><div class="dashboard-alert is-success" role="status"><?= e((string) $notice) ?></div><?php endif; ?>
           <?php if ($error): ?><div class="dashboard-alert is-error" role="alert"><?= e((string) $error) ?></div><?php endif; ?>
           <?php if (!$schemaReady): ?><div class="dashboard-alert is-error" role="alert">Automation tables are not ready yet. Log in as an admin and run <a href="/update.php">/update.php</a> once after deployment.</div><?php endif; ?>
           <section class="dashboard-section is-active" data-dashboard-section data-section-label="Automation">
-            <div class="dashboard-hero compact-hero">
-              <div><p class="eyebrow">Workflow builder</p><h2>Automation</h2><p>Create governed trigger-condition-action recipes for portal operations. Recipes are saved now; execution remains disabled until an approved runner is added.</p></div>
-              <div class="hero-actions"><a class="primary-action" href="#create-recipe">Create recipe</a><a class="secondary-action" href="#run-history">Run history</a></div>
-            </div>
+            <header class="automation-toolbar" aria-label="Automation actions">
+              <div><p class="eyebrow">Playground automation</p><h2>Automation recipes</h2></div>
+              <div class="hero-actions"><a class="primary-action" href="#create-automation">Create Automation</a><a class="secondary-action" href="#run-history">Run History</a></div>
+            </header>
 
             <section class="section-summary-grid three-up" aria-label="Automation summary">
-              <article><span>Draft recipes</span><strong><?= e((string) $counts['Draft']) ?></strong></article>
-              <article><span>Ready recipes</span><strong><?= e((string) $counts['Ready']) ?></strong></article>
-              <article><span>Connectors</span><strong>Planned</strong></article>
+              <article><span>Draft</span><strong><?= e((string) $counts['Draft']) ?></strong></article>
+              <article><span>Ready</span><strong><?= e((string) $counts['Ready']) ?></strong></article>
+              <article><span>Execution</span><strong>Manual</strong></article>
+            </section>
+
+            <section class="admin-panel automation-list-panel" id="recipes">
+              <div class="table-heading"><h3>Automations</h3><span><?= e((string) count($recipes)) ?> saved</span></div>
+              <?php if (!$schemaReady): ?><p class="empty-state">Run /update.php to enable saved automation recipes.</p><?php elseif (!$recipes): ?><p class="empty-state">No automations have been created yet. Use Create Automation to build the first recipe.</p><?php else: ?>
+              <div class="automation-list">
+                <?php foreach ($recipes as $recipe): ?>
+                <article class="automation-row">
+                  <div class="automation-title">
+                    <strong><?= e((string) $recipe['name']) ?></strong>
+                    <small><?= e((string) ($recipe['owner'] ?: $recipe['creator_name'] ?: $recipe['creator_email'] ?: 'Unassigned')) ?> &middot; Updated <?= e((string) $recipe['updated_at']) ?></small>
+                  </div>
+                  <div class="automation-cell"><b>When</b><span><?= e(automation_excerpt((string) $recipe['trigger_event'])) ?></span></div>
+                  <div class="automation-cell"><b>Then</b><span><?= e(automation_excerpt((string) $recipe['action_steps'])) ?></span></div>
+                  <div class="automation-statuses">
+                    <span class="automation-pill status-<?= e(automation_status_class((string) $recipe['status'])) ?>"><?= e((string) $recipe['status']) ?></span>
+                    <span class="automation-pill importance-<?= e(automation_status_class((string) $recipe['importance'])) ?>"><?= e((string) $recipe['importance']) ?></span>
+                  </div>
+                </article>
+                <?php endforeach; ?>
+              </div>
+              <?php endif; ?>
             </section>
 
             <?php if ($schemaReady): ?>
-            <section class="admin-panel" id="create-recipe">
-              <div class="table-heading"><h3>Create automation recipe</h3><span>Saved recipe, not auto-run</span></div>
-              <form class="automation-form" method="post">
-                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                <input type="hidden" name="action" value="create_recipe">
-                <div class="automation-form-grid">
-                  <label>Name<input name="name" maxlength="190" required placeholder="New client onboarding"></label>
-                  <label>Owner<input name="owner" maxlength="120" value="<?= e($displayName) ?>" placeholder="Operations"></label>
-                  <label>Status<select name="status"><?php foreach (automation_statuses() as $status): ?><option value="<?= e($status) ?>"><?= e($status) ?></option><?php endforeach; ?></select></label>
-                  <label>Importance<select name="importance"><?php foreach (automation_importance_levels() as $importance): ?><option value="<?= e($importance) ?>" <?= $importance === 'Medium' ? 'selected' : '' ?>><?= e($importance) ?></option><?php endforeach; ?></select></label>
-                  <label class="wide-field">Trigger<textarea name="trigger_event" rows="3" required placeholder="When a client account is confirmed"></textarea></label>
-                  <label class="wide-field">Condition<textarea name="condition_rules" rows="3" placeholder="Client status is active"></textarea></label>
-                  <label class="wide-field">Action<textarea name="action_steps" rows="4" required placeholder="Create onboarding task, notify owner, and schedule follow-up"></textarea></label>
-                </div>
-                <p class="automation-note">Saving a recipe does not execute it. Real execution will need an approval-gated runner, connector permissions, failure handling, and audit controls.</p>
-                <button class="button primary" type="submit">Save recipe</button>
-              </form>
+            <section class="automation-builder-modal" id="create-automation" aria-label="Create automation">
+              <a class="automation-modal-close" href="/automation.php" aria-label="Close automation builder">x</a>
+              <div class="block-builder">
+                <aside class="block-palette" aria-label="Automation blocks">
+                  <p class="eyebrow">Block palette</p>
+                  <h3>Recipe parts</h3>
+                  <div class="palette-blocks">
+                    <span class="palette-chip when">when event happens</span>
+                    <span class="palette-chip if">if rule matches</span>
+                    <span class="palette-chip then">then run action</span>
+                    <span class="palette-chip owner">owner and status</span>
+                  </div>
+                </aside>
+                <section class="block-canvas" aria-label="Automation block editor">
+                  <form class="block-form" method="post">
+                    <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                    <input type="hidden" name="action" value="create_recipe">
+                    <p class="eyebrow">Automation designer</p>
+                    <h3>Create Automation</h3>
+                    <div class="block-stack">
+                      <div class="logic-block event">
+                        <div class="block-inline">
+                          <label>Automation name<input name="name" maxlength="190" required placeholder="New client onboarding"></label>
+                          <label>Status<select name="status"><?php foreach (automation_statuses() as $status): ?><option value="<?= e($status) ?>"><?= e($status) ?></option><?php endforeach; ?></select></label>
+                        </div>
+                        <label>When<textarea name="trigger_event" rows="3" required placeholder="A client confirms their account"></textarea></label>
+                      </div>
+                      <div class="logic-block condition">
+                        <label>If<textarea name="condition_rules" rows="3" placeholder="Client is active and has no onboarding request"></textarea></label>
+                      </div>
+                      <div class="logic-block action">
+                        <label>Then<textarea name="action_steps" rows="4" required placeholder="Create onboarding task, notify the owner, and add an activity entry"></textarea></label>
+                      </div>
+                      <div class="logic-block meta">
+                        <div class="block-inline">
+                          <label>Owner<input name="owner" maxlength="120" value="<?= e($displayName) ?>" placeholder="Operations"></label>
+                          <label>Importance<select name="importance"><?php foreach (automation_importance_levels() as $importance): ?><option value="<?= e($importance) ?>" <?= $importance === 'Medium' ? 'selected' : '' ?>><?= e($importance) ?></option><?php endforeach; ?></select></label>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="builder-note">Saving creates a governed recipe only. Automatic execution still requires an approved runner, connector permissions, failure handling, and audit controls.</p>
+                    <div class="builder-actions"><button class="button primary" type="submit">Save Automation</button><a class="secondary-action" href="/automation.php">Cancel</a></div>
+                  </form>
+                </section>
+              </div>
             </section>
             <?php endif; ?>
-
-            <section class="workspace-grid two-up">
-              <article class="admin-panel"><div class="panel-title-row"><h3>Recipe builder</h3><span>Trigger + condition + action</span></div><div class="automation-recipe"><div><span class="status-badge">When</span><strong>Account, page, email, request, prospect, or schedule event occurs</strong></div><div><span class="status-badge">If</span><strong>Field values, role, status, owner, or delivery outcome match</strong></div><div><span class="status-badge">Then</span><strong>Notify, assign, update, trace, approve, or create activity</strong></div></div></article>
-              <article class="admin-panel"><div class="panel-title-row"><h3>Governance</h3><span>Required controls</span></div><ul class="mini-list"><li><strong>Owner</strong><span>Every automation needs an accountable owner.</span></li><li><strong>Least privilege</strong><span>Connectors should only access the data the recipe needs.</span></li><li><strong>Failure path</strong><span>Every recipe should log failed runs and route them to review.</span></li><li><strong>Change lifecycle</strong><span>Draft, test, activate, monitor, then retire safely.</span></li></ul></article>
-            </section>
-
-            <section class="admin-panel" id="recipes">
-              <div class="table-heading"><h3>Automation recipes</h3><span><?= e((string) count($recipes)) ?> saved</span></div>
-              <?php if (!$schemaReady): ?><p class="empty-state">Run /update.php to enable saved automation recipes.</p><?php elseif (!$recipes): ?><p class="empty-state">No automation recipes have been created yet.</p><?php else: ?>
-              <div class="table-scroll"><table class="data-table activity-table"><thead><tr><th>Name</th><th>Trigger</th><th>Condition</th><th>Action</th><th>Status</th><th>Importance</th><th>Owner</th></tr></thead><tbody><?php foreach ($recipes as $recipe): ?><tr><td><strong><?= e((string) $recipe['name']) ?></strong><small><?= e((string) $recipe['updated_at']) ?></small></td><td><?= e((string) $recipe['trigger_event']) ?></td><td><?= e((string) $recipe['condition_rules']) ?></td><td><?= e((string) $recipe['action_steps']) ?></td><td><span class="status-badge <?= $recipe['status'] === 'Ready' ? 'is-active' : 'is-muted' ?>"><?= e((string) $recipe['status']) ?></span></td><td><span class="status-badge"><?= e((string) $recipe['importance']) ?></span></td><td><?= e((string) ($recipe['owner'] ?: $recipe['creator_name'] ?: $recipe['creator_email'] ?: 'Unassigned')) ?></td></tr><?php endforeach; ?></tbody></table></div>
-              <?php endif; ?>
-            </section>
 
             <section class="admin-panel" id="run-history">
               <div class="table-heading"><h3>Run history</h3><span>Execution disabled</span></div>
               <?php if (!$runs): ?><p class="empty-state">No automation runs yet. Recipes are saved, but automatic execution has not been enabled.</p><?php else: ?><div class="table-scroll"><table class="data-table compact-table"><thead><tr><th>Flow</th><th>Status</th><th>Last run</th><th>Owner</th></tr></thead><tbody><?php foreach ($runs as $run): ?><tr><td><strong><?= e((string) $run['flow']) ?></strong></td><td><span class="status-badge is-muted"><?= e((string) $run['status']) ?></span></td><td><?= e((string) $run['last_run']) ?></td><td><?= e((string) $run['owner']) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
-            </section>
-
-            <section class="admin-panel">
-              <div class="panel-title-row"><h3>Connector catalog</h3><span>Planned</span></div>
-              <div class="quick-actions"><span class="status-badge">Portal users</span><span class="status-badge">CMS pages</span><span class="status-badge">Blogs</span><span class="status-badge">Requests</span><span class="status-badge">Prospects</span><span class="status-badge">Mail trace</span><span class="status-badge">Activity log</span></div>
             </section>
           </section>
         </main>

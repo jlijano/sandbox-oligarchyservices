@@ -12,6 +12,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - Analytics loader exists, but analytics are disabled by default.
 - Hostinger-compatible Apache configuration is included in `.htaccess`.
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
+- Public blog listing, detail, and dynamic sitemap routes are read-only. They read published blog rows when the database is available, but they do not create or alter blog tables.
 - Authenticated clients can submit and view service requests at `/requests.php`; admin, editor, and support users can manage the full request queue and timeline updates.
 - Admin-created portal users receive a generated temporary password by PHP mail, confirm their email address before signing in, then create their own password before opening the dashboard.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
@@ -111,6 +112,31 @@ admin and run `/update.php` once. The update creates or updates the
 `client_requests` and `client_request_updates` tables without deleting existing
 users, pages, blogs, settings, or activity records.
 
+## Blog and sitemap behavior
+
+`blogs.php`, `blog.php`, and `sitemap.php` are public read paths. They may open a
+database connection and query published blog rows, but they must not create,
+alter, or repair the blog schema during public requests. Run `/update.php` as an
+admin after blog or CMS code deployments so the required blog tables and indexes
+exist before visitors or crawlers request those public routes.
+
+`robots.txt` references both the static `sitemap.xml` and dynamic `sitemap.php`.
+`sitemap.php` keeps the same core public URLs as `sitemap.xml` and adds published
+blog detail URLs from the portal database. If the database is unavailable or the
+blog table is missing, the dynamic sitemap still returns the static public URLs
+and logs the blog lookup error server-side.
+
+## CI validation
+
+`.github/workflows/validate.yml` runs repository reference checks and production
+availability diagnostics. The repository check validates local public references
+while allowing known generated server files such as `includes/config.php` and
+`includes/installed.lock`. The availability job records DNS, TLS, HTTP status,
+and response-preview diagnostics for public and protected routes. Curl tunnel
+failures or 403 responses from the GitHub runner are reported as diagnostics and
+should be verified from a browser or Hostinger logs before treating production as
+down.
+
 ## Analytics approach
 
 The project is prepared for privacy-friendly analytics, with Plausible-style loading as the first supported provider. Tracking is intentionally disabled in `index.html` and `privacy.html` until a real provider/domain decision is made.
@@ -176,6 +202,7 @@ generated local `includes/config.php`. Do not commit generated credentials.
 
 ## Change notes
 
+- 2026-06-28: Made public blog listing, detail, and dynamic sitemap routes read-only and refined CI reference checks plus availability diagnostics.
 - 2026-06-28: Removed the Sentinel mail orchestrator from account confirmations; the portal now uses PHP `mail()` only for account confirmation emails.
 - 2026-06-22: Added a polished `career-timeline.html` page for Jan Christian L.'s LinkedIn work history using the current site design system.
 - 2026-06-22: Added request timeline updates with client-visible comments and internal-only staff notes.

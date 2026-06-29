@@ -30,15 +30,14 @@ if (!hash_equals($token, $provided)) {
 
 try {
     $pdo = db();
+    prospect_ensure_schema($pdo);
     if (!prospect_schema_ready($pdo)) {
-        throw new RuntimeException('Prospects database tables are not ready. Run /update.php after deployment.');
+        throw new RuntimeException('Prospects database tables are not ready. Check the database config, then run /update.php if needed.');
     }
 
-    $actorId = (int) (getenv('PROSPECTS_SYNC_ACTOR_ID') ?: 0);
+    $actorId = prospect_sheet_sync_actor_id($pdo);
     $summary = prospect_sheet_sync($pdo, $actorId);
-    if ($actorId > 0) {
-        prospect_log_activity($pdo, $actorId, 'prospects scheduled sheet sync', null, prospect_sheet_sync_message($summary));
-    }
+    prospect_log_activity($pdo, $actorId, 'prospects scheduled sheet sync', null, prospect_sheet_sync_message($summary));
 
     $hasErrors = !empty($summary['errors']);
     http_response_code($hasErrors ? 207 : 200);

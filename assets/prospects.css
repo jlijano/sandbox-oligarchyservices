@@ -746,16 +746,32 @@ body.prospect-modal-open {
   }
 }
 
-/* Compact prospects action toolbar: hide the large hero copy and keep only actions. */
+/* Prospects layout system: shared spacing, actions, panels, and dashboard cards. */
+:root {
+  --prospect-radius: 8px;
+  --prospect-gap-xs: 8px;
+  --prospect-gap-sm: 12px;
+  --prospect-gap-md: 16px;
+  --prospect-gap-lg: 20px;
+  --prospect-toolbar-bg: #101114;
+  --prospect-widget-bg: #171a20;
+}
+
+.prospects-workspace {
+  gap: var(--prospect-gap-lg) !important;
+}
+
+.prospect-toolbar,
 .prospects-header {
   display: flex !important;
+  min-height: 0 !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  min-height: 0 !important;
-  border: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(158, 167, 184, 0.22) !important;
+  border-radius: var(--prospect-radius) !important;
+  padding: 10px !important;
+  background: var(--prospect-toolbar-bg) !important;
+  box-shadow: var(--prospect-shadow-soft) !important;
 }
 
 .prospects-header::after,
@@ -763,13 +779,578 @@ body.prospect-modal-open {
   display: none !important;
 }
 
-.prospects-header .hero-actions {
+.prospect-toolbar-actions,
+.prospects-header .hero-actions,
+.filter-actions,
+.form-actions,
+.dashboard-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--prospect-gap-xs);
   width: 100%;
   justify-content: flex-start !important;
 }
 
-.prospects-header .primary-action,
-.prospects-header .secondary-action {
+.prospects-workspace .primary-action,
+.prospects-workspace .secondary-action,
+.prospects-workspace .button.primary,
+.prospects-workspace .table-action,
+.prospects-workspace button[type="submit"] {
+  display: inline-flex;
   min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
   padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.prospects-workspace .primary-action,
+.prospects-workspace .button.primary,
+.prospects-workspace button[type="submit"] {
+  border: 1px solid rgba(200, 23, 43, 0.72);
+  background: #c8172b;
+  color: #ffffff;
+}
+
+.prospects-workspace .secondary-action,
+.prospects-workspace .table-action {
+  border: 1px solid rgba(158, 167, 184, 0.34);
+  background: rgba(255, 255, 255, 0.035);
+  color: #f4f6f8;
+}
+
+.prospects-workspace .primary-action:hover,
+.prospects-workspace .secondary-action:hover,
+.prospects-workspace .button.primary:hover,
+.prospects-workspace .table-action:hover,
+.prospects-workspace button[type="submit"]:hover {
+  transform: translateY(-1px);
+}
+
+.prospects-workspace .secondary-action:hover,
+.prospects-workspace .table-action:hover {
+  border-color: rgba(49, 196, 189, 0.62);
+  background: rgba(49, 196, 189, 0.1);
+  color: #d9fffc;
+}
+
+.prospects-workspace .is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.prospects-workspace .admin-panel,
+.table-panel,
+.timeline-group,
+.kanban-column,
+.prospect-widget {
+  border-radius: var(--prospect-radius) !important;
+  border-color: rgba(158, 167, 184, 0.25) !important;
+  background: var(--prospect-surface-strong) !important;
+  box-shadow: var(--prospect-shadow-soft) !important;
+}
+
+.table-heading,
+.section-heading-row,
+.kanban-column-header,
+.dashboard-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--prospect-gap-sm);
+}
+
+.table-heading h3,
+.section-heading-row h2,
+.kanban-column-header h3,
+.dashboard-card-head span {
+  letter-spacing: 0;
+}
+
+.prospect-filters {
+  display: grid;
+  gap: var(--prospect-gap-sm);
+  padding: 12px;
+}
+
+.prospect-view-switcher {
+  align-self: start;
+}
+
+.kanban-status-message {
+  border: 1px solid rgba(49, 196, 189, 0.34);
+  border-radius: var(--prospect-radius);
+  padding: 10px 12px;
+  background: rgba(49, 196, 189, 0.1);
+  color: #d9fffc;
+  font-weight: 850;
+}
+
+.kanban-status-message.is-error {
+  border-color: rgba(235, 59, 99, 0.5);
+  background: rgba(235, 59, 99, 0.12);
+  color: #ffd7df;
+}
+
+.kanban-column.is-drop-target,
+.kanban-card.is-dragging {
+  border-color: rgba(49, 196, 189, 0.68) !important;
+  box-shadow: 0 0 0 2px rgba(49, 196, 189, 0.14), var(--prospect-shadow-soft) !important;
+}
+
+#prospect-dashboard {
+  border: 1px solid rgba(158, 167, 184, 0.25);
+  border-radius: var(--prospect-radius);
+  padding: 12px;
+  background: #111318;
+  box-shadow: var(--prospect-shadow-soft);
+}
+
+#prospect-dashboard .section-heading-row {
+  border-bottom: 1px solid rgba(158, 167, 184, 0.18);
+  padding-bottom: 12px;
+  margin-bottom: 0;
+}
+
+#prospect-dashboard .section-heading-row h2 {
+  color: #f8fafc;
+  font-size: 1.1rem;
+}
+
+#prospect-dashboard .eyebrow {
+  color: var(--prospect-muted);
+}
+
+.dashboard-customizer-bar {
+  display: none;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  gap: var(--prospect-gap-xs);
+  align-items: center;
+  border: 1px solid rgba(158, 167, 184, 0.25);
+  border-radius: var(--prospect-radius);
+  padding: 10px;
+  background: #101114;
+}
+
+.prospect-view.is-customizing .dashboard-customizer-bar {
+  display: grid;
+}
+
+.dashboard-customizer-bar select,
+.dashboard-customizer-bar input,
+.dashboard-editor input,
+.dashboard-editor textarea {
+  min-height: 38px;
+  border: 1px solid rgba(158, 167, 184, 0.32);
+  border-radius: 6px;
+  background: #0b0c0f;
+  color: #f7f8fa;
+  padding: 8px 10px;
+}
+
+.dashboard-customizer-bar button,
+.widget-actions button,
+.dashboard-editor button {
+  min-height: 32px;
+  border: 1px solid rgba(158, 167, 184, 0.32);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.dashboard-customizer-bar button:hover,
+.widget-actions button:hover,
+.dashboard-editor button:hover {
+  border-color: rgba(49, 196, 189, 0.62);
+  background: rgba(49, 196, 189, 0.1);
+}
+
+.prospect-widget-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: dense;
+  grid-auto-rows: minmax(90px, auto);
+  gap: var(--prospect-gap-xs);
+}
+
+.prospect-widget {
+  grid-column: span var(--widget-cols, 1);
+  grid-row: span var(--widget-rows, 1);
+  min-height: calc(96px * var(--widget-rows, 1));
+  touch-action: none;
+  overflow: hidden;
+}
+
+.prospect-widget::before {
+  display: none;
+}
+
+.prospect-widget span[data-widget-title] {
+  color: #dce2eb;
+  font-size: 0.72rem;
+  text-transform: none;
+}
+
+.prospect-widget strong[data-widget-value] {
+  color: #ffffff;
+  font-size: 1.8rem;
+  font-weight: 850;
+}
+
+.prospect-widget p[data-widget-note] {
+  color: var(--prospect-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.prospect-widget.dashboard-analytic {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.prospect-widget.dashboard-analytic strong[data-widget-value] {
+  display: none;
+}
+
+.dashboard-card-tools,
+.dashboard-legend,
+.dashboard-report-list,
+.dashboard-bar,
+.dashboard-timeline-row {
+  color: var(--prospect-muted);
+}
+
+.dashboard-card-tools {
+  display: flex;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.dashboard-progress-stack {
+  display: flex;
+  height: 64px;
+  align-items: stretch;
+  border: 1px solid rgba(158, 167, 184, 0.18);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #0b0c0f;
+}
+
+.dashboard-progress-segment {
+  display: grid;
+  min-width: 12px;
+  place-items: center;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.dashboard-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.dashboard-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  font-size: inherit;
+  text-transform: none;
+}
+
+.dashboard-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--dot);
+}
+
+.dashboard-pie-wrap {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.dashboard-pie {
+  width: 132px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--pie);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-chart {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dashboard-bar {
+  display: grid;
+  grid-template-columns: minmax(76px, 0.8fr) minmax(90px, 1.5fr) 38px;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.dashboard-bar-track {
+  height: 12px;
+  border: 1px solid rgba(158, 167, 184, 0.16);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0b0c0f;
+}
+
+.dashboard-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--prospect-red), var(--prospect-teal));
+}
+
+.dashboard-stacked {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  min-height: 132px;
+  padding: 4px 4px 0;
+}
+
+.dashboard-stack-column {
+  display: grid;
+  align-content: end;
+  gap: 5px;
+  text-align: center;
+  color: var(--prospect-muted);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.dashboard-stack {
+  display: flex;
+  height: 96px;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  border-bottom: 1px solid rgba(158, 167, 184, 0.18);
+}
+
+.dashboard-stack-piece {
+  width: 24px;
+  min-height: 8px;
+  border-radius: 4px 4px 0 0;
+  background: var(--piece);
+}
+
+.dashboard-report-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.82rem;
+}
+
+.dashboard-report-list span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(158, 167, 184, 0.16);
+  padding-top: 8px;
+}
+
+.dashboard-report-list strong {
+  color: #fff;
+  font-size: 0.92rem;
+}
+
+.dashboard-timeline {
+  display: grid;
+  gap: 10px;
+  max-height: 260px;
+  margin-top: 4px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.dashboard-timeline-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  font-size: 0.72rem;
+}
+
+.dashboard-timeline-label {
+  display: grid;
+  gap: 3px;
+}
+
+.dashboard-timeline-label strong {
+  color: #fff;
+  font-size: 0.76rem;
+}
+
+.dashboard-timeline-label span {
+  color: var(--prospect-muted);
+  font-size: 0.68rem;
+  text-transform: none;
+}
+
+.dashboard-timeline-track {
+  position: relative;
+  height: 22px;
+  border: 1px solid rgba(158, 167, 184, 0.16);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0b0c0f;
+}
+
+.dashboard-timeline-fill {
+  position: absolute;
+  inset: 4px auto 4px var(--start);
+  width: var(--width);
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--line), var(--prospect-teal));
+}
+
+.prospect-view.is-customizing .prospect-widget {
+  outline: 1px dashed rgba(49, 196, 189, 0.55);
+  outline-offset: 3px;
+  cursor: grab;
+}
+
+.prospect-widget.is-dashboard-dragging {
+  opacity: 0.55;
+  transform: scale(0.985);
+  cursor: grabbing;
+}
+
+.prospect-widget.is-drop-before {
+  box-shadow: -5px 0 0 rgba(49, 196, 189, 0.85), var(--prospect-shadow-soft) !important;
+}
+
+.prospect-widget.is-drop-after {
+  box-shadow: 5px 0 0 rgba(49, 196, 189, 0.85), var(--prospect-shadow-soft) !important;
+}
+
+.widget-actions {
+  z-index: 2;
+  flex-wrap: wrap;
+}
+
+.widget-actions button[data-dashboard-size] {
+  min-width: 34px;
+  padding: 0 8px;
+}
+
+.dashboard-resize-handle {
+  display: none;
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-right: 2px solid rgba(49, 196, 189, 0.9);
+  border-bottom: 2px solid rgba(49, 196, 189, 0.9);
+  background: transparent;
+  cursor: nwse-resize;
+  z-index: 3;
+}
+
+.prospect-view.is-customizing .dashboard-resize-handle {
+  display: block;
+}
+
+.dashboard-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.68);
+  padding: 16px;
+}
+
+.dashboard-editor[hidden] {
+  display: none;
+}
+
+.dashboard-editor form {
+  display: grid;
+  gap: 12px;
+  width: min(520px, 100%);
+  border: 1px solid rgba(158, 167, 184, 0.45);
+  border-radius: var(--prospect-radius);
+  padding: 16px;
+  background: #171a20;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.52);
+}
+
+.dashboard-editor label {
+  display: grid;
+  gap: 7px;
+  color: #f7f8fa;
+  font-weight: 850;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 1180px) {
+  .prospect-widget-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .prospect-widget {
+    grid-column: span min(var(--widget-cols, 1), 2);
+  }
+}
+
+@media (max-width: 720px) {
+  .prospect-toolbar-actions,
+  .prospects-header .hero-actions,
+  .filter-actions,
+  .form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .prospects-workspace .primary-action,
+  .prospects-workspace .secondary-action,
+  .prospects-workspace .button.primary,
+  .prospects-workspace .table-action,
+  .prospects-workspace button[type="submit"] {
+    width: 100%;
+  }
+
+  .dashboard-customizer-bar,
+  .dashboard-pie-wrap,
+  .dashboard-timeline-row {
+    grid-template-columns: 1fr;
+  }
+
+  .prospect-widget-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prospect-widget {
+    grid-column: span 1 !important;
+    grid-row: span 1 !important;
+    min-height: 150px;
+  }
 }

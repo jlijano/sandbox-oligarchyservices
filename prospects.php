@@ -201,9 +201,9 @@ $csrf = csrf_token();
     <title>Prospects | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-blogs-nav">
-    <link rel="stylesheet" href="/assets/prospects.css?v=20260629-prospect-polish">
+    <link rel="stylesheet" href="/assets/prospects.css?v=20260630-layout-system">
     <script defer src="/assets/dashboard.js?v=20260621-settings-modules"></script>
-    <script defer src="/assets/prospects.js?v=20260629-live-crm"></script>
+    <script defer src="/assets/prospects.js?v=20260630-layout-system"></script>
   </head>
   <body class="dashboard-body">
     <div class="dashboard-shell" data-dashboard-shell>
@@ -218,9 +218,8 @@ $csrf = csrf_token();
           <?php if ($notice): ?><div class="dashboard-alert is-success" role="status"><?= e((string) $notice) ?></div><?php endif; ?>
           <?php if ($error): ?><div class="dashboard-alert is-error" role="alert"><?= e((string) $error) ?></div><?php endif; ?>
           <?php if (!$schemaReady): ?><div class="dashboard-alert is-error" role="alert"><?= e($schemaMessage ?: 'Prospects database tables are not ready. Log in as an admin and run /update.php after deployment.') ?></div><?php endif; ?>
-          <header class="dashboard-hero compact-hero prospects-header">
-            <div><p class="eyebrow">Playground</p><h2>Prospects</h2><p>Manage leads using the same structure as the Google Sheets pipeline: fit data, contact paths, buying triggers, outreach angles, and calculated conversion percentage.</p></div>
-            <div class="hero-actions"><a class="primary-action" href="#prospect-form">Add Prospect</a><a class="secondary-action" href="#prospect-import">Import Leads</a></div>
+          <header class="prospect-toolbar prospects-header" aria-label="Prospect actions">
+            <div class="prospect-toolbar-actions hero-actions"><a class="primary-action" href="#prospect-form">Add Prospect</a><a class="secondary-action" href="#prospect-import">Import Leads</a><a class="secondary-action" href="/assets/prospects-import-template.csv" download="prospects-import-template.csv">Export CSV Template</a><a class="secondary-action" href="/prospect-sync.php">Sync Google Sheet</a></div>
           </header>
           <?php if ($schemaReady): ?>
           <section class="prospect-action-grid" aria-label="Prospect actions">

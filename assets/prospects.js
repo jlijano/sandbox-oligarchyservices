@@ -1,7 +1,10 @@
 (function () {
   const importTemplateHref = "/assets/prospects-import-template.csv";
-  const playgroundSubnav = document.querySelector("[data-playground-subnav]");
-  if (playgroundSubnav && !playgroundSubnav.querySelector("a[href='/prospects.php']")) {
+  const qs = (selector, root = document) => root.querySelector(selector);
+  const qsa = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+  const playgroundSubnav = qs("[data-playground-subnav]");
+  if (playgroundSubnav && !qs("a[href='/prospects.php']", playgroundSubnav)) {
     const link = document.createElement("a");
     link.href = "/prospects.php";
     link.className = "is-active";
@@ -10,58 +13,42 @@
     playgroundSubnav.appendChild(link);
     const group = playgroundSubnav.closest("[data-playground-group]");
     group?.classList.add("is-open", "is-active");
-    group?.querySelector("[data-playground-toggle]")?.setAttribute("aria-expanded", "true");
+    qs("[data-playground-toggle]", group)?.setAttribute("aria-expanded", "true");
   }
 
-  const heroActions = document.querySelector(".prospects-header .hero-actions");
-  if (heroActions && !heroActions.querySelector(`a[href='${importTemplateHref}']`)) {
-    const templateLink = document.createElement("a");
-    templateLink.href = importTemplateHref;
-    templateLink.className = "secondary-action";
-    templateLink.download = "prospects-import-template.csv";
-    templateLink.textContent = "Export CSV Template";
-    heroActions.appendChild(templateLink);
-  }
-  if (heroActions && !heroActions.querySelector("a[href='/prospect-sync.php']")) {
-    const syncLink = document.createElement("a");
-    syncLink.href = "/prospect-sync.php";
-    syncLink.className = "secondary-action";
-    syncLink.textContent = "Sync Google Sheet";
-    heroActions.appendChild(syncLink);
-  }
+  const addActionLink = (parent, href, text, downloadName) => {
+    if (!parent || qs(`a[href='${href}']`, parent)) return;
+    const link = document.createElement("a");
+    link.href = href;
+    link.className = "secondary-action";
+    link.textContent = text;
+    if (downloadName) link.download = downloadName;
+    parent.appendChild(link);
+  };
 
-  const importHeading = document.querySelector("#prospect-import .table-heading");
-  if (importHeading && !importHeading.querySelector(`a[href='${importTemplateHref}']`)) {
-    const templateLink = document.createElement("a");
-    templateLink.href = importTemplateHref;
-    templateLink.className = "secondary-action";
-    templateLink.download = "prospects-import-template.csv";
-    templateLink.textContent = "Export CSV Template";
-    importHeading.appendChild(templateLink);
-  }
+  addActionLink(qs(".prospects-header .hero-actions"), importTemplateHref, "Export CSV Template", "prospects-import-template.csv");
+  addActionLink(qs(".prospects-header .hero-actions"), "/prospect-sync.php", "Sync Google Sheet");
+  addActionLink(qs("#prospect-import .table-heading"), importTemplateHref, "Export CSV Template", "prospects-import-template.csv");
 
   const modalIds = ["prospect-form", "prospect-import", "prospect-detail"];
-  const modals = modalIds.map((id) => document.getElementById(id)).filter(Boolean);
   const closeModal = () => {
     if (!modalIds.includes(window.location.hash.slice(1))) return;
     history.pushState("", document.title, window.location.pathname + window.location.search);
     document.body.classList.remove("prospect-modal-open");
   };
   const syncModalState = () => {
-    const activeId = window.location.hash.slice(1);
-    document.body.classList.toggle("prospect-modal-open", modalIds.includes(activeId));
+    document.body.classList.toggle("prospect-modal-open", modalIds.includes(window.location.hash.slice(1)));
   };
 
-  modals.forEach((modal) => {
-    if (!modal.querySelector("[data-prospect-modal-close]")) {
-      const close = document.createElement("a");
-      close.href = window.location.pathname + window.location.search.replace(/([?&])open=[^&]*&?/, "$1").replace(/[?&]$/, "");
-      close.className = "prospect-modal-close";
-      close.setAttribute("aria-label", "Close dialog");
-      close.setAttribute("data-prospect-modal-close", "");
-      close.textContent = "×";
-      modal.insertBefore(close, modal.firstChild);
-    }
+  modalIds.map((id) => document.getElementById(id)).filter(Boolean).forEach((modal) => {
+    if (qs("[data-prospect-modal-close]", modal)) return;
+    const close = document.createElement("a");
+    close.href = window.location.pathname + window.location.search.replace(/([?&])open=[^&]*&?/, "$1").replace(/[?&]$/, "");
+    close.className = "prospect-modal-close";
+    close.setAttribute("aria-label", "Close dialog");
+    close.setAttribute("data-prospect-modal-close", "");
+    close.textContent = "x";
+    modal.insertBefore(close, modal.firstChild);
   });
 
   document.addEventListener("keydown", (event) => {
@@ -76,9 +63,8 @@
   window.addEventListener("hashchange", syncModalState);
   syncModalState();
 
-  const viewButtons = Array.from(document.querySelectorAll("[data-prospect-view-button]"));
-  const views = Array.from(document.querySelectorAll("[data-prospect-view]"));
-
+  const viewButtons = qsa("[data-prospect-view-button]");
+  const views = qsa("[data-prospect-view]");
   const showView = (viewName) => {
     viewButtons.forEach((button) => {
       const isActive = button.dataset.prospectViewButton === viewName;
@@ -91,25 +77,20 @@
       view.hidden = !isActive;
     });
   };
+  viewButtons.forEach((button) => button.addEventListener("click", () => showView(button.dataset.prospectViewButton)));
 
-  viewButtons.forEach((button) => {
-    button.addEventListener("click", () => showView(button.dataset.prospectViewButton));
-  });
-
-  const search = document.querySelector("[data-prospect-search]");
-  const status = document.querySelector("[data-prospect-status]");
-  const owner = document.querySelector("[data-prospect-owner]");
-  const priority = document.querySelector("[data-prospect-priority]");
-  const count = document.querySelector("[data-prospect-result-count]");
-  const rows = Array.from(document.querySelectorAll("[data-prospect-row]"));
-
+  const search = qs("[data-prospect-search]");
+  const status = qs("[data-prospect-status]");
+  const owner = qs("[data-prospect-owner]");
+  const priority = qs("[data-prospect-priority]");
+  const count = qs("[data-prospect-result-count]");
+  const rows = qsa("[data-prospect-row]");
   const applyFilters = () => {
     const query = (search?.value || "").trim().toLowerCase();
     const statusValue = status?.value || "";
     const ownerValue = owner?.value || "";
     const priorityValue = priority?.value || "";
     let visible = 0;
-
     rows.forEach((row) => {
       const matches = (!query || row.dataset.search.includes(query))
         && (!statusValue || row.dataset.status === statusValue)
@@ -118,18 +99,15 @@
       row.hidden = !matches;
       if (matches) visible += 1;
     });
-
     if (count) count.textContent = `${visible} prospect${visible === 1 ? "" : "s"}`;
   };
-
   [search, status, owner, priority].forEach((control) => {
     control?.addEventListener("input", applyFilters);
     control?.addEventListener("change", applyFilters);
   });
 
-  const board = document.querySelector(".prospect-board");
-  const csrfToken = document.querySelector("input[name='csrf_token']")?.value || "";
-
+  const board = qs(".prospect-board");
+  const csrfToken = qs("input[name='csrf_token']")?.value || "";
   if (board) {
     let draggedCard = null;
     let originalColumn = null;
@@ -148,35 +126,34 @@
       message.classList.toggle("is-error", isError);
       if (text !== "") window.setTimeout(() => setMessage(""), 3500);
     };
-
     const cardId = (card) => {
-      const href = card.querySelector("a[href*='open=']")?.getAttribute("href") || "";
+      const href = qs("a[href*='open=']", card)?.getAttribute("href") || "";
       try {
         return new URL(href, window.location.origin).searchParams.get("open") || "";
       } catch (error) {
         return "";
       }
     };
-
-    const columnStatus = (column) => column?.querySelector(".kanban-column-header h3")?.textContent.trim() || "";
+    const columnStatus = (column) => qs(".kanban-column-header h3", column)?.textContent.trim() || "";
     const updateColumnCount = (column) => {
-      const countBadge = column?.querySelector(".kanban-column-header span");
-      if (countBadge) countBadge.textContent = String(column.querySelectorAll(".kanban-card").length);
+      const badge = qs(".kanban-column-header span", column);
+      if (badge) badge.textContent = String(qsa(".kanban-card", column).length);
     };
-    const updateAllCounts = () => document.querySelectorAll(".kanban-column").forEach(updateColumnCount);
-    const clearDropTargets = () => document.querySelectorAll(".kanban-column.is-drop-target").forEach((column) => column.classList.remove("is-drop-target"));
-
-    const moveCardBack = () => {
-      if (!draggedCard || !originalColumn) return;
-      if (originalNextSibling && originalNextSibling.parentElement === originalColumn) {
-        originalColumn.insertBefore(draggedCard, originalNextSibling);
-      } else {
-        originalColumn.appendChild(draggedCard);
-      }
-      draggedCard.dataset.kanbanStatus = originalStatus;
+    const updateAllCounts = () => qsa(".kanban-column").forEach(updateColumnCount);
+    const clearDropTargets = () => qsa(".kanban-column.is-drop-target").forEach((column) => column.classList.remove("is-drop-target"));
+    const resetDragState = () => {
+      draggedCard = null;
+      originalColumn = null;
+      originalNextSibling = null;
+      originalStatus = "";
+    };
+    const moveCardBack = (card, column, nextSibling, statusValue) => {
+      if (!card || !column) return;
+      if (nextSibling && nextSibling.parentElement === column) column.insertBefore(card, nextSibling);
+      else column.appendChild(card);
+      card.dataset.kanbanStatus = statusValue;
       updateAllCounts();
     };
-
     const saveStatus = async (card, statusValue) => {
       const prospectId = card.dataset.prospectId || cardId(card);
       if (!prospectId || !csrfToken) throw new Error("Missing prospect update token. Refresh and try again.");
@@ -191,16 +168,13 @@
         headers: { "Accept": "application/json" },
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok !== true) {
-        throw new Error(payload.message || "Could not update prospect status.");
-      }
+      if (!response.ok || payload.ok !== true) throw new Error(payload.message || "Could not update prospect status.");
       return payload;
     };
 
-    document.querySelectorAll(".kanban-column").forEach((column) => {
+    qsa(".kanban-column").forEach((column) => {
       column.dataset.kanbanStatus = columnStatus(column);
       column.setAttribute("aria-label", `${column.dataset.kanbanStatus} prospects`);
-
       column.addEventListener("dragover", (event) => {
         if (!draggedCard) return;
         event.preventDefault();
@@ -220,6 +194,9 @@
         if (!newStatus || newStatus === originalStatus) return;
 
         const activeCard = draggedCard;
+        const rollbackColumn = originalColumn;
+        const rollbackNextSibling = originalNextSibling;
+        const rollbackStatus = originalStatus;
         column.appendChild(activeCard);
         activeCard.dataset.kanbanStatus = newStatus;
         activeCard.classList.add("is-saving");
@@ -229,15 +206,16 @@
           await saveStatus(activeCard, newStatus);
           setMessage(`Status updated to ${newStatus}.`);
         } catch (error) {
-          moveCardBack();
+          moveCardBack(activeCard, rollbackColumn, rollbackNextSibling, rollbackStatus);
           setMessage(error.message || "Could not update prospect status.", true);
         } finally {
           activeCard.classList.remove("is-saving");
+          resetDragState();
         }
       });
     });
 
-    document.querySelectorAll(".kanban-card").forEach((card) => {
+    qsa(".kanban-card").forEach((card) => {
       const id = cardId(card);
       if (!id) return;
       card.dataset.prospectId = id;
@@ -246,7 +224,6 @@
       card.setAttribute("tabindex", "0");
       card.setAttribute("aria-grabbed", "false");
       card.title = "Drag to another status column";
-
       card.addEventListener("dragstart", (event) => {
         draggedCard = card;
         originalColumn = card.closest(".kanban-column");
@@ -257,25 +234,20 @@
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.setData("text/plain", id);
       });
-
       card.addEventListener("dragend", () => {
         card.classList.remove("is-dragging");
         card.setAttribute("aria-grabbed", "false");
         clearDropTargets();
-        draggedCard = null;
-        originalColumn = null;
-        originalNextSibling = null;
-        originalStatus = "";
+        if (!card.classList.contains("is-saving")) resetDragState();
       });
     });
   }
 
-  const customizeButton = document.querySelector("[data-customize-dashboard]");
-  const dashboardView = document.querySelector("[data-prospect-view='dashboard']");
-  const widgetGrid = document.querySelector(".prospect-widget-grid");
-  const widgets = Array.from(document.querySelectorAll("[data-prospect-widget]"));
+  const customizeButton = qs("[data-customize-dashboard]");
+  const dashboardView = qs("[data-prospect-view='dashboard']");
+  const widgetGrid = qs(".prospect-widget-grid");
+  const widgets = qsa("[data-prospect-widget]");
   let isCustomizing = false;
-
   const setCustomizing = (enabled) => {
     isCustomizing = enabled;
     dashboardView?.classList.toggle("is-customizing", enabled);
@@ -284,15 +256,11 @@
       customizeButton.textContent = enabled ? "Done customizing" : "Customize dashboard";
       customizeButton.setAttribute("aria-pressed", String(enabled));
     }
-    if (!enabled) {
-      widgets.forEach((widget) => widget.classList.remove("is-configuring"));
-    }
+    if (!enabled) widgets.forEach((widget) => widget.classList.remove("is-configuring"));
   };
-
   customizeButton?.setAttribute("aria-pressed", "false");
   customizeButton?.addEventListener("click", () => setCustomizing(!isCustomizing));
-
-  document.querySelectorAll("[data-prospect-widget] .widget-actions button").forEach((button) => {
+  qsa("[data-prospect-widget] .widget-actions button").forEach((button) => {
     button.addEventListener("click", () => {
       if (!isCustomizing) return;
       const widget = button.closest("[data-prospect-widget]");

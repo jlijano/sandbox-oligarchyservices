@@ -6,3 +6,4 @@ dist/
 includes/config.php
 includes/installed.lock
 includes/mail-config.php
+sentinel-reports/

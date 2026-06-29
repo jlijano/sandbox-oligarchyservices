@@ -12,6 +12,15 @@
     group?.querySelector("[data-playground-toggle]")?.setAttribute("aria-expanded", "true");
   }
 
+  const heroActions = document.querySelector(".prospects-header .hero-actions");
+  if (heroActions && !heroActions.querySelector("a[href='/prospect-sync.php']")) {
+    const syncLink = document.createElement("a");
+    syncLink.href = "/prospect-sync.php";
+    syncLink.className = "secondary-action";
+    syncLink.textContent = "Sync Google Sheet";
+    heroActions.appendChild(syncLink);
+  }
+
   const modalIds = ["prospect-form", "prospect-import", "prospect-detail"];
   const modals = modalIds.map((id) => document.getElementById(id)).filter(Boolean);
   const closeModal = () => {

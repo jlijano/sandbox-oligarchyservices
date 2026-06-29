@@ -14,8 +14,9 @@ ErrorDocument 404 /404.html
   # Keep the public login URL stable while serving the PHP login form.
   RewriteRule ^login\.html$ /login.php [L]
 
-  # Serve the Carrier portal module from the requested app route.
+  # Serve the Carrier and Switchboard portal modules from their requested app routes.
   RewriteRule ^carrier/?$ /carrier.php [L]
+  RewriteRule ^switchboard/?$ /switchboard.php [L]
 
   # Protect server-side helpers and generated credentials from browser access.
   RewriteRule ^includes/ - [F,L]

@@ -115,9 +115,15 @@ the existing database.
 
 `robots.txt` references both the static `sitemap.xml` and dynamic `sitemap.php`.
 The dynamic sitemap keeps the same core public URLs as `sitemap.xml` and adds
-published blog detail URLs from the portal database. If the database is briefly
-unavailable, `sitemap.php` still returns the static public URLs and logs the blog
-lookup error server-side.
+published blog detail URLs from the portal database. `blogs.php`, `blog.php`, and
+`sitemap.php` are public read paths only. They do not create or alter blog tables
+during visitor or crawler requests.
+
+If the database is briefly unavailable, or if the blog schema has not been
+created yet, `sitemap.php` still returns the static public URLs and logs the blog
+lookup error server-side. After deploying blog or CMS changes, log in as an admin
+and run `/update.php` once so blog schema updates happen in the authenticated
+maintenance flow instead of public routes.
 
 ## Account confirmation email
 
@@ -144,6 +150,15 @@ Sentinel report archive expectations are documented in
 `docs/sentinel-report-archive.md`. Generated report archives should stay in
 Sentinel's private durable workspace or the automation host's private persistent
 storage, not in Hostinger `public_html`.
+
+## Availability diagnostics
+
+The GitHub Actions workflow checks public routes and protected helper paths, but
+external probes from GitHub runners can be blocked by network tunnels, Hostinger
+edge rules, WAF behavior, or proxy policy. A curl tunnel failure or unexpected
+403 from the runner is diagnostic evidence only. Confirm availability from a
+normal browser session, Hostinger hPanel, or server logs before treating the site
+as down.
 
 ## Before going live
 

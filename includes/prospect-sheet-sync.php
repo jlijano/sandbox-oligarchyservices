@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 function prospect_sheet_sync_spreadsheet_id(): string
 {
-    $configured = trim((string) getenv('PROSPECTS_SYNC_SPREADSHEET_ID'));
-    return $configured !== '' ? $configured : '1-BzOqTRrJ9RWuro50_aLqgrWpNjKNetz2Y_o0UMCO1g';
+    return trim((string) getenv('PROSPECTS_SYNC_SPREADSHEET_ID'));
 }
 
 function prospect_sheet_sync_sources(): array
@@ -14,7 +13,12 @@ function prospect_sheet_sync_sources(): array
         return [['label' => 'Configured CSV', 'status' => 'New Lead', 'url' => $singleCsvUrl]];
     }
 
-    $spreadsheetId = rawurlencode(prospect_sheet_sync_spreadsheet_id());
+    $spreadsheetIdValue = prospect_sheet_sync_spreadsheet_id();
+    if ($spreadsheetIdValue === '') {
+        throw new RuntimeException('Prospect sheet sync is not configured. Set PROSPECTS_SYNC_SPREADSHEET_ID or PROSPECTS_SYNC_CSV_URL on the server before running sync.');
+    }
+
+    $spreadsheetId = rawurlencode($spreadsheetIdValue);
     $tabs = [
         ['label' => 'Clients', 'status' => 'Client', 'gid' => '1600310510'],
         ['label' => 'New Leads', 'status' => 'New Lead', 'gid' => '1600310511'],

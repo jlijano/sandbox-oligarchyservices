@@ -14,6 +14,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - `login.html` is the stable public login URL and is rewritten to `login.php` when the PHP portal is deployed.
 - Public blog listing, detail, and dynamic sitemap routes are read-only. They read published blog rows when the database is available, but they do not create or alter blog tables.
 - Authenticated clients can submit and view service requests at `/requests.php`; admin, editor, and support users can manage the full request queue and timeline updates.
+- Admin and editor users can manage prospects, Carrier records, Switchboard conversations, CMS pages, blog posts, automation recipes, access records, and portal settings after the relevant schema updates are run.
 - Admin-created portal users receive a generated temporary password by PHP mail, confirm their email address before signing in, then create their own password before opening the dashboard.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
 - The installer also writes persistent database config backups outside `public_html` when Hostinger file permissions allow it, so full file syncs do not force a database reinstall.
@@ -46,9 +47,9 @@ Before going live:
    reconnect the existing database. Do not reinstall, drop, empty, or recreate
    the database just because the config file is missing.
 7. Test `index.html`, `login.html`, `dashboard.php`, `requests.php`,
-   `logout.php`, `privacy.html`, `career-timeline.html`,
-   `account-confirmation.php`, `change-password.php`, and one missing URL after
-   upload.
+   `carrier.php`, `switchboard.php`, `prospects.php`, `logout.php`,
+   `privacy.html`, `career-timeline.html`, `account-confirmation.php`,
+   `change-password.php`, and one missing URL after upload.
 
 See `HOSTINGER.md` for the full checklist.
 
@@ -57,8 +58,8 @@ See `HOSTINGER.md` for the full checklist.
 - `/install.php`: first-time portal setup. Creates the server-local database
   config, required tables, and first admin account.
 - `/update.php`: logged-in admin maintenance page. Applies safe, non-destructive
-  table updates after CMS, blog, access-management, or client request code
-  changes.
+  table updates after CMS, blog, access-management, prospect, Carrier,
+  Switchboard, automation, or client request code changes.
 - `/repair.php`: server repair page. Reconnects the existing database when the
   server-local config file is missing. It restores from a persistent backup when
   possible, or from entered Hostinger database values when the installer lock
@@ -202,6 +203,7 @@ generated local `includes/config.php`. Do not commit generated credentials.
 
 ## Change notes
 
+- 2026-06-30: Aligned README deployment notes with the current prospects, Carrier, Switchboard, automation, and portal update flow documented in `HOSTINGER.md`.
 - 2026-06-28: Made public blog listing, detail, and dynamic sitemap routes read-only and refined CI reference checks plus availability diagnostics.
 - 2026-06-28: Removed the Sentinel mail orchestrator from account confirmations; the portal now uses PHP `mail()` only for account confirmation emails.
 - 2026-06-22: Added a polished `career-timeline.html` page for Jan Christian L.'s LinkedIn work history using the current site design system.

@@ -213,11 +213,12 @@ function prospect_sheet_sync_upsert(PDO $pdo, array $payload, int $actorId): str
 
 function prospect_sheet_sync(PDO $pdo, int $actorId): array
 {
+    $sources = prospect_sheet_sync_sources();
     prospect_sheet_ensure_recommended_services_column($pdo);
     $summary = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'sources' => [], 'errors' => []];
     $actorId = prospect_sheet_sync_actor_id($pdo, $actorId);
 
-    foreach (prospect_sheet_sync_sources() as $source) {
+    foreach ($sources as $source) {
         $sourceLabel = (string) $source['label'];
         try {
             $csv = prospect_sheet_fetch_csv((string) $source['url']);

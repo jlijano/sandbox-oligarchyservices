@@ -25,6 +25,8 @@ $summary = null;
 $pdo = null;
 $schemaReady = false;
 $schemaMessage = '';
+$sources = [];
+$sourceConfigError = '';
 
 try {
     $pdo = db();
@@ -35,11 +37,19 @@ try {
     $schemaMessage = 'Prospect sync cannot prepare the portal database yet. Check the Hostinger database config, then run /update.php if needed.';
 }
 
+try {
+    $sources = prospect_sheet_sync_sources();
+} catch (Throwable $sourceError) {
+    $sourceConfigError = $sourceError->getMessage();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$pdo instanceof PDO || !$schemaReady) {
         $error = 'Prospects database tables are not ready. Check the database config, then run /update.php if needed.';
     } elseif (!csrf_verify($_POST['csrf_token'] ?? null)) {
         $error = 'Your session expired. Please refresh and try again.';
+    } elseif ($sourceConfigError !== '') {
+        $error = $sourceConfigError;
     } else {
         try {
             $summary = prospect_sheet_sync($pdo, (int) $user['id']);
@@ -55,7 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$sources = prospect_sheet_sync_sources();
 $csrf = csrf_token();
 ?>
 <!doctype html>
@@ -83,6 +92,7 @@ $csrf = csrf_token();
           <?php if ($notice !== ''): ?><div class="dashboard-alert is-success" role="status"><?= e($notice) ?></div><?php endif; ?>
           <?php if ($error !== ''): ?><div class="dashboard-alert is-error" role="alert"><?= e($error) ?></div><?php endif; ?>
           <?php if (!$schemaReady): ?><div class="dashboard-alert is-error" role="alert"><?= e($schemaMessage ?: 'Prospects database tables are not ready. Check the database config, then run /update.php if needed.') ?></div><?php endif; ?>
+          <?php if ($sourceConfigError !== ''): ?><div class="dashboard-alert is-error" role="alert"><?= e($sourceConfigError) ?></div><?php endif; ?>
           <header class="dashboard-hero compact-hero prospects-header">
             <div><p class="eyebrow">Google Sheet staging</p><h2>Sync Sheet Rows Into The Portal Database</h2><p>This sync reads the configured Google Sheet CSV tabs, maps the tracker fields to the live prospects table, and upserts records by website, email, or business name/location.</p></div>
             <div class="hero-actions"><a class="secondary-action" href="/prospects.php">Back to prospects</a></div>
@@ -92,12 +102,12 @@ $csrf = csrf_token();
             <p class="empty-state">Use this after researching leads into the Google Sheet. The sync updates existing matching records and creates new records for unmatched rows.</p>
             <form class="prospect-form" method="post">
               <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-              <button class="button primary" type="submit" <?= $schemaReady ? '' : 'disabled' ?>>Sync Google Sheet now</button>
+              <button class="button primary" type="submit" <?= ($schemaReady && $sourceConfigError === '') ? '' : 'disabled' ?>>Sync Google Sheet now</button>
             </form>
           </section>
           <section class="admin-panel table-panel">
             <div class="table-heading"><h3>Configured sheet sources</h3><span>CSV export tabs</span></div>
-            <div class="table-scroll"><table class="data-table"><thead><tr><th>Source</th><th>Default Status</th><th>CSV URL</th></tr></thead><tbody><?php foreach ($sources as $source): ?><tr><td><?= e((string) $source['label']) ?></td><td><?= e((string) $source['status']) ?></td><td><a href="<?= e((string) $source['url']) ?>" target="_blank" rel="noopener">Open CSV export</a></td></tr><?php endforeach; ?></tbody></table></div>
+            <?php if (!$sources): ?><p class="empty-state">No prospect sync source is configured. Set PROSPECTS_SYNC_SPREADSHEET_ID or PROSPECTS_SYNC_CSV_URL in the hosting environment before running sync.</p><?php else: ?><div class="table-scroll"><table class="data-table"><thead><tr><th>Source</th><th>Default Status</th><th>CSV URL</th></tr></thead><tbody><?php foreach ($sources as $source): ?><tr><td><?= e((string) $source['label']) ?></td><td><?= e((string) $source['status']) ?></td><td><a href="<?= e((string) $source['url']) ?>" target="_blank" rel="noopener">Open CSV export</a></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
           </section>
           <?php if (is_array($summary)): ?>
           <section class="admin-panel table-panel">

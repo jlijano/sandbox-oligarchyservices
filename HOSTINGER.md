@@ -153,11 +153,17 @@ portal still accepts the parent backup config or these environment variables:
 ## Prospect sheet sync
 
 Prospect management works without a scheduled sync job. To enable the optional
-Google Sheet sync, configure only non-secret identifiers in documentation and put
-actual private values in the hosting environment:
+Google Sheet sync, configure the source in the hosting environment before any
+manual or scheduled sync runs. Do not commit private sheet values to the
+repository.
 
-- `PROSPECTS_SYNC_CSV_URL`: optional direct HTTPS CSV export URL.
-- `PROSPECTS_SYNC_SPREADSHEET_ID`: optional spreadsheet ID used by the default tab exports.
+Set one of these non-secret source values:
+
+- `PROSPECTS_SYNC_CSV_URL`: direct HTTPS CSV export URL.
+- `PROSPECTS_SYNC_SPREADSHEET_ID`: spreadsheet ID used by the default tab exports.
+
+Additional sync setting:
+
 - `PROSPECTS_SYNC_JOB_TOKEN`: required only for `/prospect-sync-job.php` scheduled sync calls.
 
 Use `/prospect-sync.php` while logged in as an admin or editor for a manual sync.

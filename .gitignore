@@ -6,4 +6,5 @@ dist/
 includes/config.php
 includes/installed.lock
 includes/mail-config.php
+oligarchy-config.php
 sentinel-reports/

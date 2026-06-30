@@ -162,7 +162,7 @@ $csrf = csrf_token();
     <title>Carrier | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
-    <link rel="stylesheet" href="/assets/carrier.css?v=20260630-inbox">
+    <link rel="stylesheet" href="/assets/carrier.css?v=20260630-wide-modal">
     <script defer src="/assets/dashboard.js?v=20260630-carrier"></script>
   </head>
   <body class="dashboard-body carrier-body">

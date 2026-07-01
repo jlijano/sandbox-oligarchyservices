@@ -31,6 +31,7 @@ jobs:
           from html.parser import HTMLParser
           from pathlib import Path
           from urllib.parse import urlsplit, unquote
+          import html
           import re
           import sys
 
@@ -47,6 +48,11 @@ jobs:
               '/oligarchy-config.php',
           }
           external_schemes = {'http', 'https', 'mailto', 'tel', 'sms', 'javascript', 'data'}
+          php_fragment_prefixes = (
+              '$', '[', "' .", '" .', 'array ', 'bool ', 'float ', 'int ',
+              'mixed ', 'string ', '(array', '(bool', '(float', '(int', '(string',
+              '$_', 'self::', 'static::', '$this'
+          )
 
           class RefParser(HTMLParser):
               def __init__(self):
@@ -68,17 +74,23 @@ jobs:
                       yield path
 
           def normalize_url(raw):
+              raw = html.unescape(raw or '').strip().strip('"\'')
+              raw = raw.replace('\\/', '/')
               if not raw or raw.startswith('#'):
                   return None
-              if '<?' in raw or '?>' in raw:
+              if raw.startswith(php_fragment_prefixes):
                   return None
               if raw.startswith(('{{', '{%', '${')):
+                  return None
+              if '<?' in raw or '?>' in raw or '. e(' in raw:
                   return None
               parsed = urlsplit(raw)
               if parsed.scheme.lower() in external_schemes or parsed.netloc:
                   return None
               path = unquote(parsed.path or '')
               if not path or path.startswith('#'):
+                  return None
+              if path.startswith(php_fragment_prefixes):
                   return None
               if '<?' in path or '?>' in path:
                   return None

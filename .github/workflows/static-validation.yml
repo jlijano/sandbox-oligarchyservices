@@ -78,8 +78,8 @@ jobs:
           fi
           for file in "${xml_files[@]}"; do
             python3 - <<'PY' "$file"
-import sys
-import xml.etree.ElementTree as ET
-ET.parse(sys.argv[1])
-PY
+          import sys
+          import xml.etree.ElementTree as ET
+          ET.parse(sys.argv[1])
+          PY
           done

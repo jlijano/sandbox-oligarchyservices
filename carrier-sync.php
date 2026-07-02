@@ -220,7 +220,7 @@ function carrier_sync_decode_body(string $body, int $encoding): string
 
 function carrier_sync_fetch_body($imap, int $uid): string
 {
-    $structure = imap_fetchstructure($imap, (string) $uid, FT_UID);
+    $structure = imap_fetchstructure($imap, $uid, FT_UID);
     $body = '';
     $encoding = (int) ($structure->encoding ?? 0);
 
@@ -228,7 +228,7 @@ function carrier_sync_fetch_body($imap, int $uid): string
         foreach ($structure->parts as $index => $part) {
             $subtype = strtolower((string) ($part->subtype ?? ''));
             if ($subtype !== 'plain' && $subtype !== 'html') continue;
-            $partBody = imap_fetchbody($imap, (string) $uid, (string) ($index + 1), FT_UID | FT_PEEK);
+            $partBody = imap_fetchbody($imap, $uid, (string) ($index + 1), FT_UID | FT_PEEK);
             if (is_string($partBody) && trim($partBody) !== '') {
                 $body = carrier_sync_decode_body($partBody, (int) ($part->encoding ?? 0));
                 break;
@@ -237,7 +237,7 @@ function carrier_sync_fetch_body($imap, int $uid): string
     }
 
     if (trim($body) === '') {
-        $raw = imap_body($imap, (string) $uid, FT_UID | FT_PEEK);
+        $raw = imap_body($imap, $uid, FT_UID | FT_PEEK);
         if (is_string($raw)) $body = carrier_sync_decode_body($raw, $encoding);
     }
 
@@ -333,11 +333,16 @@ function carrier_sync_run(PDO $pdo, array $config, int $actorId): array
 
         foreach ($uids as $uidValue) {
             $uid = (string) $uidValue;
+            $uidNumber = (int) $uidValue;
+            if ($uidNumber <= 0) {
+                $skipped++;
+                continue;
+            }
             if (carrier_sync_already_imported($pdo, $sourceMailbox, $uid)) {
                 $skipped++;
                 continue;
             }
-            $overviewList = imap_fetch_overview($imap, $uid, FT_UID);
+            $overviewList = imap_fetch_overview($imap, (string) $uidNumber, FT_UID);
             $overview = $overviewList[0] ?? null;
             if (!$overview) {
                 $skipped++;
@@ -346,10 +351,10 @@ function carrier_sync_run(PDO $pdo, array $config, int $actorId): array
             $header = imap_headerinfo($imap, (int) ($overview->msgno ?? 0));
             $sender = carrier_sync_sender($header);
             $subject = carrier_sync_decode_header((string) ($overview->subject ?? 'No subject')) ?: 'No subject';
-            $body = carrier_sync_fetch_body($imap, (int) $uidValue);
+            $body = carrier_sync_fetch_body($imap, $uidNumber);
             if ($body === '') $body = '(No readable message body imported.)';
             $receivedAt = strtotime((string) ($overview->date ?? ''));
-            $structure = imap_fetchstructure($imap, $uid, FT_UID);
+            $structure = imap_fetchstructure($imap, $uidNumber, FT_UID);
             carrier_sync_insert($pdo, [
                 'carrier_name' => $sender['name'],
                 'carrier_email' => $sender['email'],

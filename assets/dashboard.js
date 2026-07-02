@@ -19,6 +19,7 @@
     agents: "fa-android",
     prospects: "fa-address-card-o",
     carrier: "fa-envelope-o",
+    switchboard: "fa-comments-o",
     pages: "fa-file-text-o",
     blogs: "fa-newspaper-o",
     navigation: "fa-bars",
@@ -51,11 +52,21 @@
       if (navigationLink) playgroundSubnav.insertBefore(prospectsLink, navigationLink);
       else playgroundSubnav.appendChild(prospectsLink);
     }
-    if (!playgroundSubnav.querySelector("a[href='/carrier']")) {
-      const carrierLink = document.createElement("a");
+
+    let carrierLink = playgroundSubnav.querySelector("a[href='/carrier']");
+    if (!carrierLink) {
+      carrierLink = document.createElement("a");
       carrierLink.href = "/carrier";
       carrierLink.innerHTML = '<span class="nav-icon" aria-hidden="true">C</span><span class="nav-label">Carrier</span>';
       prospectsLink.insertAdjacentElement("afterend", carrierLink);
+    }
+
+    let switchboardLink = playgroundSubnav.querySelector("a[href='/switchboard']");
+    if (!switchboardLink) {
+      switchboardLink = document.createElement("a");
+      switchboardLink.href = "/switchboard";
+      switchboardLink.innerHTML = '<span class="nav-icon" aria-hidden="true">S</span><span class="nav-label">Switchboard</span>';
+      carrierLink.insertAdjacentElement("afterend", switchboardLink);
     }
   };
 

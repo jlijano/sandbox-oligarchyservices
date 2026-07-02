@@ -333,3 +333,8 @@
     min-width: 118px;
   }
 }
+
+/* Preview actions are available in the ribbon; keep the reading pane focused on message content. */
+.carrier-preview .preview-button-row {
+  display: none;
+}

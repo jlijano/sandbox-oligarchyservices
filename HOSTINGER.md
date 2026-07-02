@@ -44,10 +44,9 @@ cron jobs, or a long-running Node.js process for the public website.
 login UI with a CSRF token and submits to `api/login.php`.
 
 The PHP/MySQL backend stores password hashes only. It never stores plain-text
-passwords. Admin-created users receive a generated temporary password by email,
-must confirm their email address before signing in, then create their own
-password before opening the dashboard. The confirmation email includes the
-account confirmation link, temporary password, and stable `/login.html` link.
+passwords. Admin-created users receive an account confirmation email, then create
+their own password from the confirmation link before signing in. The confirmation
+email intentionally does not include a temporary password.
 
 ## PHP/MySQL setup
 
@@ -84,9 +83,9 @@ After deploying CMS, prospect, Carrier, Switchboard, or client request changes:
 After deploying account-confirmation changes, `/update.php` adds the email
 confirmation columns without deleting users. Existing older users are marked
 confirmed so they are not locked out. Newly created users receive a confirmation
-link and temporary password by email. After they confirm and sign in with the
-temporary password, they are redirected to `/change-password.php` and cannot open
-the dashboard until they create their own password.
+link by email. After they open the link, they confirm the account and create
+their own password on `/account-confirmation.php`; no temporary password is sent
+by email.
 
 After deploying the Client Requests module, `/update.php` creates or updates the
 `client_requests` and `client_request_updates` tables without deleting users or
@@ -139,11 +138,16 @@ Optional non-secret environment settings:
 - `PORTAL_BASE_URL`: absolute portal URL used in confirmation emails, for
   example `https://sandbox.oligarchyservices.com`.
 - `PORTAL_MAIL_FROM`: sender address for confirmation emails, for example
-  `sentinel@oligarchyservices.com`.
+  `no-reply@sandbox.oligarchyservices.com`.
 
 If `PORTAL_BASE_URL` is not set, the portal builds links from the current request
 host. If `PORTAL_MAIL_FROM` is not set, the sender defaults to
-`sentinel@oligarchyservices.com`.
+`no-reply@sandbox.oligarchyservices.com`.
+
+For best Gmail delivery, enable SPF and DKIM for the sender domain in Hostinger
+DNS/email settings and publish a DMARC record that aligns with the visible From
+domain. The app no longer sends temporary passwords in account emails because
+mail relays can classify credential-bearing messages as unsafe.
 
 If a deployment replaces `public_html` and removes `includes/config.php`, the
 portal still accepts the parent backup config or these environment variables:

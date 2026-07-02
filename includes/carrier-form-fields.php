@@ -110,8 +110,13 @@ if (!$carrierForm): ?>
     pointer-events: auto;
     color: #f4f5f7;
     caret-color: #ffffff;
-    line-height: 1.45;
+    font: 400 .92rem/1.45 "Segoe UI", Arial, sans-serif;
     cursor: text;
+  }
+  #compose-carrier .carrier-new-mail-grid input::placeholder,
+  #compose-carrier .carrier-new-mail-grid textarea::placeholder {
+    color: #8f95a1;
+    opacity: 1;
   }
   #compose-carrier .carrier-new-mail-grid input {
     min-height: 32px !important;

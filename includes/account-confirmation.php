@@ -91,7 +91,6 @@ function account_confirmation_send_via_php_mail(string $email, string $subject, 
         'From: ' . account_confirmation_from_header(),
         'Reply-To: ' . account_confirmation_from_header(),
         'Content-Type: text/plain; charset=UTF-8',
-        'X-Mailer: Oligarchy Services Portal',
     ];
 
     return mail($email, $subject, $parts['text'], implode("\r\n", $headers));
@@ -170,7 +169,7 @@ function account_confirmation_send_email(string $email, string $name, string $to
     try {
         $parts = account_confirmation_message_parts($name, $token, $temporaryPassword);
         $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
-        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by plain text PHP mail().' : 'Plain text PHP mail() returned false.');
+        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by Hostinger-style plain text PHP mail().' : 'Hostinger-style plain text PHP mail() returned false.');
         return $phpMailResult;
     } catch (Throwable $error) {
         account_confirmation_record_mail_trace($email, $subject, 'php-mail', false, 'Send failed before completion: ' . $error->getMessage());

@@ -12,7 +12,8 @@ Upload these repository files into the domain's `public_html` directory:
 - `login.php`
 - `dashboard.php`
 - `requests.php` for authenticated client service requests
-- `carrier.php` and `switchboard.php` for admin/editor operational workspaces
+- `carrier.php` and `carrier-sync.php` for admin/editor Carrier mailbox work
+- `switchboard.php` for admin/editor operational conversations
 - `pages.php`, `page.php`, `admin-blogs.php`, `blogs.php`, and `blog.php` for CMS and blog content
 - `prospects.php`, `prospect-status.php`, `prospect-sync.php`, and `prospect-sync-job.php` for prospect management and optional sheet sync
 - `users.php`, `roles.php`, `companies.php`, `departments.php`, and `agents.php` for portal access management
@@ -94,6 +95,18 @@ follow-up comments, and view their own timeline at `/requests.php`. Admin,
 editor, and support users can view the full queue, update status and priority,
 assign an internal owner, add client-visible updates, add internal-only notes,
 and record activity-log entries.
+
+## Carrier mail setup
+
+After deploying Carrier changes, `/update.php` creates or updates the core
+Carrier tables. The first Carrier mail settings save or sync creates the IMAP
+settings table and import-tracking columns when needed.
+
+Use `/carrier` for the Outlook-inspired Carrier workspace. The Mail Settings
+modal saves settings through `/carrier-sync.php` and returns to `/carrier` with a
+success or error message. Direct browser access to `/carrier-sync.php` remains
+available as a standalone setup page. Saved mailbox passwords are never displayed;
+leave the password field blank to keep an existing saved password.
 
 If login says the database config is missing:
 

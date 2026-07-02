@@ -16,6 +16,7 @@ function access_modules(): array
         'navigation' => 'Navigation',
         'automation' => 'Automation',
         'system_settings' => 'System Settings',
+        'restore_points' => 'Restore Points',
         'activity' => 'Activity',
         'system_health' => 'System Health',
         'mail_trace' => 'Mail Trace',
@@ -232,6 +233,9 @@ function access_sidebar(string $active, string $roleLabel, string $role = 'admin
     $settingsItems = [];
     if ($canManageContent) {
         $settingsItems[] = ['href' => '/dashboard.php#system-settings', 'label' => 'System Settings', 'key' => 'system-settings'];
+    }
+    if ($isAdmin) {
+        $settingsItems[] = ['href' => '/restore.php', 'label' => 'Restore Points', 'key' => 'restore-points'];
     }
     if ($canViewActivity) {
         $settingsItems[] = ['href' => '/dashboard.php#activity', 'label' => 'Activity', 'key' => 'activity'];

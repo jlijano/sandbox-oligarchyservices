@@ -164,6 +164,7 @@ $csrf = csrf_token();
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
     <link rel="stylesheet" href="/assets/carrier.css?v=20260630-wide-modal">
     <link rel="stylesheet" href="/assets/carrier-outlook.css?v=20260703-outlook">
+    <link rel="stylesheet" href="/assets/carrier-compose.css?v=20260703-compose">
     <script defer src="/assets/dashboard.js?v=20260630-carrier"></script>
   </head>
   <body class="dashboard-body carrier-body">

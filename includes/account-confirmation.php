@@ -173,30 +173,39 @@ function account_confirmation_send_email(string $email, string $name, string $to
 
 function account_confirmation_issue_invite(PDO $pdo, int $userId): array
 {
-    require_once __DIR__ . '/password-change.php';
+    $traceEmail = 'user #' . $userId;
+    $subject = account_confirmation_subject();
 
-    password_change_ensure_schema($pdo);
+    try {
+        require_once __DIR__ . '/password-change.php';
 
-    $stmt = $pdo->prepare('SELECT id, email, full_name, email_confirmed_at FROM users WHERE id = ? LIMIT 1');
-    $stmt->execute([$userId]);
-    $createdUser = $stmt->fetch();
-    if (!$createdUser) {
-        throw new RuntimeException('Choose a valid user account.');
+        password_change_ensure_schema($pdo);
+
+        $stmt = $pdo->prepare('SELECT id, email, full_name, email_confirmed_at FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$userId]);
+        $createdUser = $stmt->fetch();
+        if (!$createdUser) {
+            throw new RuntimeException('Choose a valid user account.');
+        }
+
+        $traceEmail = (string) $createdUser['email'];
+        if (!empty($createdUser['email_confirmed_at'])) {
+            throw new RuntimeException('That user is already confirmed.');
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+        $temporaryPassword = account_confirmation_generate_temporary_password();
+        $update = $pdo->prepare('UPDATE users SET password_hash = ?, email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 1, updated_at = NOW() WHERE id = ?');
+        $update->execute([password_hash($temporaryPassword, PASSWORD_DEFAULT), $tokenHash, $userId]);
+
+        $sent = account_confirmation_send_email($traceEmail, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword);
+
+        return ['email' => $traceEmail, 'sent' => $sent];
+    } catch (Throwable $error) {
+        account_confirmation_record_mail_trace($traceEmail, $subject, 'invite-generation', false, 'Invite failed before PHP mail: ' . $error->getMessage());
+        throw $error;
     }
-    if (!empty($createdUser['email_confirmed_at'])) {
-        throw new RuntimeException('That user is already confirmed.');
-    }
-
-    $token = bin2hex(random_bytes(32));
-    $tokenHash = hash('sha256', $token);
-    $temporaryPassword = account_confirmation_generate_temporary_password();
-    $update = $pdo->prepare('UPDATE users SET password_hash = ?, email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 1, updated_at = NOW() WHERE id = ?');
-    $update->execute([password_hash($temporaryPassword, PASSWORD_DEFAULT), $tokenHash, $userId]);
-
-    $email = (string) $createdUser['email'];
-    $sent = account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword);
-
-    return ['email' => $email, 'sent' => $sent];
 }
 
 function account_confirmation_flash_keys(): array

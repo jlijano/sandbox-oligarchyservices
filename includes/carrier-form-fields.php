@@ -94,6 +94,38 @@ if (!$carrierForm): ?>
     z-index: 3;
     margin: 0;
   }
+  #compose-carrier .carrier-new-mail-grid {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+  }
+  #compose-carrier .carrier-new-mail-grid label {
+    pointer-events: auto;
+  }
+  #compose-carrier .carrier-new-mail-grid input,
+  #compose-carrier .carrier-new-mail-grid textarea {
+    position: relative;
+    z-index: 1;
+    display: block;
+    pointer-events: auto;
+    color: #f4f5f7;
+    caret-color: #ffffff;
+    line-height: 1.45;
+    cursor: text;
+  }
+  #compose-carrier .carrier-new-mail-grid input {
+    min-height: 32px !important;
+  }
+  #compose-carrier .carrier-new-mail-grid textarea[name="body"] {
+    width: 100%;
+    height: 100%;
+    min-height: 260px !important;
+  }
+  #compose-carrier .carrier-new-mail-grid input:focus,
+  #compose-carrier .carrier-new-mail-grid textarea:focus {
+    outline: 2px solid rgba(93, 140, 255, 0.72);
+    outline-offset: 2px;
+  }
   @media (max-width: 700px) {
     #compose-carrier .carrier-compose-toolbar {
       left: 96px;
@@ -110,6 +142,9 @@ if (!$carrierForm): ?>
     }
     #compose-carrier .carrier-compose-attachments {
       max-width: 140px;
+    }
+    #compose-carrier .carrier-new-mail-grid textarea[name="body"] {
+      min-height: 220px !important;
     }
   }
 </style>

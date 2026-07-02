@@ -24,6 +24,7 @@ if (!$carrierForm): ?>
     background: #1d1e21;
   }
   #compose-carrier .carrier-compose-toolbar button {
+    position: relative;
     display: grid;
     place-items: center;
     width: 30px;
@@ -43,8 +44,39 @@ if (!$carrierForm): ?>
     color: #fff;
     outline: 0;
   }
+  #compose-carrier .carrier-compose-toolbar button::after {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    z-index: 10;
+    display: none;
+    width: max-content;
+    max-width: 180px;
+    transform: translateX(-50%);
+    border: 1px solid rgba(157, 163, 173, 0.45);
+    border-radius: 4px;
+    background: #2b2d35;
+    color: #fff;
+    padding: 5px 8px;
+    content: attr(aria-label);
+    font-size: .72rem;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34);
+    pointer-events: none;
+  }
+  #compose-carrier .carrier-compose-toolbar button:hover::after,
+  #compose-carrier .carrier-compose-toolbar button:focus-visible::after {
+    display: block;
+  }
   #compose-carrier .carrier-compose-toolbar .carrier-compose-discard {
     margin-left: auto;
+  }
+  #compose-carrier .carrier-compose-toolbar .carrier-compose-discard::after {
+    left: auto;
+    right: 0;
+    transform: none;
   }
   #compose-carrier .carrier-compose-attachments {
     max-width: min(240px, 34vw);

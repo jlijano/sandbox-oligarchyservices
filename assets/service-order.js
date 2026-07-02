@@ -81,6 +81,19 @@
     return true;
   };
 
+  const syncPrimaryNavigationLinks = () => {
+    const navLinks = document.getElementById("primary-navigation");
+    if (!navLinks) return false;
+    if (!navLinks.querySelector('a[href="/blogs.php"]')) {
+      const blogsLink = document.createElement("a");
+      blogsLink.href = "/blogs.php";
+      blogsLink.textContent = "Blogs";
+      const contactLink = navLinks.querySelector('a[href="/contact.html"]:not(.nav-cta)');
+      navLinks.insertBefore(blogsLink, contactLink || navLinks.querySelector(".nav-cta"));
+    }
+    return true;
+  };
+
   const installAboutSection = () => {
     if (document.querySelector(".about-preview")) return true;
     const positioningSection = document.querySelector("main .section.intro");
@@ -151,7 +164,7 @@
     return true;
   };
 
-  const syncPage = () => syncServiceMenu() && installAboutSection() && installServicesCarousel();
+  const syncPage = () => syncServiceMenu() && syncPrimaryNavigationLinks() && installAboutSection() && installServicesCarousel();
   if (syncPage()) return;
   const observer = new MutationObserver(() => { if (syncPage()) observer.disconnect(); });
   observer.observe(document.documentElement, { childList: true, subtree: true });

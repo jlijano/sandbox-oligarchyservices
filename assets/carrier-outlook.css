@@ -640,3 +640,27 @@ button[value="delete_carrier_email"].ribbon-action::after { content: "Delete - R
 @media (max-width: 900px) {
   .ribbon-action { min-width: 54px; }
 }
+
+/* Keep account settings under the Settings control instead of the action strip. */
+.ribbon-actions .ribbon-action[href="#mail-settings"] {
+  display: none;
+}
+.ribbon-tabs a[href="#mail-settings"] {
+  overflow: visible;
+}
+.ribbon-tabs a[href="#mail-settings"]::after {
+  content: "Mail settings";
+  top: calc(100% + 2px);
+  min-width: 132px;
+  max-width: 180px;
+  border-radius: 4px;
+  padding: 9px 12px;
+  background: #202027;
+  text-align: left;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42);
+}
+.ribbon-tabs a[href="#mail-settings"]:hover::after,
+.ribbon-tabs a[href="#mail-settings"]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

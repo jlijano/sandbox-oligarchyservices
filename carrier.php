@@ -265,6 +265,7 @@ $csrf = csrf_token();
               <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button type="submit" name="action" value="sync_mail">Sync IMAP</button></form>
               <a href="#carrier-folders">Folders</a>
               <a href="#carrier-preview">Reading pane</a>
+              <a href="#mail-settings">Settings</a>
             </div>
             <div class="ribbon-actions">
               <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action primary" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>

@@ -26,7 +26,7 @@ function account_confirmation_url(string $path): string
 function account_confirmation_from_address(): string
 {
     $from = trim((string) getenv('PORTAL_MAIL_FROM'));
-    if ($from === '' || !filter_var($from, FILTER_VALIDATE_EMAIL)) {
+    if ($from === '' || strtolower($from) === 'sentinel@oligarchyservices.com' || !filter_var($from, FILTER_VALIDATE_EMAIL)) {
         $from = 'no-reply@sandbox.oligarchyservices.com';
     }
 

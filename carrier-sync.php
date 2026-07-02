@@ -124,10 +124,16 @@ function carrier_sync_ensure_schema(PDO $pdo): void
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 }
 
+function carrier_sync_row_to_array($row): array
+{
+    if (!$row) return [];
+    return is_array($row) ? $row : get_object_vars($row);
+}
+
 function carrier_sync_saved_settings(PDO $pdo): array
 {
     $settings = carrier_sync_default_settings();
-    $row = $pdo->query('SELECT * FROM carrier_imap_settings WHERE id = 1 LIMIT 1')->fetch();
+    $row = carrier_sync_row_to_array($pdo->query('SELECT * FROM carrier_imap_settings WHERE id = 1 LIMIT 1')->fetch());
     if (!$row) return $settings;
     return array_merge($settings, $row);
 }

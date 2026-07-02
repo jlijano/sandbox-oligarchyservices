@@ -244,3 +244,190 @@
     margin: 0 16px 16px;
   }
 }
+
+/* New Carrier mail opens like a compact compose window while keeping the manual record flow intact. */
+#compose-carrier.carrier-modal:target {
+  inset: auto 24px 0 auto;
+  width: min(620px, calc(100vw - 32px));
+  height: min(590px, calc(100dvh - 88px));
+  max-height: min(590px, calc(100dvh - 88px));
+  overflow: visible;
+  transform: none;
+  padding: 0;
+  border-color: rgba(120, 124, 132, 0.44);
+  border-radius: 8px 8px 0 0;
+  background: #1d1e21;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.18), 0 18px 52px rgba(0, 0, 0, 0.5);
+}
+#compose-carrier .modal-close {
+  top: 8px;
+  right: 10px;
+  z-index: 4;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #d7dbe2;
+  font-size: 1.15rem;
+}
+#compose-carrier .modal-close:hover,
+#compose-carrier .modal-close:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  outline: 0;
+}
+#compose-carrier .carrier-form {
+  height: 100%;
+  max-height: none;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background: #1d1e21;
+}
+#compose-carrier .carrier-form h2 {
+  min-height: 42px;
+  margin: 0;
+  padding: 0 48px 0 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px 8px 0 0;
+  background: #2a2b2f;
+  color: #fff;
+  font-size: 0;
+  line-height: 1.2;
+}
+#compose-carrier .carrier-form h2::before {
+  content: "New message";
+  font-size: .95rem;
+  font-weight: 800;
+}
+#compose-carrier .carrier-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  background: #1d1e21;
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(2),
+#compose-carrier .carrier-form-grid label:nth-of-type(4),
+#compose-carrier .carrier-form-grid label:nth-of-type(5),
+#compose-carrier .carrier-form-grid label:nth-of-type(6),
+#compose-carrier .carrier-form-grid label:nth-of-type(7),
+#compose-carrier .carrier-form-grid label:nth-of-type(8),
+#compose-carrier .carrier-form-grid label:nth-of-type(10),
+#compose-carrier .carrier-form-grid label:nth-of-type(11) {
+  display: none;
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(1),
+#compose-carrier .carrier-form-grid label:nth-of-type(3) {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #aeb3bd;
+  font-size: 0;
+  font-weight: 600;
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(3) {
+  grid-template-columns: 70px minmax(0, 1fr);
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(1)::before {
+  content: "To";
+  font-size: .86rem;
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(1)::after {
+  content: "Cc  Bcc";
+  color: #c9ced6;
+  font-size: .8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(3)::before {
+  content: "Subject";
+  font-size: .86rem;
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(9) {
+  display: grid;
+  min-height: 0;
+  padding: 14px 16px;
+  font-size: 0;
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(1) input,
+#compose-carrier .carrier-form-grid label:nth-of-type(3) input,
+#compose-carrier .carrier-form-grid label:nth-of-type(9) textarea {
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #f3f4f6;
+  padding: 0;
+  font-size: .92rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+#compose-carrier .carrier-form-grid label:nth-of-type(1) input:focus,
+#compose-carrier .carrier-form-grid label:nth-of-type(3) input:focus,
+#compose-carrier .carrier-form-grid label:nth-of-type(9) textarea:focus {
+  outline: 0;
+  border: 0;
+}
+#compose-carrier textarea[name="message"] {
+  min-height: 100%;
+  max-height: none;
+  resize: none;
+  line-height: 1.5;
+}
+#compose-carrier .carrier-form > .button.primary {
+  justify-self: start;
+  min-width: 76px;
+  min-height: 36px;
+  margin: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 18px;
+  background: #5d8cff;
+  color: #fff;
+  font-size: 0;
+  font-weight: 800;
+  transform: none;
+}
+#compose-carrier .carrier-form > .button.primary::before {
+  content: "Save";
+  font-size: .9rem;
+}
+#compose-carrier .carrier-form > .button.primary:hover,
+#compose-carrier .carrier-form > .button.primary:focus-visible {
+  filter: brightness(1.08);
+  outline: 2px solid rgba(93, 140, 255, 0.4);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  #compose-carrier.carrier-modal:target {
+    inset: auto 8px 0 8px;
+    width: auto;
+    height: min(620px, calc(100dvh - 36px));
+    max-height: calc(100dvh - 36px);
+  }
+  #compose-carrier .carrier-form-grid label:nth-of-type(1),
+  #compose-carrier .carrier-form-grid label:nth-of-type(3) {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+  #compose-carrier .carrier-form-grid label:nth-of-type(1)::after {
+    display: none;
+  }
+  #compose-carrier .carrier-form > .button.primary {
+    width: auto;
+    justify-self: start;
+    margin: 8px 14px max(12px, env(safe-area-inset-bottom));
+  }
+}

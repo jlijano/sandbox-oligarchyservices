@@ -243,6 +243,13 @@ $csrf = csrf_token();
     <link rel="stylesheet" href="/assets/carrier.css?v=20260630-wide-modal">
     <link rel="stylesheet" href="/assets/carrier-outlook.css?v=20260703-outlook">
     <link rel="stylesheet" href="/assets/carrier-compose.css?v=20260703-compose">
+    <style>
+      .ribbon-group { display: grid; gap: 4px; align-content: start; padding: 0 4px 2px; }
+      .ribbon-group-title { color: #aeb3bd; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+      .ribbon-group-actions { display: flex; gap: 6px; align-items: stretch; }
+      .ribbon-group-actions form { display: contents; margin: 0; }
+      @media (max-width: 900px) { .ribbon-group { min-width: max-content; } .ribbon-group-actions { flex-wrap: nowrap; } }
+    </style>
     <script defer src="/assets/dashboard.js?v=20260630-carrier"></script>
   </head>
   <body class="dashboard-body carrier-body">
@@ -268,10 +275,20 @@ $csrf = csrf_token();
               <a href="#mail-settings">Settings</a>
             </div>
             <div class="ribbon-actions">
-              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action primary" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>
-              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
-              <a class="ribbon-action" href="#compose-carrier"><strong>Manual add</strong><span>New record</span></a>
-              <a class="ribbon-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
+              <div class="ribbon-group" aria-label="Compose actions">
+                <span class="ribbon-group-title">Compose</span>
+                <div class="ribbon-group-actions">
+                  <a class="ribbon-action primary" href="#compose-carrier"><strong>New email</strong><span>Compose</span></a>
+                </div>
+              </div>
+              <div class="ribbon-group" aria-label="Settings actions">
+                <span class="ribbon-group-title">Settings</span>
+                <div class="ribbon-group-actions">
+                  <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>
+                  <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
+                  <a class="ribbon-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
+                </div>
+              </div>
               <span class="ribbon-divider"></span>
               <?php if ($openedEmail): ?>
                 <form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><button class="ribbon-action" type="submit" name="action" value="<?= (int) $openedEmail['is_read'] === 1 ? 'mark_unread' : 'mark_read' ?>"><strong><?= (int) $openedEmail['is_read'] === 1 ? 'Unread' : 'Read' ?></strong><span>Mark message</span></button></form>
@@ -347,7 +364,7 @@ $csrf = csrf_token();
 
           <section class="carrier-modal" id="compose-carrier" aria-labelledby="compose-carrier-title" role="dialog" aria-modal="true" tabindex="-1">
             <a class="modal-close" href="<?= e(carrier_context_url()) ?>" aria-label="Close compose form">×</a>
-            <form class="carrier-form" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs() ?><input type="hidden" name="action" value="create_carrier_email"><h2 id="compose-carrier-title">Add Carrier Email</h2><?php $formMail = null; require __DIR__ . '/includes/carrier-form-fields.php'; ?><button class="button primary" type="submit">Save email</button></form>
+            <form class="carrier-form" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs() ?><input type="hidden" name="action" value="create_carrier_email"><h2 id="compose-carrier-title">New Carrier Email</h2><?php $formMail = null; require __DIR__ . '/includes/carrier-form-fields.php'; ?><button class="button primary" type="submit">Save email</button></form>
           </section>
 
           <section class="carrier-modal" id="mail-settings" aria-labelledby="mail-settings-title" role="dialog" aria-modal="true" tabindex="-1">

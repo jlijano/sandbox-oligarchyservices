@@ -1,6 +1,21 @@
 <?php
 declare(strict_types=1);
 
+function mail_config_default_from_address(): string
+{
+    return 'no-reply@sandbox.oligarchyservices.com';
+}
+
+function mail_config_normalize_sender(string $value): string
+{
+    $sender = strtolower(trim($value));
+    if ($sender === '' || $sender === 'sentinel@oligarchyservices.com') {
+        return mail_config_default_from_address();
+    }
+
+    return trim($value);
+}
+
 function mail_config_apply_value(string $envName, array $config, string $configKey, array $replaceValues = []): void
 {
     $current = trim((string) getenv($envName));
@@ -10,6 +25,9 @@ function mail_config_apply_value(string $envName, array $config, string $configK
     }
 
     $value = trim((string) $config[$configKey]);
+    if ($envName === 'PORTAL_MAIL_FROM') {
+        $value = mail_config_normalize_sender($value);
+    }
     if ($value === '') {
         return;
     }

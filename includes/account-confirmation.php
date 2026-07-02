@@ -120,12 +120,18 @@ function account_confirmation_send_via_php_mail(string $email, string $subject, 
         . '</td></tr></table></td></tr></table></body></html>'
         . "\r\n--{$boundary}--\r\n";
 
+    $headerText = implode("\r\n", $headers);
     $additionalParameters = account_confirmation_mail_additional_parameters();
     if ($additionalParameters !== '') {
-        return mail($email, $subject, $body, implode("\r\n", $headers), $additionalParameters);
+        $sentWithEnvelopeSender = mail($email, $subject, $body, $headerText, $additionalParameters);
+        if ($sentWithEnvelopeSender) {
+            return true;
+        }
+
+        error_log('PHP mail invite send failed with envelope sender parameter; retrying without it.');
     }
 
-    return mail($email, $subject, $body, implode("\r\n", $headers));
+    return mail($email, $subject, $body, $headerText);
 }
 
 function account_confirmation_mail_trace_column_exists(PDO $pdo, string $column): bool

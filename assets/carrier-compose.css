@@ -468,3 +468,42 @@
   border-color: #c40917;
   background: #4b1018;
 }
+
+/* Keep the toolbar compose control icon-only; hover/focus already reveals the label. */
+.ribbon-action[href="#compose-carrier"] {
+  width: 54px;
+  min-width: 54px;
+  max-width: 54px;
+  padding: 0;
+  background: rgba(93, 140, 255, 0.16);
+  border-color: rgba(93, 140, 255, 0.58);
+}
+
+.ribbon-action[href="#compose-carrier"]::before {
+  width: 100%;
+  min-height: 52px;
+  margin-bottom: 0;
+  font-size: 1.24rem;
+}
+
+.ribbon-action[href="#compose-carrier"] strong,
+.ribbon-action[href="#compose-carrier"] span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ribbon-action[href="#compose-carrier"] strong::before,
+.ribbon-action[href="#compose-carrier"] span::before {
+  content: none;
+}
+
+@media (max-width: 900px) {
+  .ribbon-action[href="#compose-carrier"] {
+    min-width: 54px;
+  }
+}

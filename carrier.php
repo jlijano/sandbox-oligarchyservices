@@ -248,6 +248,8 @@ $csrf = csrf_token();
       .ribbon-group-title { color: #aeb3bd; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
       .ribbon-group-actions { display: flex; gap: 6px; align-items: stretch; }
       .ribbon-group-actions form { display: contents; margin: 0; }
+      .ribbon-settings-group { border-left: 1px solid rgba(255,255,255,.14); padding-left: 12px; scroll-margin-top: 72px; }
+      .ribbon-settings-group:target { outline: 2px solid rgba(196,18,48,.72); outline-offset: 2px; }
       @media (max-width: 900px) { .ribbon-group { min-width: max-content; } .ribbon-group-actions { flex-wrap: nowrap; } }
     </style>
     <script defer src="/assets/dashboard.js?v=20260630-carrier"></script>
@@ -269,10 +271,9 @@ $csrf = csrf_token();
           <section class="carrier-ribbon" aria-label="Carrier mail actions">
             <div class="ribbon-tabs" aria-label="Carrier shortcuts">
               <a class="is-active" href="<?= e(carrier_context_url(['open' => null])) ?>">Home</a>
-              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button type="submit" name="action" value="sync_mail">Sync IMAP</button></form>
               <a href="#carrier-folders">Folders</a>
               <a href="#carrier-preview">Reading pane</a>
-              <a href="#mail-settings">Settings</a>
+              <a href="#carrier-settings-ribbon">Settings</a>
             </div>
             <div class="ribbon-actions">
               <div class="ribbon-group" aria-label="Compose actions">
@@ -281,11 +282,12 @@ $csrf = csrf_token();
                   <a class="ribbon-action primary" href="#compose-carrier"><strong>New email</strong><span>Compose</span></a>
                 </div>
               </div>
-              <div class="ribbon-group" aria-label="Settings actions">
+              <div class="ribbon-group ribbon-settings-group" id="carrier-settings-ribbon" aria-label="Settings actions">
                 <span class="ribbon-group-title">Settings</span>
                 <div class="ribbon-group-actions">
                   <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>
                   <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
+                  <a class="ribbon-action" href="#compose-carrier"><strong>Manual add</strong><span>New record</span></a>
                   <a class="ribbon-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
                 </div>
               </div>

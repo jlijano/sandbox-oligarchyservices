@@ -619,3 +619,13 @@
   max-height: none;
   resize: none;
 }
+
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(3) {
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(3)::before,
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(3)::after {
+  content: none;
+}

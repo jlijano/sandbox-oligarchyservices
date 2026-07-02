@@ -566,3 +566,56 @@
 #compose-carrier .carrier-form > .button.primary::before {
   content: 'Send';
 }
+
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(1),
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(2),
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(3) {
+  display: grid;
+}
+
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(1),
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(2) {
+  grid-template-columns: 70px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 16px;
+  color: #aeb3bd;
+  font-size: 0;
+}
+
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(1)::before {
+  content: 'To';
+  font-size: .86rem;
+}
+
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(1)::after {
+  content: none;
+}
+
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(2)::before {
+  content: 'Subject';
+  font-size: .86rem;
+}
+
+#compose-carrier .carrier-new-mail-grid label:nth-of-type(3) {
+  min-height: 0;
+  padding: 14px 16px;
+  font-size: 0;
+}
+
+#compose-carrier .carrier-new-mail-grid input,
+#compose-carrier .carrier-new-mail-grid textarea {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+#compose-carrier .carrier-new-mail-grid textarea[name='body'] {
+  min-height: 100%;
+  max-height: none;
+  resize: none;
+}

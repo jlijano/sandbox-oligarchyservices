@@ -128,6 +128,34 @@ function account_confirmation_send_via_php_mail(string $email, string $subject, 
     return mail($email, $subject, $body, implode("\r\n", $headers));
 }
 
+function account_confirmation_mail_trace_column_exists(PDO $pdo, string $column): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?');
+    $stmt->execute(['mail_trace', $column]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function account_confirmation_mail_trace_add_column_if_missing(PDO $pdo, string $column, string $definition): void
+{
+    if (!account_confirmation_mail_trace_column_exists($pdo, $column)) {
+        $pdo->exec('ALTER TABLE mail_trace ADD COLUMN `' . $column . '` ' . $definition);
+    }
+}
+
+function account_confirmation_mail_trace_index_exists(PDO $pdo, string $index): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?');
+    $stmt->execute(['mail_trace', $index]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+function account_confirmation_mail_trace_add_index_if_missing(PDO $pdo, string $index, string $columns): void
+{
+    if (!account_confirmation_mail_trace_index_exists($pdo, $index)) {
+        $pdo->exec('ALTER TABLE mail_trace ADD INDEX `' . $index . '` (' . $columns . ')');
+    }
+}
+
 function account_confirmation_mail_trace_ensure_schema(PDO $pdo): void
 {
     $pdo->exec("CREATE TABLE IF NOT EXISTS mail_trace (
@@ -142,6 +170,16 @@ function account_confirmation_mail_trace_ensure_schema(PDO $pdo): void
         INDEX idx_mail_trace_recipient (recipient),
         INDEX idx_mail_trace_status (status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    account_confirmation_mail_trace_add_column_if_missing($pdo, 'recipient', "VARCHAR(190) NOT NULL DEFAULT ''");
+    account_confirmation_mail_trace_add_column_if_missing($pdo, 'subject', "VARCHAR(255) NOT NULL DEFAULT ''");
+    account_confirmation_mail_trace_add_column_if_missing($pdo, 'provider', "VARCHAR(80) NOT NULL DEFAULT ''");
+    account_confirmation_mail_trace_add_column_if_missing($pdo, 'status', "VARCHAR(40) NOT NULL DEFAULT ''");
+    account_confirmation_mail_trace_add_column_if_missing($pdo, 'message', 'TEXT NULL');
+    account_confirmation_mail_trace_add_column_if_missing($pdo, 'created_at', 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+    account_confirmation_mail_trace_add_index_if_missing($pdo, 'idx_mail_trace_created', '`created_at`');
+    account_confirmation_mail_trace_add_index_if_missing($pdo, 'idx_mail_trace_recipient', '`recipient`');
+    account_confirmation_mail_trace_add_index_if_missing($pdo, 'idx_mail_trace_status', '`status`');
 }
 
 function account_confirmation_record_mail_trace(string $email, string $subject, string $provider, bool $sent, string $message = ''): void

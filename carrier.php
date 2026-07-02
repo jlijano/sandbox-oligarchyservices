@@ -189,8 +189,9 @@ $csrf = csrf_token();
               <a href="#carrier-preview">View</a>
             </div>
             <div class="ribbon-actions">
-              <a class="ribbon-action primary" href="#compose-carrier"><strong>New</strong><span>Email</span></a>
+              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><button class="ribbon-action primary" type="submit" name="action" value="sync_mail"><strong>New</strong><span>Import mail</span></button></form>
               <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
+              <a class="ribbon-action" href="#compose-carrier"><strong>Manual</strong><span>Add record</span></a>
               <a class="ribbon-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
               <span class="ribbon-divider"></span>
               <?php if ($openedEmail): ?>

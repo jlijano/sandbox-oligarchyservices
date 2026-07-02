@@ -4,6 +4,71 @@ $carrierValue = static function (string $key, string $default = '') use ($carrie
     return (string) ($carrierForm[$key] ?? $default);
 };
 if (!$carrierForm): ?>
+<style>
+  #compose-carrier .carrier-form {
+    position: relative;
+    padding-bottom: 52px;
+  }
+  #compose-carrier .carrier-compose-toolbar {
+    position: absolute;
+    left: 104px;
+    right: 12px;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    min-width: 0;
+    min-height: 52px;
+    align-items: center;
+    gap: 7px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: #1d1e21;
+  }
+  #compose-carrier .carrier-compose-toolbar button {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #c9ced6;
+    padding: 0;
+    font: 800 .95rem/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    cursor: pointer;
+  }
+  #compose-carrier .carrier-compose-toolbar button:hover,
+  #compose-carrier .carrier-compose-toolbar button:focus-visible {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    outline: 0;
+  }
+  #compose-carrier .carrier-compose-toolbar .carrier-compose-discard {
+    margin-left: auto;
+  }
+  #compose-carrier .carrier-form > .button.primary {
+    position: absolute;
+    left: 14px;
+    bottom: 8px;
+    z-index: 3;
+    margin: 0;
+  }
+  @media (max-width: 700px) {
+    #compose-carrier .carrier-compose-toolbar {
+      left: 96px;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    #compose-carrier .carrier-compose-toolbar::-webkit-scrollbar {
+      display: none;
+    }
+    #compose-carrier .carrier-compose-toolbar button {
+      width: 28px;
+      min-width: 28px;
+    }
+  }
+</style>
 <input type="hidden" name="action" value="send_carrier_email">
 <input type="hidden" name="compose_mode" value="new">
 <div class="carrier-form-grid carrier-new-mail-grid">

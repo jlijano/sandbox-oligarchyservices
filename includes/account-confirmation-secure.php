@@ -40,7 +40,14 @@ function account_confirmation_from_header(): string
 
 function account_confirmation_generate_temporary_password(): string
 {
-    return bin2hex(random_bytes(24));
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+    $password = '';
+    $max = strlen($alphabet) - 1;
+    for ($index = 0; $index < 18; $index++) {
+        $password .= $alphabet[random_int(0, $max)];
+    }
+
+    return $password;
 }
 
 function account_confirmation_subject(): string
@@ -48,56 +55,30 @@ function account_confirmation_subject(): string
     return 'Confirm your Oligarchy Services account';
 }
 
-function account_confirmation_message_parts(string $name, string $token): array
+function account_confirmation_message_text(string $name, string $token, string $temporaryPassword): string
 {
     $confirmUrl = account_confirmation_url('/account-confirmation.php?token=' . rawurlencode($token));
+    $loginUrl = account_confirmation_url('/login.html');
     $displayName = $name !== '' ? $name : 'there';
-    $escapedName = e($displayName);
-    $escapedConfirmUrl = e($confirmUrl);
 
-    $text = "Hi {$displayName},\n\n"
-        . "Your Oligarchy Services account has been created. Confirm your email address and create your password here:\n\n"
+    return "Hi {$displayName},\n\n"
+        . "Your Oligarchy Services account has been created. Confirm your email address before signing in:\n\n"
         . "{$confirmUrl}\n\n"
-        . "This confirmation link expires in 48 hours.\n\n"
-        . "Oligarchy Services\n";
-
-    $html = '<p style="Margin:0 0 18px 0;">Hi ' . $escapedName . ',</p>'
-        . '<p style="Margin:0 0 18px 0;">Your Oligarchy Services account has been created. Confirm your email address and create your password before signing in.</p>'
-        . '<p style="Margin:0 0 20px 0;"><a href="' . $escapedConfirmUrl . '" style="display:inline-block; background-color:#d2222a; color:#ffffff; font-family:Arial, Helvetica, sans-serif; font-size:14px; font-weight:bold; line-height:20px; text-decoration:none; padding:12px 18px; border-radius:6px;">Confirm account</a></p>'
-        . '<p style="Margin:0 0 18px 0; color:#5d6b7a;">This confirmation link expires in 48 hours.</p>';
-
-    return ['text' => $text, 'html' => $html];
+        . "Temporary password:\n{$temporaryPassword}\n\n"
+        . "After confirming, log in here with the temporary password, then create your own password before opening the dashboard:\n\n"
+        . "{$loginUrl}\n\n"
+        . "This confirmation link expires in 48 hours.\n";
 }
 
-function account_confirmation_send_via_php_mail(string $email, string $subject, array $parts): bool
+function account_confirmation_send_via_php_mail(string $email, string $subject, string $body): bool
 {
-    $alternativeBoundary = 'oligarchy-alternative-' . bin2hex(random_bytes(12));
     $headers = [
         'From: ' . account_confirmation_from_header(),
         'Reply-To: ' . account_confirmation_from_header(),
-        'MIME-Version: 1.0',
-        'Content-Type: multipart/alternative; boundary="' . $alternativeBoundary . '"',
-        'X-Mailer: Oligarchy Services Portal',
+        'Content-Type: text/plain; charset=UTF-8',
     ];
 
-    $htmlBody = '<!doctype html><html><body style="Margin:0; padding:24px; background-color:#f4f7fb; color:#263238; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:23px;">'
-        . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center">'
-        . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background-color:#ffffff; border:1px solid #dfe7f0; border-radius:8px;"><tr><td style="background-color:#101820; color:#ffffff; padding:22px 26px; font-size:20px; font-weight:bold;">Oligarchy Services</td></tr><tr><td style="padding:26px;">'
-        . $parts['html']
-        . '</td></tr></table></td></tr></table></body></html>';
-
-    $body = "--{$alternativeBoundary}\r\n"
-        . "Content-Type: text/plain; charset=UTF-8\r\n"
-        . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-        . $parts['text'] . "\r\n\r\n"
-        . "--{$alternativeBoundary}\r\n"
-        . "Content-Type: text/html; charset=UTF-8\r\n"
-        . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-        . $htmlBody . "\r\n\r\n"
-        . "--{$alternativeBoundary}--\r\n";
-
-    $envelopeSender = account_confirmation_from_address();
-    return mail($email, $subject, $body, implode("\r\n", $headers), '-f' . $envelopeSender);
+    return mail($email, $subject, $body, implode("\r\n", $headers));
 }
 
 function account_confirmation_mail_trace_column_exists(PDO $pdo, string $column): bool
@@ -166,14 +147,14 @@ function account_confirmation_record_mail_trace(string $email, string $subject, 
     }
 }
 
-function account_confirmation_send_email(string $email, string $name, string $token, string $temporaryPassword = ''): bool
+function account_confirmation_send_email(string $email, string $name, string $token, string $temporaryPassword): bool
 {
     $subject = account_confirmation_subject();
 
     try {
-        $parts = account_confirmation_message_parts($name, $token);
-        $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
-        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by PHP mail without emailing a temporary password.' : 'PHP mail() returned false.');
+        $body = account_confirmation_message_text($name, $token, $temporaryPassword);
+        $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $body);
+        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by plain-text PHP mail().' : 'Plain-text PHP mail() returned false.');
         return $phpMailResult;
     } catch (Throwable $error) {
         account_confirmation_record_mail_trace($email, $subject, 'php-mail', false, 'Send failed before completion: ' . $error->getMessage());
@@ -205,11 +186,11 @@ function account_confirmation_issue_invite(PDO $pdo, int $userId): array
 
         $token = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
-        $lockedPassword = account_confirmation_generate_temporary_password();
-        $update = $pdo->prepare('UPDATE users SET password_hash = ?, email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 0, updated_at = NOW() WHERE id = ?');
-        $update->execute([password_hash($lockedPassword, PASSWORD_DEFAULT), $tokenHash, $userId]);
+        $temporaryPassword = account_confirmation_generate_temporary_password();
+        $update = $pdo->prepare('UPDATE users SET password_hash = ?, email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 1, updated_at = NOW() WHERE id = ?');
+        $update->execute([password_hash($temporaryPassword, PASSWORD_DEFAULT), $tokenHash, $userId]);
 
-        $sent = account_confirmation_send_email($traceEmail, (string) ($createdUser['full_name'] ?? ''), $token);
+        $sent = account_confirmation_send_email($traceEmail, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword);
 
         return ['email' => $traceEmail, 'sent' => $sent];
     } catch (Throwable $error) {
@@ -292,7 +273,7 @@ function account_confirmation_finalize_dashboard_create(): void
 
         $invite = account_confirmation_issue_invite($pdo, (int) $createdUser['id']);
         if ($invite['sent']) {
-            account_confirmation_flash_notice('User created. Confirmation email sent to ' . $invite['email'] . '.');
+            account_confirmation_flash_notice('User created. Confirmation email and temporary password sent to ' . $invite['email'] . '.');
         } else {
             account_confirmation_flash_error('User created, but the confirmation email could not be sent. Check Mail Trace for the PHP mail result and confirm Hostinger PHP mail is enabled for the sender address.');
         }

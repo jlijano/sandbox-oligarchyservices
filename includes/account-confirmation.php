@@ -94,14 +94,14 @@ function account_confirmation_message_parts(string $name, string $token, string 
 
 function account_confirmation_send_via_php_mail(string $email, string $subject, array $parts): bool
 {
-    $relatedBoundary = 'oligarchy-related-' . bin2hex(random_bytes(12));
     $alternativeBoundary = 'oligarchy-alternative-' . bin2hex(random_bytes(12));
+    $relatedBoundary = 'oligarchy-related-' . bin2hex(random_bytes(12));
     $logoCid = 'oligarchy-services-logo';
     $headers = [
         'From: ' . account_confirmation_from_header(),
         'Reply-To: ' . account_confirmation_from_header(),
         'MIME-Version: 1.0',
-        'Content-Type: multipart/related; boundary="' . $relatedBoundary . '"',
+        'Content-Type: multipart/alternative; boundary="' . $alternativeBoundary . '"',
         'X-Mailer: Oligarchy Services Portal',
     ];
 
@@ -111,24 +111,25 @@ function account_confirmation_send_via_php_mail(string $email, string $subject, 
         . $parts['html']
         . '</td></tr></table></td></tr></table></body></html>';
 
-    $body = "--{$relatedBoundary}\r\n"
-        . "Content-Type: multipart/alternative; boundary=\"{$alternativeBoundary}\"\r\n\r\n"
-        . "--{$alternativeBoundary}\r\n"
+    $body = "--{$alternativeBoundary}\r\n"
         . "Content-Type: text/plain; charset=UTF-8\r\n"
         . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-        . $parts['text'] . "\r\n"
+        . $parts['text'] . "\r\n\r\n"
         . "--{$alternativeBoundary}\r\n"
+        . "Content-Type: multipart/related; boundary=\"{$relatedBoundary}\"\r\n\r\n"
+        . "--{$relatedBoundary}\r\n"
         . "Content-Type: text/html; charset=UTF-8\r\n"
         . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-        . $htmlBody . "\r\n"
-        . "--{$alternativeBoundary}--\r\n"
+        . $htmlBody . "\r\n\r\n"
         . "--{$relatedBoundary}\r\n"
         . "Content-Type: image/png; name=\"oligarchy-services-logo.png\"\r\n"
         . "Content-Transfer-Encoding: base64\r\n"
         . "Content-ID: <{$logoCid}>\r\n"
-        . "Content-Disposition: inline; filename=\"oligarchy-services-logo.png\"\r\n\r\n"
+        . "Content-Disposition: inline; filename=\"oligarchy-services-logo.png\"\r\n"
+        . "X-Attachment-Id: {$logoCid}\r\n\r\n"
         . chunk_split(account_confirmation_logo_base64(), 76, "\r\n") . "\r\n"
-        . "--{$relatedBoundary}--\r\n";
+        . "--{$relatedBoundary}--\r\n\r\n"
+        . "--{$alternativeBoundary}--\r\n";
 
     return mail($email, $subject, $body, implode("\r\n", $headers));
 }

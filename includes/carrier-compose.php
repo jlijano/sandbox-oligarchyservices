@@ -47,16 +47,96 @@ function carrier_compose_sender_header(): string
     return 'Oligarchy Services <' . $from . '>';
 }
 
-function carrier_send_via_php_mail(string $to, string $subject, string $body, string $replyTo): bool
+function carrier_uploaded_attachments(): array
+{
+    if (empty($_FILES['attachments']) || !is_array($_FILES['attachments'])) {
+        return [];
+    }
+
+    $files = $_FILES['attachments'];
+    $names = is_array($files['name'] ?? null) ? $files['name'] : [$files['name'] ?? ''];
+    $tmpNames = is_array($files['tmp_name'] ?? null) ? $files['tmp_name'] : [$files['tmp_name'] ?? ''];
+    $types = is_array($files['type'] ?? null) ? $files['type'] : [$files['type'] ?? 'application/octet-stream'];
+    $sizes = is_array($files['size'] ?? null) ? $files['size'] : [$files['size'] ?? 0];
+    $errors = is_array($files['error'] ?? null) ? $files['error'] : [$files['error'] ?? UPLOAD_ERR_NO_FILE];
+    $attachments = [];
+    $totalBytes = 0;
+    $maxFileBytes = 10 * 1024 * 1024;
+    $maxTotalBytes = 20 * 1024 * 1024;
+
+    foreach ($names as $index => $name) {
+        $error = (int) ($errors[$index] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        if ($error !== UPLOAD_ERR_OK) {
+            throw new RuntimeException('One attachment could not be uploaded.');
+        }
+
+        $tmpName = (string) ($tmpNames[$index] ?? '');
+        $size = (int) ($sizes[$index] ?? 0);
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            throw new RuntimeException('One attachment could not be read.');
+        }
+        if ($size <= 0 || $size > $maxFileBytes) {
+            throw new RuntimeException('Each attachment must be 10 MB or smaller.');
+        }
+        $totalBytes += $size;
+        if ($totalBytes > $maxTotalBytes) {
+            throw new RuntimeException('Total attachments must be 20 MB or smaller.');
+        }
+
+        $safeName = preg_replace('/[^A-Za-z0-9._ -]/', '_', basename((string) $name)) ?: 'attachment';
+        $type = trim((string) ($types[$index] ?? 'application/octet-stream'));
+        if (!preg_match('/^[A-Za-z0-9.+_-]+\/[A-Za-z0-9.+_-]+$/', $type)) {
+            $type = 'application/octet-stream';
+        }
+        $attachments[] = [
+            'name' => $safeName,
+            'tmp_name' => $tmpName,
+            'type' => $type,
+        ];
+    }
+
+    return $attachments;
+}
+
+function carrier_send_via_php_mail(string $to, string $subject, string $body, string $replyTo, array $attachments = []): bool
 {
     $fromHeader = carrier_compose_sender_header();
     $headers = [
         'From: ' . $fromHeader,
         'Reply-To: ' . (filter_var($replyTo, FILTER_VALIDATE_EMAIL) ? $replyTo : $fromHeader),
-        'Content-Type: text/plain; charset=UTF-8',
     ];
 
-    return mail($to, $subject, $body, implode("\r\n", $headers));
+    if (!$attachments) {
+        $headers[] = 'Content-Type: text/plain; charset=UTF-8';
+        return mail($to, $subject, $body, implode("\r\n", $headers));
+    }
+
+    $boundary = '=_Carrier_' . bin2hex(random_bytes(12));
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-Type: multipart/mixed; boundary="' . $boundary . '"';
+    $message = '--' . $boundary . "\r\n"
+        . "Content-Type: text/plain; charset=UTF-8\r\n"
+        . "Content-Transfer-Encoding: 8bit\r\n\r\n"
+        . $body . "\r\n";
+
+    foreach ($attachments as $attachment) {
+        $content = file_get_contents((string) $attachment['tmp_name']);
+        if ($content === false) {
+            throw new RuntimeException('One attachment could not be attached.');
+        }
+        $fileName = str_replace(['"', "\r", "\n"], '_', (string) $attachment['name']);
+        $message .= '--' . $boundary . "\r\n"
+            . 'Content-Type: ' . $attachment['type'] . '; name="' . $fileName . '"' . "\r\n"
+            . "Content-Transfer-Encoding: base64\r\n"
+            . 'Content-Disposition: attachment; filename="' . $fileName . '"' . "\r\n\r\n"
+            . chunk_split(base64_encode($content)) . "\r\n";
+    }
+    $message .= '--' . $boundary . "--\r\n";
+
+    return mail($to, $subject, $message, implode("\r\n", $headers));
 }
 
 function carrier_handle_compose_send(PDO $pdo, array $user): void
@@ -89,7 +169,8 @@ function carrier_handle_compose_send(PDO $pdo, array $user): void
     }
 
     $replyTo = trim((string) ($user['email'] ?? ''));
-    $sent = carrier_send_via_php_mail($to, $subject, $body, $replyTo);
+    $attachments = $mode === 'new' ? carrier_uploaded_attachments() : [];
+    $sent = carrier_send_via_php_mail($to, $subject, $body, $replyTo, $attachments);
     if (function_exists('account_confirmation_record_mail_trace')) {
         account_confirmation_record_mail_trace($to, $subject, 'carrier-php-mail', $sent, $sent ? 'Accepted by PHP mail().' : 'PHP mail() returned false.');
     }

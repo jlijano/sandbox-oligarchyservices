@@ -664,3 +664,31 @@ button[value="delete_carrier_email"].ribbon-action::after { content: "Delete - R
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* Expanded Settings dropdown: account, sync, inbox, and common mailbox options. */
+.ribbon-tabs a[href="#mail-settings"]::after {
+  content: "Mail settings\A   > Signature settings\A \A Sync Settings\A   > Email Sync\A   > IMAP/POP\A \A Inbox settings\A   > Auto Reply\A   > Scheduled reply\A \A Common settings\A   > Filters and rules\A   > Forwarding\A   > Notifications\A   > Blocked senders\A   > Storage and cleanup";
+  top: calc(100% + 4px);
+  left: auto;
+  right: 0;
+  min-width: 236px;
+  max-width: min(280px, calc(100vw - 28px));
+  transform: translateY(-3px);
+  border-color: rgba(157, 163, 173, 0.58);
+  border-radius: 4px;
+  padding: 11px 12px;
+  background: #202027;
+  color: #f4f5f7;
+  font-size: .78rem;
+  font-weight: 750;
+  line-height: 1.38;
+  text-align: left;
+  white-space: pre-line;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.46);
+}
+
+.ribbon-tabs a[href="#mail-settings"]:hover::after,
+.ribbon-tabs a[href="#mail-settings"]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}

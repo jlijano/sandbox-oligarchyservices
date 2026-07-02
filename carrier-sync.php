@@ -263,11 +263,24 @@ function carrier_sync_sender($header): array
     return ['name' => substr($name, 0, 190), 'email' => substr($email, 0, 190)];
 }
 
+function carrier_sync_imap_parameter_list($value): array
+{
+    if (!$value) return [];
+    if (is_array($value)) return $value;
+    if ($value instanceof Traversable) return iterator_to_array($value);
+    if (is_object($value)) return [$value];
+    return [];
+}
+
 function carrier_sync_attachments($structure): string
 {
     $names = [];
     foreach (($structure->parts ?? []) as $part) {
-        foreach (array_merge($part->dparameters ?? [], $part->parameters ?? []) as $parameter) {
+        $parameters = array_merge(
+            carrier_sync_imap_parameter_list($part->dparameters ?? []),
+            carrier_sync_imap_parameter_list($part->parameters ?? [])
+        );
+        foreach ($parameters as $parameter) {
             $attribute = strtolower((string) ($parameter->attribute ?? ''));
             if (!in_array($attribute, ['filename', 'name'], true)) continue;
             $name = carrier_sync_decode_header((string) ($parameter->value ?? ''));

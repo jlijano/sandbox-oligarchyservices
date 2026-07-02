@@ -60,6 +60,11 @@ function account_confirmation_generate_temporary_password(): string
     return $password;
 }
 
+function account_confirmation_subject(): string
+{
+    return 'Confirm your Oligarchy Services account';
+}
+
 function account_confirmation_message_parts(string $name, string $token, string $temporaryPassword): array
 {
     $confirmUrl = account_confirmation_url('/account-confirmation.php?token=' . rawurlencode($token));
@@ -153,11 +158,47 @@ function account_confirmation_record_mail_trace(string $email, string $subject, 
 
 function account_confirmation_send_email(string $email, string $name, string $token, string $temporaryPassword): bool
 {
-    $subject = 'Confirm your Oligarchy Services account';
-    $parts = account_confirmation_message_parts($name, $token, $temporaryPassword);
-    $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
-    account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by PHP mail().' : 'PHP mail() returned false.');
-    return $phpMailResult;
+    $subject = account_confirmation_subject();
+
+    try {
+        $parts = account_confirmation_message_parts($name, $token, $temporaryPassword);
+        $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
+        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by PHP mail().' : 'PHP mail() returned false.');
+        return $phpMailResult;
+    } catch (Throwable $error) {
+        account_confirmation_record_mail_trace($email, $subject, 'php-mail', false, 'Send failed before completion: ' . $error->getMessage());
+        throw $error;
+    }
+}
+
+function account_confirmation_issue_invite(PDO $pdo, int $userId): array
+{
+    require_once __DIR__ . '/installer.php';
+    require_once __DIR__ . '/password-change.php';
+
+    create_or_update_schema($pdo);
+    password_change_ensure_schema($pdo);
+
+    $stmt = $pdo->prepare('SELECT id, email, full_name, email_confirmed_at FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $createdUser = $stmt->fetch();
+    if (!$createdUser) {
+        throw new RuntimeException('Choose a valid user account.');
+    }
+    if (!empty($createdUser['email_confirmed_at'])) {
+        throw new RuntimeException('That user is already confirmed.');
+    }
+
+    $token = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', $token);
+    $temporaryPassword = account_confirmation_generate_temporary_password();
+    $update = $pdo->prepare('UPDATE users SET password_hash = ?, email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 1, updated_at = NOW() WHERE id = ?');
+    $update->execute([password_hash($temporaryPassword, PASSWORD_DEFAULT), $tokenHash, $userId]);
+
+    $email = (string) $createdUser['email'];
+    $sent = account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword);
+
+    return ['email' => $email, 'sent' => $sent];
 }
 
 function account_confirmation_flash_keys(): array
@@ -225,26 +266,21 @@ function account_confirmation_finalize_dashboard_create(): void
         create_or_update_schema($pdo);
         password_change_ensure_schema($pdo);
 
-        $stmt = $pdo->prepare('SELECT id, full_name, email_confirmed_at, email_confirmation_token_hash FROM users WHERE email = ? ORDER BY id DESC LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, email_confirmed_at, email_confirmation_token_hash FROM users WHERE email = ? ORDER BY id DESC LIMIT 1');
         $stmt->execute([$email]);
         $createdUser = $stmt->fetch();
         if (!$createdUser || !empty($createdUser['email_confirmed_at']) || !empty($createdUser['email_confirmation_token_hash'])) {
             return;
         }
 
-        $token = bin2hex(random_bytes(32));
-        $tokenHash = hash('sha256', $token);
-        $temporaryPassword = account_confirmation_generate_temporary_password();
-        $update = $pdo->prepare('UPDATE users SET password_hash = ?, email_confirmation_token_hash = ?, email_confirmation_expires_at = DATE_ADD(NOW(), INTERVAL 2 DAY), password_change_required = 1, updated_at = NOW() WHERE id = ?');
-        $update->execute([password_hash($temporaryPassword, PASSWORD_DEFAULT), $tokenHash, (int) $createdUser['id']]);
-
-        if (account_confirmation_send_email($email, (string) ($createdUser['full_name'] ?? ''), $token, $temporaryPassword)) {
-            account_confirmation_flash_notice('User created. Confirmation email and temporary password sent to ' . $email . '.');
+        $invite = account_confirmation_issue_invite($pdo, (int) $createdUser['id']);
+        if ($invite['sent']) {
+            account_confirmation_flash_notice('User created. Confirmation email and temporary password sent to ' . $invite['email'] . '.');
         } else {
             account_confirmation_flash_error('User created, but the confirmation email could not be sent. Check Mail Trace for the PHP mail result and confirm Hostinger PHP mail is enabled for the sender address.');
         }
     } catch (Throwable $error) {
         error_log('Account confirmation setup failed: ' . $error->getMessage());
-        account_confirmation_flash_error('User created, but account confirmation setup failed. Check the PHP error log.');
+        account_confirmation_flash_error('User created, but account confirmation setup failed. Check Mail Trace and the PHP error log.');
     }
 }

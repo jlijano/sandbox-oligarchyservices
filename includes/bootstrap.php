@@ -48,5 +48,5 @@ function request_path(): string
 }
 
 require_once __DIR__ . '/mail-config-loader.php';
-require_once __DIR__ . '/account-confirmation.php';
+require_once __DIR__ . '/account-confirmation-secure.php';
 account_confirmation_register_dashboard_hook();

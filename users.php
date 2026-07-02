@@ -30,6 +30,25 @@ function users_log_activity(PDO $pdo, int $actorId, string $action, string $targ
 {
     access_log_activity($pdo, $actorId, $action, $targetType, $targetId, $details);
 }
+function users_mail_trace_error(Throwable $error): string
+{
+    $message = trim(str_replace(["\r", "\n"], ' ', $error->getMessage()));
+    return $message !== '' ? substr($message, 0, 220) : 'Unknown Mail Trace write error.';
+}
+function users_record_invite_mail_trace(PDO $pdo, array $invite, string $sender): void
+{
+    account_confirmation_mail_trace_ensure_schema($pdo);
+    $email = (string) ($invite['email'] ?? 'unknown recipient');
+    $sent = !empty($invite['sent']);
+    $stmt = $pdo->prepare('INSERT INTO mail_trace (recipient, subject, provider, status, message) VALUES (?, ?, ?, ?, ?)');
+    $stmt->execute([
+        $email,
+        account_confirmation_subject(),
+        'resend-invite-button',
+        $sent ? 'sent' : 'failed',
+        'Resend invite button used. Sender: ' . $sender . '. PHP mail result: ' . ($sent ? 'accepted' : 'not accepted') . '.',
+    ]);
+}
 function users_option_exists(PDO $pdo, string $table, int $id): bool
 {
     if ($id <= 0) {
@@ -72,10 +91,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $invite = account_confirmation_issue_invite($pdo, $userId);
             users_log_activity($pdo, (int) $user['id'], 'invite resent', 'user', $userId, (string) $invite['email']);
 
+            $sender = account_confirmation_from_address();
+            $traceRecorded = false;
+            $traceError = '';
+            try {
+                users_record_invite_mail_trace($pdo, $invite, $sender);
+                $traceRecorded = true;
+            } catch (Throwable $traceException) {
+                $traceError = users_mail_trace_error($traceException);
+                error_log('Resend invite Mail Trace write failed: ' . $traceException->getMessage());
+            }
+
+            $traceStatus = $traceRecorded ? ' Mail Trace recorded.' : ' Mail Trace could not be written: ' . $traceError . '.';
             if ($invite['sent']) {
-                users_flash_success('Confirmation email and new temporary password sent to ' . $invite['email'] . '.');
+                users_flash_success('PHP accepted the invite for ' . $invite['email'] . ' from ' . $sender . '.' . $traceStatus);
             } else {
-                users_flash_error('Invite was generated, but PHP mail did not accept it. Check Mail Trace for the failed send details.');
+                users_flash_error('Invite was generated, but PHP mail did not accept it from ' . $sender . '.' . $traceStatus);
             }
             users_redirect();
         }

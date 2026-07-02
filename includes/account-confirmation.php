@@ -38,16 +38,6 @@ function account_confirmation_from_header(): string
     return 'Oligarchy Services <' . account_confirmation_from_address() . '>';
 }
 
-function account_confirmation_mail_additional_parameters(): string
-{
-    $from = account_confirmation_from_address();
-    if (!preg_match('/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/', $from)) {
-        return '';
-    }
-
-    return '-f' . $from;
-}
-
 function account_confirmation_generate_temporary_password(): string
 {
     $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
@@ -120,18 +110,7 @@ function account_confirmation_send_via_php_mail(string $email, string $subject, 
         . '</td></tr></table></td></tr></table></body></html>'
         . "\r\n--{$boundary}--\r\n";
 
-    $headerText = implode("\r\n", $headers);
-    $additionalParameters = account_confirmation_mail_additional_parameters();
-    if ($additionalParameters !== '') {
-        $sentWithEnvelopeSender = mail($email, $subject, $body, $headerText, $additionalParameters);
-        if ($sentWithEnvelopeSender) {
-            return true;
-        }
-
-        error_log('PHP mail invite send failed with envelope sender parameter; retrying without it.');
-    }
-
-    return mail($email, $subject, $body, $headerText);
+    return mail($email, $subject, $body, implode("\r\n", $headers));
 }
 
 function account_confirmation_mail_trace_column_exists(PDO $pdo, string $column): bool
@@ -207,7 +186,7 @@ function account_confirmation_send_email(string $email, string $name, string $to
     try {
         $parts = account_confirmation_message_parts($name, $token, $temporaryPassword);
         $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
-        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by PHP mail().' : 'PHP mail() returned false.');
+        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by plain PHP mail().' : 'Plain PHP mail() returned false.');
         return $phpMailResult;
     } catch (Throwable $error) {
         account_confirmation_record_mail_trace($email, $subject, 'php-mail', false, 'Send failed before completion: ' . $error->getMessage());

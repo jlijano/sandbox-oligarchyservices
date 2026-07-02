@@ -173,10 +173,8 @@ function account_confirmation_send_email(string $email, string $name, string $to
 
 function account_confirmation_issue_invite(PDO $pdo, int $userId): array
 {
-    require_once __DIR__ . '/installer.php';
     require_once __DIR__ . '/password-change.php';
 
-    create_or_update_schema($pdo);
     password_change_ensure_schema($pdo);
 
     $stmt = $pdo->prepare('SELECT id, email, full_name, email_confirmed_at FROM users WHERE id = ? LIMIT 1');

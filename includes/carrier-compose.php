@@ -63,13 +63,16 @@ function carrier_handle_compose_send(PDO $pdo, array $user): void
 {
     $id = carrier_post_int('carrier_id');
     $mode = trim((string) ($_POST['compose_mode'] ?? 'reply'));
-    if (!in_array($mode, ['reply', 'forward'], true)) {
+    if (!in_array($mode, ['new', 'reply', 'forward'], true)) {
         throw new RuntimeException('Choose a valid send mode.');
     }
 
-    $mail = $id > 0 ? carrier_fetch($pdo, $id) : null;
-    if (!$mail) {
-        throw new RuntimeException('Choose a valid carrier email.');
+    $mail = null;
+    if ($mode !== 'new') {
+        $mail = $id > 0 ? carrier_fetch($pdo, $id) : null;
+        if (!$mail) {
+            throw new RuntimeException('Choose a valid carrier email.');
+        }
     }
 
     $to = strtolower(trim((string) ($_POST['to'] ?? '')));
@@ -92,6 +95,12 @@ function carrier_handle_compose_send(PDO $pdo, array $user): void
     }
     if (!$sent) {
         throw new RuntimeException('Carrier email could not be sent. Check Mail Trace and confirm PHP mail is enabled.');
+    }
+
+    if ($mode === 'new') {
+        carrier_log_activity($pdo, (int) $user['id'], 'carrier email sent', null, $to);
+        carrier_flash_success('Email sent to ' . $to . '.');
+        carrier_redirect(carrier_context_params(['open' => null]));
     }
 
     $pdo->prepare("UPDATE carrier_emails SET status = CASE WHEN status = 'New' THEN 'Contacted' ELSE status END, is_read = 1, updated_by = ?, updated_at = NOW() WHERE id = ?")->execute([(int) $user['id'], $id]);

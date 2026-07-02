@@ -241,6 +241,202 @@
     if (field) field.checked = value === "1" || value === 1 || value === true;
   };
 
+  const enhanceCarrierMailbox = () => {
+    if (!document.body.classList.contains("carrier-body") || document.querySelector("[data-carrier-enhanced]")) return;
+    const inbox = document.querySelector(".carrier-inbox");
+    const list = document.querySelector(".carrier-list");
+    const searchbar = document.querySelector(".carrier-searchbar");
+    if (!inbox || !list || !searchbar) return;
+
+    document.documentElement.dataset.carrierEnhanced = "true";
+    const style = document.createElement("style");
+    style.dataset.carrierEnhanced = "true";
+    style.textContent = `
+      .carrier-row { grid-template-columns: 34px 34px minmax(0, 1fr); }
+      .carrier-bulk-cell { display: grid; place-items: center; }
+      .carrier-bulk-check, .carrier-select-all { width: 16px; height: 16px; accent-color: #b00714; }
+      .carrier-bulk-toolbar, .carrier-advanced-filters { display: grid; gap: 8px; align-items: center; border-bottom: 1px solid rgba(120,124,132,.3); background: #111114; padding: 9px 10px; }
+      .carrier-bulk-toolbar { grid-template-columns: auto minmax(126px, .26fr) minmax(126px, .26fr) auto minmax(0, 1fr); }
+      .carrier-advanced-filters { grid-template-columns: repeat(3, minmax(112px, 1fr)); }
+      .carrier-bulk-toolbar label, .carrier-bulk-toolbar output { color: #aeb3bd; font-size: .78rem; font-weight: 750; }
+      .carrier-bulk-toolbar select, .carrier-advanced-filters select { min-height: 32px; border: 1px solid rgba(90,93,99,.7); border-radius: 3px; background: #0d0d10; color: #f4f5f7; padding: 0 8px; }
+      .carrier-bulk-toolbar button { min-height: 32px; border: 1px solid #c40917; border-radius: 3px; background: #a40712; color: #fff; padding: 0 12px; font-weight: 800; }
+      .carrier-bulk-toolbar button:disabled { opacity: .52; cursor: not-allowed; }
+      .carrier-quick-status { margin: 0 0 0 auto; }
+      .carrier-quick-status select { min-height: 28px; max-width: 126px; border: 1px solid rgba(120,124,132,.42); border-radius: 999px; background: rgba(255,255,255,.05); color: #fff; font-size: .72rem; font-weight: 850; padding: 0 8px; }
+      .carrier-context-panel { display: grid; gap: 9px; margin: 14px 20px 0; border: 1px solid rgba(120,124,132,.28); border-radius: 6px; background: #141417; padding: 12px; }
+      .carrier-context-panel h3 { margin: 0; color: #f4f5f7; font-size: .92rem; }
+      .carrier-context-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .carrier-context-grid span { display: grid; gap: 2px; min-width: 0; color: #9da3ad; font-size: .72rem; font-weight: 750; text-transform: uppercase; }
+      .carrier-context-grid strong, .carrier-context-grid a { min-width: 0; overflow-wrap: anywhere; color: #f4f5f7; font-size: .84rem; text-transform: none; }
+      .carrier-context-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      @media (max-width: 900px) { .carrier-bulk-toolbar, .carrier-advanced-filters { grid-template-columns: 1fr 1fr; } .carrier-bulk-toolbar output { grid-column: 1 / -1; } }
+      @media (max-width: 700px) { .carrier-row { grid-template-columns: 34px 34px minmax(0, 1fr); } .carrier-bulk-toolbar, .carrier-advanced-filters, .carrier-context-grid { grid-template-columns: 1fr; } .carrier-quick-status { margin: 4px 0 0; } }
+    `;
+    document.head.appendChild(style);
+
+    const rows = Array.from(list.querySelectorAll(".carrier-row"));
+    rows.forEach((row) => {
+      const id = row.querySelector("input[name='carrier_id']")?.value || "";
+      const sender = row.querySelector(".sender")?.textContent?.trim() || "";
+      const subject = row.querySelector(".subject strong")?.textContent?.trim() || "";
+      const preview = row.querySelector(".subject small")?.textContent?.trim() || "";
+      const status = row.querySelector(".status")?.textContent?.trim() || "";
+      const priority = row.querySelector(".priority")?.textContent?.trim() || "";
+      const date = row.querySelector("time")?.getAttribute("datetime") || "";
+      row.dataset.carrierText = `${sender} ${subject} ${preview}`.toLowerCase();
+      row.dataset.carrierStatus = status;
+      row.dataset.carrierPriority = priority;
+      row.dataset.carrierDate = date;
+      row.dataset.carrierRead = row.classList.contains("is-unread") ? "unread" : "read";
+      if (!row.querySelector(".carrier-bulk-cell")) {
+        const cell = document.createElement("label");
+        cell.className = "carrier-bulk-cell";
+        cell.innerHTML = `<span class="sr-only">Select ${subject || "carrier email"}</span><input class="carrier-bulk-check" type="checkbox" value="${id}">`;
+        row.insertBefore(cell, row.firstElementChild);
+      }
+    });
+
+    const advanced = document.createElement("div");
+    advanced.className = "carrier-advanced-filters";
+    advanced.innerHTML = `
+      <select data-carrier-local-read aria-label="Filter loaded messages by read state"><option value="">Read state</option><option value="unread">Unread only</option><option value="read">Read only</option></select>
+      <select data-carrier-local-priority aria-label="Filter loaded messages by priority"><option value="">All priorities</option><option value="High">High</option><option value="Normal">Normal</option><option value="Low">Low</option></select>
+      <select data-carrier-local-sort aria-label="Sort loaded messages"><option value="current">Current order</option><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="sender">Sender A-Z</option><option value="status">Status A-Z</option><option value="priority">Priority</option></select>
+    `;
+    searchbar.insertAdjacentElement("afterend", advanced);
+
+    const bulk = document.createElement("form");
+    bulk.className = "carrier-bulk-toolbar";
+    bulk.dataset.carrierEnhanced = "true";
+    bulk.innerHTML = `
+      <label><input class="carrier-select-all" type="checkbox" data-carrier-select-all> Select visible</label>
+      <select name="bulk_action" aria-label="Bulk action"><option value="mark_read">Mark read</option><option value="mark_unread">Mark unread</option><option value="archive_carrier_email">Archive</option></select>
+      <select name="bulk_scope" aria-label="Bulk scope"><option value="selected">Selected messages</option><option value="visible">All visible messages</option></select>
+      <button type="submit" disabled>Apply</button>
+      <output>0 selected</output>
+    `;
+    advanced.insertAdjacentElement("afterend", bulk);
+
+    const visibleRows = () => rows.filter((row) => !row.hidden);
+    const checkedBoxes = () => rows.map((row) => row.querySelector(".carrier-bulk-check")).filter((box) => box?.checked && !box.closest(".carrier-row")?.hidden);
+    const syncBulkState = () => {
+      const selected = checkedBoxes().length;
+      bulk.querySelector("button").disabled = selected === 0 && bulk.elements.bulk_scope.value === "selected";
+      bulk.querySelector("output").textContent = `${selected} selected`;
+    };
+
+    const applyLocalFilters = () => {
+      const readFilter = advanced.querySelector("[data-carrier-local-read]").value;
+      const priorityFilter = advanced.querySelector("[data-carrier-local-priority]").value;
+      const sort = advanced.querySelector("[data-carrier-local-sort]").value;
+      rows.forEach((row) => {
+        const showRead = !readFilter || row.dataset.carrierRead === readFilter;
+        const showPriority = !priorityFilter || row.dataset.carrierPriority === priorityFilter;
+        row.hidden = !(showRead && showPriority);
+      });
+      const priorityRank = { High: 0, Normal: 1, Low: 2 };
+      if (sort !== "current") {
+        [...rows].sort((a, b) => {
+          if (sort === "newest") return String(b.dataset.carrierDate).localeCompare(String(a.dataset.carrierDate));
+          if (sort === "oldest") return String(a.dataset.carrierDate).localeCompare(String(b.dataset.carrierDate));
+          if (sort === "sender") return String(a.querySelector(".sender")?.textContent || "").localeCompare(String(b.querySelector(".sender")?.textContent || ""));
+          if (sort === "status") return String(a.dataset.carrierStatus).localeCompare(String(b.dataset.carrierStatus));
+          if (sort === "priority") return (priorityRank[a.dataset.carrierPriority] ?? 9) - (priorityRank[b.dataset.carrierPriority] ?? 9);
+          return 0;
+        }).forEach((row) => list.appendChild(row));
+      }
+      syncBulkState();
+    };
+
+    advanced.addEventListener("change", applyLocalFilters);
+    bulk.addEventListener("change", (event) => {
+      if (event.target.matches("[data-carrier-select-all]")) {
+        visibleRows().forEach((row) => {
+          const box = row.querySelector(".carrier-bulk-check");
+          if (box) box.checked = event.target.checked;
+        });
+      }
+      syncBulkState();
+    });
+    list.addEventListener("change", (event) => {
+      if (event.target.matches(".carrier-bulk-check")) syncBulkState();
+    });
+    bulk.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const action = bulk.elements.bulk_action.value;
+      const targets = bulk.elements.bulk_scope.value === "visible"
+        ? visibleRows().map((row) => row.querySelector(".carrier-bulk-check")).filter(Boolean)
+        : checkedBoxes();
+      if (!targets.length) return;
+      const submitButton = bulk.querySelector("button");
+      submitButton.disabled = true;
+      submitButton.textContent = "Applying...";
+      try {
+        for (const box of targets) {
+          const row = box.closest(".carrier-row");
+          const sourceForm = row?.querySelector(".star-form");
+          if (!sourceForm) continue;
+          const formData = new FormData(sourceForm);
+          formData.set("carrier_id", box.value);
+          formData.set("action", action);
+          await window.fetch("/carrier", { method: "POST", body: formData, credentials: "same-origin" });
+        }
+        window.location.reload();
+      } catch (error) {
+        submitButton.textContent = "Retry";
+        submitButton.disabled = false;
+        window.alert("Carrier bulk action could not finish. Please refresh and try again.");
+      }
+    });
+
+    const editForm = document.querySelector("#edit-carrier form");
+    const editStatus = editForm?.querySelector("select[name='status']");
+    const previewActions = document.querySelector(".preview-actions");
+    if (editForm && editStatus && previewActions && !previewActions.querySelector(".carrier-quick-status")) {
+      const quick = document.createElement("label");
+      quick.className = "carrier-quick-status";
+      quick.innerHTML = `<span class="sr-only">Quick status</span><select aria-label="Quickly change carrier status">${Array.from(editStatus.options).map((option) => `<option value="${option.value}" ${option.selected ? "selected" : ""}>${option.textContent}</option>`).join("")}</select>`;
+      quick.querySelector("select").addEventListener("change", (event) => {
+        editStatus.value = event.target.value;
+        if (editForm.requestSubmit) editForm.requestSubmit();
+        else editForm.submit();
+      });
+      previewActions.appendChild(quick);
+    }
+
+    const previewCard = document.querySelector(".preview-card");
+    const previewMessage = document.querySelector(".preview-message");
+    if (previewCard && previewMessage && !previewCard.querySelector(".carrier-context-panel")) {
+      const fromText = document.querySelector(".preview-from")?.textContent?.trim() || "";
+      const subject = document.querySelector(".reading-pane-header h2")?.textContent?.trim() || "Carrier email";
+      const emailMatch = fromText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+      const email = emailMatch ? emailMatch[0] : "";
+      const status = document.querySelector(".preview-actions .status")?.textContent?.trim() || "";
+      const priority = document.querySelector(".preview-meta")?.textContent?.split(" priority")?.[0]?.split(" · ")?.pop()?.trim() || "";
+      const panel = document.createElement("section");
+      panel.className = "carrier-context-panel";
+      panel.innerHTML = `
+        <h3>Lead context</h3>
+        <div class="carrier-context-grid">
+          <span>Contact<strong>${fromText.replace(/</g, "&lt;") || "No contact name"}</strong></span>
+          <span>Email${email ? `<a href="mailto:${email}">${email}</a>` : "<strong>No sender email</strong>"}</span>
+          <span>Status<strong>${status || "Not set"}</strong></span>
+          <span>Priority<strong>${priority || "Not set"}</strong></span>
+        </div>
+        <div class="carrier-context-actions">
+          ${email ? `<a class="secondary-action" href="mailto:${email}?subject=${encodeURIComponent("Follow up: " + subject)}">Follow up</a>` : ""}
+          <a class="secondary-action" href="#edit-carrier">Add note / update record</a>
+        </div>
+      `;
+      previewMessage.insertAdjacentElement("beforebegin", panel);
+    }
+
+    syncBulkState();
+  };
+
+  enhanceCarrierMailbox();
+
   const userIdField = document.querySelector("[data-user-id]");
   const userForm = userIdField?.closest("form");
   const userPassword = userForm?.querySelector("input[name='password']");

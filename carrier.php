@@ -250,7 +250,7 @@ $csrf = csrf_token();
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
     <link rel="stylesheet" href="/assets/carrier.css?v=20260630-wide-modal">
-    <link rel="stylesheet" href="/assets/carrier-outlook.css?v=20260703-outlook">
+    <link rel="stylesheet" href="/assets/carrier-outlook.css?v=20260703-settings-dropdown">
     <link rel="stylesheet" href="/assets/carrier-compose.css?v=20260703-inline-compose">
     <script defer src="/assets/dashboard.js?v=20260630-carrier"></script>
   </head>
@@ -274,7 +274,34 @@ $csrf = csrf_token();
               <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button type="submit" name="action" value="sync_mail">Sync IMAP</button></form>
               <a href="#carrier-folders">Folders</a>
               <a href="#carrier-preview">Reading pane</a>
-              <a href="#mail-settings">Settings</a>
+              <div class="ribbon-settings" data-carrier-settings>
+                <button class="ribbon-settings-toggle" type="button" data-carrier-settings-toggle aria-haspopup="menu" aria-expanded="false" aria-controls="carrier-settings-menu" aria-label="Open settings menu">Settings</button>
+                <div class="carrier-settings-menu" id="carrier-settings-menu" role="menu" aria-label="Carrier settings" hidden>
+                  <div class="settings-menu-group" role="group" aria-labelledby="carrier-settings-mail-heading">
+                    <div class="settings-menu-heading" id="carrier-settings-mail-heading">Mail settings</div>
+                    <a class="settings-menu-item" role="menuitem" href="#mail-settings" data-carrier-settings-item><span>Mail settings</span></a>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Signature settings</span><small>Coming soon</small></button>
+                  </div>
+                  <div class="settings-menu-group" role="group" aria-labelledby="carrier-settings-sync-heading">
+                    <div class="settings-menu-heading" id="carrier-settings-sync-heading">Sync Settings</div>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Email Sync</span><small>Coming soon</small></button>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>IMAP/POP</span><small>Coming soon</small></button>
+                  </div>
+                  <div class="settings-menu-group" role="group" aria-labelledby="carrier-settings-inbox-heading">
+                    <div class="settings-menu-heading" id="carrier-settings-inbox-heading">Inbox settings</div>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Auto Reply</span><small>Coming soon</small></button>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Scheduled reply</span><small>Coming soon</small></button>
+                  </div>
+                  <div class="settings-menu-group" role="group" aria-labelledby="carrier-settings-common-heading">
+                    <div class="settings-menu-heading" id="carrier-settings-common-heading">Common settings</div>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Filters and rules</span><small>Coming soon</small></button>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Forwarding</span><small>Coming soon</small></button>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Notifications</span><small>Coming soon</small></button>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Blocked senders</span><small>Coming soon</small></button>
+                    <button class="settings-menu-item is-child is-disabled" type="button" role="menuitem" aria-disabled="true" disabled><span>Storage and cleanup</span><small>Coming soon</small></button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="ribbon-actions">
               <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action primary" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>
@@ -443,7 +470,75 @@ $csrf = csrf_token();
     <script>
       (() => {
         const modalSelector = '.carrier-modal';
+        const settingsRoot = document.querySelector('[data-carrier-settings]');
+        const settingsToggle = settingsRoot?.querySelector('[data-carrier-settings-toggle]');
+        const settingsMenu = settingsRoot?.querySelector('#carrier-settings-menu');
         let lastFocus = null;
+
+        const isSettingsOpen = () => Boolean(settingsMenu && !settingsMenu.hidden);
+        const closeSettings = (restoreFocus = false) => {
+          if (!settingsMenu || !settingsToggle) return;
+          settingsMenu.hidden = true;
+          settingsRoot.classList.remove('is-open');
+          settingsToggle.setAttribute('aria-expanded', 'false');
+          if (restoreFocus) settingsToggle.focus({ preventScroll: true });
+        };
+        const openSettings = () => {
+          if (!settingsMenu || !settingsToggle) return;
+          settingsMenu.hidden = false;
+          settingsRoot.classList.add('is-open');
+          settingsToggle.setAttribute('aria-expanded', 'true');
+        };
+        const focusFirstSettingsItem = () => {
+          const firstItem = settingsMenu?.querySelector('a[href], button:not(:disabled)');
+          if (firstItem instanceof HTMLElement) firstItem.focus({ preventScroll: true });
+        };
+        const focusSettingsItem = (direction) => {
+          const items = Array.from(settingsMenu?.querySelectorAll('a[href], button:not(:disabled)') || []).filter((item) => item instanceof HTMLElement);
+          if (!items.length) return;
+          const currentIndex = items.indexOf(document.activeElement);
+          const nextIndex = currentIndex < 0 ? 0 : (currentIndex + direction + items.length) % items.length;
+          items[nextIndex].focus({ preventScroll: true });
+        };
+
+        settingsToggle?.addEventListener('click', () => {
+          if (isSettingsOpen()) closeSettings();
+          else openSettings();
+        });
+        settingsToggle?.addEventListener('keydown', (event) => {
+          if (!['ArrowDown', 'Enter', ' '].includes(event.key)) return;
+          event.preventDefault();
+          openSettings();
+          focusFirstSettingsItem();
+        });
+        settingsMenu?.addEventListener('click', (event) => {
+          const item = event.target instanceof Element ? event.target.closest('[data-carrier-settings-item]') : null;
+          if (item) closeSettings();
+        });
+        settingsMenu?.addEventListener('keydown', (event) => {
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            focusSettingsItem(1);
+          }
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            focusSettingsItem(-1);
+          }
+          if (event.key === 'Home') {
+            event.preventDefault();
+            focusFirstSettingsItem();
+          }
+          if (event.key === 'End') {
+            event.preventDefault();
+            focusSettingsItem(-1);
+          }
+        });
+        document.addEventListener('click', (event) => {
+          if (!settingsRoot || !isSettingsOpen()) return;
+          if (event.target instanceof Node && settingsRoot.contains(event.target)) return;
+          closeSettings();
+        });
+
         const activeModal = () => {
           if (!window.location.hash) return null;
           const target = document.getElementById(window.location.hash.slice(1));
@@ -459,6 +554,11 @@ $csrf = csrf_token();
         window.addEventListener('hashchange', focusModal);
         document.addEventListener('keydown', (event) => {
           if (event.key !== 'Escape') return;
+          if (isSettingsOpen()) {
+            event.preventDefault();
+            closeSettings(true);
+            return;
+          }
           const modal = activeModal();
           if (!modal) return;
           const close = modal.querySelector('.modal-close');
@@ -468,6 +568,7 @@ $csrf = csrf_token();
           }
         });
         window.addEventListener('hashchange', () => {
+          closeSettings();
           if (activeModal() || !(lastFocus instanceof HTMLElement)) return;
           lastFocus.focus({ preventScroll: true });
         });

@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
 
-function mail_config_apply_value(string $envName, array $config, string $configKey): void
+function mail_config_apply_value(string $envName, array $config, string $configKey, array $replaceValues = []): void
 {
     $current = trim((string) getenv($envName));
-    if ($current !== '' || !array_key_exists($configKey, $config)) {
+    $canReplaceCurrent = $current !== '' && in_array(strtolower($current), array_map('strtolower', $replaceValues), true);
+    if (($current !== '' && !$canReplaceCurrent) || !array_key_exists($configKey, $config)) {
         return;
     }
 
@@ -38,7 +39,7 @@ function mail_config_load(): void
     }
 
     mail_config_apply_value('PORTAL_BASE_URL', $config, 'portal_base_url');
-    mail_config_apply_value('PORTAL_MAIL_FROM', $config, 'portal_mail_from');
+    mail_config_apply_value('PORTAL_MAIL_FROM', $config, 'portal_mail_from', ['sentinel@oligarchyservices.com']);
     mail_config_apply_value('PORTAL_MAIL_ORCHESTRATOR_URL', $config, 'portal_mail_orchestrator_url');
     mail_config_apply_value('PORTAL_MAIL_ORCHESTRATOR_TOKEN', $config, 'portal_mail_orchestrator_token');
 }

@@ -182,6 +182,7 @@ $csrf = csrf_token();
           <section class="carrier-shell" aria-label="Carrier inbox">
             <aside class="carrier-folders" aria-label="Carrier folders">
               <a class="compose-button" href="#compose-carrier">Compose</a>
+              <a class="compose-button" href="#mail-settings">Mail Settings</a>
               <?php foreach ([['inbox','Inbox'],['unread','Unread'],['starred','Starred'],['archived','Archived'],['all','All mail']] as $folderItem): ?>
                 <a class="folder-link <?= $folder === $folderItem[0] ? 'is-active' : '' ?>" href="/carrier?folder=<?= e($folderItem[0]) ?>"><span><?= e($folderItem[1]) ?></span><strong><?= e((string) $counts[$folderItem[0]]) ?></strong></a>
               <?php endforeach; ?>
@@ -242,6 +243,32 @@ $csrf = csrf_token();
           <section class="carrier-modal" id="compose-carrier" aria-labelledby="compose-carrier-title">
             <a class="modal-close" href="/carrier" aria-label="Close compose form">×</a>
             <form class="carrier-form" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="create_carrier_email"><h2 id="compose-carrier-title">Add Carrier Email</h2><?php $formMail = null; require __DIR__ . '/includes/carrier-form-fields.php'; ?><button class="button primary" type="submit">Save email</button></form>
+          </section>
+
+          <section class="carrier-modal" id="mail-settings" aria-labelledby="mail-settings-title">
+            <a class="modal-close" href="/carrier" aria-label="Close mail settings">×</a>
+            <form class="carrier-form" method="post" action="/carrier-sync.php">
+              <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+              <h2 id="mail-settings-title">Carrier Mail Settings</h2>
+              <p class="preview-meta">Connect a Hostinger mailbox with IMAP, similar to adding an account in Thunderbird, Outlook, or Gmail. Defaults are already set for Hostinger.</p>
+              <?php if (!extension_loaded('imap')): ?><div class="dashboard-alert is-error" role="alert">PHP IMAP is not enabled on this server yet. Enable the <strong>imap</strong> PHP extension in Hostinger PHP Configuration before syncing.</div><?php endif; ?>
+              <div class="carrier-form-grid">
+                <label>Email address<input name="username" type="email" autocomplete="username" placeholder="name@yourdomain.com" required></label>
+                <label>Password<input name="password" type="password" autocomplete="current-password" placeholder="Mailbox password"></label>
+                <label>IMAP host<input name="host" type="text" value="imap.hostinger.com" required></label>
+                <label>Port<input name="port" type="number" min="1" max="65535" value="993" required></label>
+                <label>Security flags<input name="flags" type="text" value="/imap/ssl" required></label>
+                <label>Mailbox<input name="mailbox" type="text" value="INBOX" required></label>
+                <label>Messages to check<input name="limit_count" type="number" min="1" max="200" value="50" required></label>
+                <label><span>Enabled</span><span class="preview-meta"><input name="is_enabled" type="checkbox" value="1" checked> Use this account for Carrier imports</span></label>
+              </div>
+              <p class="preview-meta">Hostinger default: imap.hostinger.com, port 993, SSL, mailbox INBOX. Passwords are stored encrypted in the portal database.</p>
+              <div class="preview-button-row">
+                <button class="button primary" type="submit" name="action" value="save_settings">Save settings</button>
+                <button class="button primary" type="submit" name="action" value="save_and_sync">Save and sync now</button>
+                <button class="secondary-action" type="submit" name="action" value="sync_mail">Sync using saved settings</button>
+              </div>
+            </form>
           </section>
 
           <?php if ($openedEmail): ?>

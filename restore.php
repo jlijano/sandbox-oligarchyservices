@@ -176,6 +176,15 @@ function restore_first_valid_point_file(string $configPath, string $fileName): ?
     return null;
 }
 
+function restore_point_status(string $configPath, array $point): string
+{
+    try {
+        return restore_first_valid_point_file($configPath, (string) ($point['file_name'] ?? '')) !== null ? 'available' : 'missing file';
+    } catch (Throwable $error) {
+        return 'missing file';
+    }
+}
+
 function restore_save_setting(PDO $pdo, string $key, string $value): void
 {
     $stmt = $pdo->prepare('INSERT INTO settings (`setting_key`, `setting_value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`), updated_at = NOW()');
@@ -214,9 +223,7 @@ function restore_savepoint_summary(array $points, string $configPath): string
     }
 
     $latest = $points[0];
-    $filePath = restore_first_valid_point_file($configPath, (string) $latest['file_name']);
-    $status = $filePath !== null ? 'available' : 'missing its server-local file';
-    return 'Latest restore point: ' . $latest['label'] . ' from ' . $latest['created_at'] . ' (' . $status . ').';
+    return 'Latest restore point: ' . $latest['label'] . ' from ' . $latest['created_at'] . ' (' . restore_point_status($configPath, $latest) . ').';
 }
 
 restore_ensure_schema($pdo);
@@ -332,7 +339,7 @@ $summary = restore_savepoint_summary($restorePoints, $configPath);
           <form method="post">
             <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
             <input type="hidden" name="action" value="restore_savepoint">
-            <label class="field"><span>Select restore point</span><select name="restore_point_id" required><option value="">Choose a restore point</option><?php foreach ($restorePoints as $point): ?><option value="<?= e((string) $point['id']) ?>"><?= e('#' . $point['id'] . ' - ' . $point['label'] . ' (' . $point['created_at'] . ')') ?></option><?php endforeach; ?></select></label>
+            <label class="field"><span>Select restore point</span><select name="restore_point_id" required><option value="">Choose a restore point</option><?php foreach ($restorePoints as $point): ?><option value="<?= e((string) $point['id']) ?>"><?= e('#' . $point['id'] . ' - ' . $point['label'] . ' (' . $point['created_at'] . ') - ' . restore_point_status($configPath, $point)) ?></option><?php endforeach; ?></select></label>
             <button class="button secondary login-submit" type="submit" data-confirm="Restore the selected known-good configuration now?">Restore selected point</button>
           </form>
 
@@ -340,7 +347,7 @@ $summary = restore_savepoint_summary($restorePoints, $configPath);
             <strong><?= e((string) count($restorePoints)) ?> restore point<?= count($restorePoints) === 1 ? '' : 's' ?></strong><br>
             <?php if (!$restorePoints): ?>No restore points are available yet. Save the first known-good point before restoring.<?php else: ?>
               <?php foreach (array_slice($restorePoints, 0, 8) as $point): ?>
-                #<?= e((string) $point['id']) ?> <?= e($point['label']) ?> - created <?= e($point['created_at']) ?><?= $point['restored_at'] ? ' - last restored ' . e($point['restored_at']) : '' ?><br>
+                #<?= e((string) $point['id']) ?> <?= e($point['label']) ?> - <?= e(restore_point_status($configPath, $point)) ?> - created <?= e($point['created_at']) ?><?= $point['restored_at'] ? ' - last restored ' . e($point['restored_at']) : '' ?><br>
               <?php endforeach; ?>
             <?php endif; ?>
           </div>

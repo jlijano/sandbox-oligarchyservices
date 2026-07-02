@@ -507,3 +507,14 @@
     min-width: 54px;
   }
 }
+
+/* Sync commands live in Mail Settings; keep the main ribbon focused on message actions. */
+.ribbon-tabs form,
+.ribbon-actions > form:nth-of-type(1),
+.ribbon-actions > form:nth-of-type(2) {
+  display: none;
+}
+
+.ribbon-actions > .ribbon-divider:first-of-type {
+  margin-left: 0;
+}

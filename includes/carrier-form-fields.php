@@ -11,6 +11,17 @@ if (!$carrierForm): ?>
   <label class="wide-field">Subject<input name="subject" type="text" placeholder="Subject" required></label>
   <label class="wide-field">Message<textarea name="body" rows="14" required></textarea></label>
 </div>
+<div class="carrier-compose-toolbar" aria-label="Compose options">
+  <button type="button" title="Formatting options" aria-label="Formatting options">A</button>
+  <button type="button" title="Attach file" aria-label="Attach file">⌕</button>
+  <button type="button" title="Insert link" aria-label="Insert link">🔗</button>
+  <button type="button" title="Insert emoji" aria-label="Insert emoji">☺</button>
+  <button type="button" title="Insert from Drive" aria-label="Insert from Drive">△</button>
+  <button type="button" title="Insert photo" aria-label="Insert photo">▧</button>
+  <button type="button" title="Confidential mode" aria-label="Confidential mode">🔒</button>
+  <button type="button" title="More options" aria-label="More options">⋮</button>
+  <button class="carrier-compose-discard" type="reset" title="Discard draft" aria-label="Discard draft">⌫</button>
+</div>
 <?php return; endif; ?>
 <div class="carrier-form-grid">
   <label>Carrier name<input name="carrier_name" value="<?= e($carrierValue('carrier_name')) ?>" required></label>

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/installer.php';
+require_once __DIR__ . '/includes/setup-access.php';
 require_once __DIR__ . '/includes/access-management.php';
 require_once __DIR__ . '/includes/blogs.php';
 require_once __DIR__ . '/includes/requests.php';
@@ -10,6 +11,8 @@ require_once __DIR__ . '/includes/prospects.php';
 require_once __DIR__ . '/includes/carrier.php';
 require_once __DIR__ . '/includes/switchboard.php';
 require_once __DIR__ . '/includes/automation.php';
+
+setup_send_safety_headers();
 
 $lockPath = db_install_lock_path();
 $configPath = db_local_config_path();
@@ -29,6 +32,10 @@ if ($hasLock || $hasConfig) {
     http_response_code(403);
     echo 'Install is not available because this portal already has setup files. Use /update.php while logged in as an admin, or use /repair.php only if the database config is missing.';
     exit;
+}
+
+if (!setup_unlock_is_present($configPath, 'install')) {
+    setup_exit_locked('install');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

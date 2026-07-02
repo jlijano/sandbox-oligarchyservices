@@ -1,6 +1,8 @@
 /* Carrier compose/edit modal polish. Loads after the base and Outlook Carrier styles. */
 #compose-carrier.carrier-modal:target,
-#edit-carrier.carrier-modal:target {
+#edit-carrier.carrier-modal:target,
+#reply-carrier.carrier-modal:target,
+#forward-carrier.carrier-modal:target {
   width: min(960px, calc(100vw - 48px));
   max-height: calc(100dvh - 48px);
   overflow: hidden;
@@ -12,7 +14,9 @@
   box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.68), 0 24px 70px rgba(0, 0, 0, 0.52);
 }
 #compose-carrier .modal-close,
-#edit-carrier .modal-close {
+#edit-carrier .modal-close,
+#reply-carrier .modal-close,
+#forward-carrier .modal-close {
   position: absolute;
   top: 14px;
   right: 14px;
@@ -25,12 +29,16 @@
   color: #fff;
 }
 #compose-carrier .modal-close:hover,
-#edit-carrier .modal-close:hover {
+#edit-carrier .modal-close:hover,
+#reply-carrier .modal-close:hover,
+#forward-carrier .modal-close:hover {
   border-color: #c40917;
   background: #a40712;
 }
 #compose-carrier .carrier-form,
-#edit-carrier .carrier-form {
+#edit-carrier .carrier-form,
+#reply-carrier .carrier-form,
+#forward-carrier .carrier-form {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   max-height: calc(100dvh - 48px);
@@ -38,7 +46,9 @@
   color: #f4f5f7;
 }
 #compose-carrier .carrier-form h2,
-#edit-carrier .carrier-form h2 {
+#edit-carrier .carrier-form h2,
+#reply-carrier .carrier-form h2,
+#forward-carrier .carrier-form h2 {
   margin: 0;
   padding: 22px 72px 18px 24px;
   border-bottom: 1px solid rgba(120, 124, 132, 0.34);
@@ -48,7 +58,9 @@
   line-height: 1.05;
 }
 #compose-carrier .carrier-form-grid,
-#edit-carrier .carrier-form-grid {
+#edit-carrier .carrier-form-grid,
+#reply-carrier .carrier-form-grid,
+#forward-carrier .carrier-form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -58,7 +70,9 @@
   background: #17171a;
 }
 #compose-carrier .carrier-form label,
-#edit-carrier .carrier-form label {
+#edit-carrier .carrier-form label,
+#reply-carrier .carrier-form label,
+#forward-carrier .carrier-form label {
   display: grid;
   gap: 7px;
   min-width: 0;
@@ -71,7 +85,11 @@
 #compose-carrier .carrier-form textarea,
 #edit-carrier .carrier-form input,
 #edit-carrier .carrier-form select,
-#edit-carrier .carrier-form textarea {
+#edit-carrier .carrier-form textarea,
+#reply-carrier .carrier-form input,
+#reply-carrier .carrier-form textarea,
+#forward-carrier .carrier-form input,
+#forward-carrier .carrier-form textarea {
   width: 100%;
   min-height: 38px;
   border: 1px solid rgba(157, 163, 173, 0.58);
@@ -84,7 +102,11 @@
 #compose-carrier .carrier-form input::placeholder,
 #compose-carrier .carrier-form textarea::placeholder,
 #edit-carrier .carrier-form input::placeholder,
-#edit-carrier .carrier-form textarea::placeholder {
+#edit-carrier .carrier-form textarea::placeholder,
+#reply-carrier .carrier-form input::placeholder,
+#reply-carrier .carrier-form textarea::placeholder,
+#forward-carrier .carrier-form input::placeholder,
+#forward-carrier .carrier-form textarea::placeholder {
   color: #858b95;
 }
 #compose-carrier .carrier-form input:focus,
@@ -92,16 +114,24 @@
 #compose-carrier .carrier-form textarea:focus,
 #edit-carrier .carrier-form input:focus,
 #edit-carrier .carrier-form select:focus,
-#edit-carrier .carrier-form textarea:focus {
+#edit-carrier .carrier-form textarea:focus,
+#reply-carrier .carrier-form input:focus,
+#reply-carrier .carrier-form textarea:focus,
+#forward-carrier .carrier-form input:focus,
+#forward-carrier .carrier-form textarea:focus {
   outline: 2px solid rgba(255, 107, 115, 0.42);
   border-color: #ff6b73;
 }
 #compose-carrier .wide-field,
-#edit-carrier .wide-field {
+#edit-carrier .wide-field,
+#reply-carrier .wide-field,
+#forward-carrier .wide-field {
   grid-column: 1 / -1;
 }
 #compose-carrier textarea[name="message"],
-#edit-carrier textarea[name="message"] {
+#edit-carrier textarea[name="message"],
+#reply-carrier textarea[name="body"],
+#forward-carrier textarea[name="body"] {
   min-height: 170px;
   max-height: 230px;
   resize: vertical;
@@ -122,7 +152,9 @@
   accent-color: #b00714;
 }
 #compose-carrier .carrier-form > .button.primary,
-#edit-carrier .carrier-form > .button.primary {
+#edit-carrier .carrier-form > .button.primary,
+#reply-carrier .carrier-form > .button.primary,
+#forward-carrier .carrier-form > .button.primary {
   justify-self: end;
   min-width: 132px;
   min-height: 38px;
@@ -136,40 +168,56 @@
   transform: translate(-22px, -14px);
 }
 #compose-carrier .carrier-form > .button.primary:hover,
-#edit-carrier .carrier-form > .button.primary:hover {
+#edit-carrier .carrier-form > .button.primary:hover,
+#reply-carrier .carrier-form > .button.primary:hover,
+#forward-carrier .carrier-form > .button.primary:hover {
   filter: brightness(1.08);
 }
 @media (max-width: 980px) {
   #compose-carrier.carrier-modal:target,
-  #edit-carrier.carrier-modal:target {
+  #edit-carrier.carrier-modal:target,
+  #reply-carrier.carrier-modal:target,
+  #forward-carrier.carrier-modal:target {
     width: calc(100vw - 24px);
   }
   #compose-carrier .carrier-form-grid,
-  #edit-carrier .carrier-form-grid {
+  #edit-carrier .carrier-form-grid,
+  #reply-carrier .carrier-form-grid,
+  #forward-carrier .carrier-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 700px) {
   #compose-carrier.carrier-modal:target,
-  #edit-carrier.carrier-modal:target {
+  #edit-carrier.carrier-modal:target,
+  #reply-carrier.carrier-modal:target,
+  #forward-carrier.carrier-modal:target {
     width: calc(100vw - 18px);
     max-height: calc(100dvh - 18px);
   }
   #compose-carrier .carrier-form,
-  #edit-carrier .carrier-form {
+  #edit-carrier .carrier-form,
+  #reply-carrier .carrier-form,
+  #forward-carrier .carrier-form {
     max-height: calc(100dvh - 18px);
   }
   #compose-carrier .carrier-form h2,
-  #edit-carrier .carrier-form h2 {
+  #edit-carrier .carrier-form h2,
+  #reply-carrier .carrier-form h2,
+  #forward-carrier .carrier-form h2 {
     padding: 18px 64px 14px 18px;
   }
   #compose-carrier .carrier-form-grid,
-  #edit-carrier .carrier-form-grid {
+  #edit-carrier .carrier-form-grid,
+  #reply-carrier .carrier-form-grid,
+  #forward-carrier .carrier-form-grid {
     grid-template-columns: 1fr;
     padding: 16px;
   }
   #compose-carrier .carrier-form > .button.primary,
-  #edit-carrier .carrier-form > .button.primary {
+  #edit-carrier .carrier-form > .button.primary,
+  #reply-carrier .carrier-form > .button.primary,
+  #forward-carrier .carrier-form > .button.primary {
     justify-self: stretch;
     width: auto;
     transform: none;

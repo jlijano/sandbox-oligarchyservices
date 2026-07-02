@@ -163,6 +163,7 @@ $csrf = csrf_token();
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
     <link rel="stylesheet" href="/assets/carrier.css?v=20260630-wide-modal">
+    <link rel="stylesheet" href="/assets/carrier-outlook.css?v=20260703-outlook">
     <script defer src="/assets/dashboard.js?v=20260630-carrier"></script>
   </head>
   <body class="dashboard-body carrier-body">
@@ -179,10 +180,27 @@ $csrf = csrf_token();
           <?php if ($error): ?><div class="dashboard-alert is-error" role="alert"><?= e((string) $error) ?></div><?php endif; ?>
           <?php if (!$schemaReady): ?><div class="dashboard-alert is-error" role="alert"><?= e($schemaMessage ?: 'Carrier tables are not ready. Run /update.php as an admin.') ?></div><?php endif; ?>
 
+          <section class="carrier-ribbon" aria-label="Carrier mail actions">
+            <div class="ribbon-tabs"><span class="is-active">Home</span><span>Send / Receive</span><span>Folder</span><span>View</span></div>
+            <div class="ribbon-actions">
+              <a class="ribbon-action primary" href="#compose-carrier"><strong>New</strong><span>Email</span></a>
+              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
+              <a class="ribbon-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
+              <span class="ribbon-divider"></span>
+              <?php if ($openedEmail): ?>
+                <form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><button class="ribbon-action" type="submit" name="action" value="<?= (int) $openedEmail['is_read'] === 1 ? 'mark_unread' : 'mark_read' ?>"><strong><?= (int) $openedEmail['is_read'] === 1 ? 'Unread' : 'Read' ?></strong><span>Mark message</span></button></form>
+                <form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><button class="ribbon-action" type="submit" name="action" value="archive_carrier_email"><strong>Archive</strong><span>Move message</span></button></form>
+                <form method="post" data-confirm="Delete this carrier email permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><button class="ribbon-action danger" type="submit" name="action" value="delete_carrier_email"><strong>Delete</strong><span>Remove</span></button></form>
+              <?php else: ?>
+                <button class="ribbon-action is-disabled" type="button" disabled><strong>Read</strong><span>Select message</span></button>
+                <button class="ribbon-action is-disabled" type="button" disabled><strong>Archive</strong><span>Select message</span></button>
+              <?php endif; ?>
+            </div>
+          </section>
+
           <section class="carrier-shell" aria-label="Carrier inbox">
             <aside class="carrier-folders" aria-label="Carrier folders">
-              <a class="compose-button" href="#compose-carrier">Compose</a>
-              <a class="compose-button" href="#mail-settings">Mail Settings</a>
+              <div class="mailbox-title"><span>▾</span><strong>Carrier Mailbox</strong></div>
               <?php foreach ([['inbox','Inbox'],['unread','Unread'],['starred','Starred'],['archived','Archived'],['all','All mail']] as $folderItem): ?>
                 <a class="folder-link <?= $folder === $folderItem[0] ? 'is-active' : '' ?>" href="/carrier?folder=<?= e($folderItem[0]) ?>"><span><?= e($folderItem[1]) ?></span><strong><?= e((string) $counts[$folderItem[0]]) ?></strong></a>
               <?php endforeach; ?>
@@ -194,6 +212,7 @@ $csrf = csrf_token();
             </aside>
 
             <section class="carrier-inbox" aria-label="Carrier email list">
+              <div class="message-list-title"><strong><?= e(ucfirst($folder)) ?></strong><span><?= e((string) count($emails)) ?> shown</span></div>
               <form class="carrier-searchbar" method="get" action="/carrier">
                 <input type="hidden" name="folder" value="<?= e($folder) ?>">
                 <label><span class="sr-only">Search carrier emails</span><input name="search" type="search" value="<?= e($search) ?>" placeholder="Search mail"></label>
@@ -221,11 +240,11 @@ $csrf = csrf_token();
 
             <aside class="carrier-preview" aria-label="Carrier email preview">
               <?php if (!$openedEmail): ?>
-                <div class="preview-empty"><h2>Select an email</h2><p>Open a carrier message to review details, update status, or archive it.</p></div>
+                <div class="preview-empty"><h2>Select an item to read</h2><p>Choose a message from the list to view it in the reading pane.</p></div>
               <?php else: ?>
                 <div class="preview-card">
-                  <div class="preview-actions"><span class="status status-<?= e(carrier_status_class((string) $openedEmail['status'])) ?>"><?= e($openedEmail['status']) ?></span><a class="secondary-action" href="#edit-carrier">Edit</a></div>
-                  <h2><?= e($openedEmail['subject']) ?></h2>
+                  <div class="preview-actions"><span class="status status-<?= e(carrier_status_class((string) $openedEmail['status'])) ?>"><?= e($openedEmail['status']) ?></span><a class="secondary-action" href="#edit-carrier">Edit details</a></div>
+                  <div class="reading-pane-header"><h2><?= e($openedEmail['subject']) ?></h2></div>
                   <p class="preview-from"><strong><?= e($openedEmail['carrier_name']) ?></strong><?php if ($openedEmail['carrier_email']): ?> &lt;<?= e($openedEmail['carrier_email']) ?>&gt;<?php endif; ?></p>
                   <p class="preview-meta">Received <?= e(carrier_display_date((string) $openedEmail['received_at'])) ?> · <?= e($openedEmail['priority']) ?> priority</p>
                   <div class="preview-message"><?= nl2br(e((string) $openedEmail['message'])) ?></div>

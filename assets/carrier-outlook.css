@@ -692,3 +692,158 @@ button[value="delete_carrier_email"].ribbon-action::after { content: "Delete - R
   opacity: 1;
   transform: translateY(0);
 }
+
+/* Real click-open Settings dropdown. */
+.carrier-workspace {
+  overflow: visible;
+}
+.carrier-ribbon,
+.ribbon-tabs,
+.ribbon-settings {
+  overflow: visible;
+}
+.carrier-ribbon {
+  z-index: 50;
+}
+.ribbon-settings {
+  position: relative;
+  display: inline-flex;
+  align-items: end;
+}
+.ribbon-settings-toggle::before {
+  content: "⚙";
+}
+.ribbon-settings-toggle::after {
+  content: none !important;
+  display: none !important;
+}
+.ribbon-settings.is-open .ribbon-settings-toggle,
+.ribbon-settings-toggle[aria-expanded="true"] {
+  border-color: rgba(120, 124, 132, 0.54);
+  background: #2a2a31;
+  color: #fff;
+}
+.carrier-settings-menu[hidden] {
+  display: none !important;
+}
+.carrier-settings-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1002;
+  display: grid;
+  width: min(320px, calc(100vw - 28px));
+  max-height: min(74vh, 620px);
+  overflow: auto;
+  border: 1px solid rgba(157, 163, 173, 0.58);
+  border-radius: 4px;
+  padding: 8px;
+  background: #202027;
+  color: #f4f5f7;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.52);
+}
+.settings-menu-group {
+  display: grid;
+  gap: 2px;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid rgba(120, 124, 132, 0.24);
+}
+.settings-menu-group:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.settings-menu-heading {
+  padding: 6px 8px 4px;
+  color: #ff8a91;
+  font-size: .72rem;
+  font-weight: 850;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.carrier-settings-menu span,
+.carrier-settings-menu small,
+.carrier-settings-menu a,
+.carrier-settings-menu button {
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+.carrier-settings-menu a,
+.carrier-settings-menu button,
+.carrier-settings-menu .settings-menu-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 7px 9px;
+  background: transparent;
+  color: #f4f5f7;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 760;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.carrier-settings-menu .settings-menu-item::before,
+.carrier-settings-menu .settings-menu-item::after {
+  content: none !important;
+  display: none !important;
+}
+.carrier-settings-menu .settings-menu-item.is-child {
+  padding-left: 24px;
+  font-weight: 680;
+}
+.carrier-settings-menu .settings-menu-item.is-child::marker {
+  content: "";
+}
+.carrier-settings-menu .settings-menu-item.is-child span::before {
+  content: "›";
+  position: absolute;
+  left: 10px;
+  color: #9da3ad;
+}
+.carrier-settings-menu .settings-menu-item:hover,
+.carrier-settings-menu .settings-menu-item:focus-visible {
+  border-color: rgba(255, 107, 115, 0.36);
+  background: rgba(176, 7, 20, 0.2);
+  color: #fff;
+  outline: 0;
+}
+.carrier-settings-menu .settings-menu-item.is-disabled,
+.carrier-settings-menu .settings-menu-item:disabled {
+  color: #8b909b;
+  cursor: not-allowed;
+  opacity: .78;
+}
+.carrier-settings-menu .settings-menu-item.is-disabled:hover {
+  border-color: transparent;
+  background: transparent;
+}
+.carrier-settings-menu small {
+  flex: 0 0 auto;
+  color: #aeb3bd;
+  font-size: .68rem;
+  font-weight: 750;
+}
+@media (max-width: 700px) {
+  .ribbon-tabs {
+    padding-inline: 10px;
+  }
+  .carrier-settings-menu {
+    position: fixed;
+    top: 102px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-height: calc(100dvh - 122px);
+  }
+}

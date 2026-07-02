@@ -95,6 +95,89 @@ function account_confirmation_message_parts(string $name, string $token, string 
     return ['text' => $text, 'html' => $html];
 }
 
+function account_confirmation_send_via_mail_orchestrator(string $email, string $subject, array $parts): array
+{
+    $url = trim((string) getenv('PORTAL_MAIL_ORCHESTRATOR_URL'));
+    if ($url === '') {
+        return ['configured' => false, 'sent' => false, 'message' => 'Mail orchestrator is not configured.'];
+    }
+    if (!preg_match('#^https?://#i', $url)) {
+        return ['configured' => true, 'sent' => false, 'message' => 'Mail orchestrator URL must start with http:// or https://.'];
+    }
+
+    $payload = json_encode([
+        'to' => $email,
+        'from' => account_confirmation_from_address(),
+        'from_name' => 'Oligarchy Services',
+        'reply_to' => account_confirmation_from_address(),
+        'subject' => $subject,
+        'text' => $parts['text'],
+        'html' => $parts['html'],
+        'category' => 'account-confirmation',
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if ($payload === false) {
+        return ['configured' => true, 'sent' => false, 'message' => 'Mail orchestrator payload could not be encoded.'];
+    }
+
+    $headers = ['Content-Type: application/json', 'Accept: application/json'];
+    $token = trim((string) getenv('PORTAL_MAIL_ORCHESTRATOR_TOKEN'));
+    if ($token !== '') {
+        $headers[] = 'Authorization: Bearer ' . $token;
+    }
+
+    $status = 0;
+    $responseBody = '';
+    try {
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            if ($ch === false) {
+                throw new RuntimeException('Could not initialize cURL.');
+            }
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => $headers,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HEADER => false,
+                CURLOPT_CONNECTTIMEOUT => 8,
+                CURLOPT_TIMEOUT => 15,
+            ]);
+            $response = curl_exec($ch);
+            if ($response === false) {
+                $error = curl_error($ch);
+                curl_close($ch);
+                throw new RuntimeException($error !== '' ? $error : 'cURL request failed.');
+            }
+            $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            curl_close($ch);
+            $responseBody = is_string($response) ? $response : '';
+        } else {
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => implode("\r\n", $headers),
+                    'content' => $payload,
+                    'timeout' => 15,
+                    'ignore_errors' => true,
+                ],
+            ]);
+            $response = file_get_contents($url, false, $context);
+            $responseBody = is_string($response) ? $response : '';
+            $statusLine = $http_response_header[0] ?? '';
+            if (preg_match('/\s(\d{3})\s/', $statusLine, $matches)) {
+                $status = (int) $matches[1];
+            }
+        }
+    } catch (Throwable $error) {
+        return ['configured' => true, 'sent' => false, 'message' => 'Mail orchestrator request failed: ' . $error->getMessage()];
+    }
+
+    $summary = trim(preg_replace('/\s+/', ' ', strip_tags(substr($responseBody, 0, 220))) ?: '');
+    $message = 'Mail orchestrator HTTP ' . ($status > 0 ? (string) $status : 'unknown') . ($summary !== '' ? ': ' . $summary : '.');
+
+    return ['configured' => true, 'sent' => $status >= 200 && $status < 300, 'message' => $message];
+}
+
 function account_confirmation_send_via_php_mail(string $email, string $subject, array $parts): bool
 {
     $boundary = 'oligarchy-' . bin2hex(random_bytes(12));
@@ -206,6 +289,14 @@ function account_confirmation_send_email(string $email, string $name, string $to
 
     try {
         $parts = account_confirmation_message_parts($name, $token, $temporaryPassword);
+        $orchestratorResult = account_confirmation_send_via_mail_orchestrator($email, $subject, $parts);
+        if ($orchestratorResult['configured']) {
+            account_confirmation_record_mail_trace($email, $subject, 'mail-orchestrator', (bool) $orchestratorResult['sent'], (string) $orchestratorResult['message']);
+            if ($orchestratorResult['sent']) {
+                return true;
+            }
+        }
+
         $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
         account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by PHP mail().' : 'PHP mail() returned false.');
         return $phpMailResult;

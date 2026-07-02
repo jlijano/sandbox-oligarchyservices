@@ -182,7 +182,12 @@ $csrf = csrf_token();
           <?php if (!$schemaReady): ?><div class="dashboard-alert is-error" role="alert"><?= e($schemaMessage ?: 'Carrier tables are not ready. Run /update.php as an admin.') ?></div><?php endif; ?>
 
           <section class="carrier-ribbon" aria-label="Carrier mail actions">
-            <div class="ribbon-tabs"><span class="is-active">Home</span><span>Send / Receive</span><span>Folder</span><span>View</span></div>
+            <div class="ribbon-tabs">
+              <a class="is-active" href="/carrier">Home</a>
+              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><button type="submit" name="action" value="sync_mail">Send / Receive</button></form>
+              <a href="#carrier-folders">Folder</a>
+              <a href="#carrier-preview">View</a>
+            </div>
             <div class="ribbon-actions">
               <a class="ribbon-action primary" href="#compose-carrier"><strong>New</strong><span>Email</span></a>
               <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
@@ -200,7 +205,7 @@ $csrf = csrf_token();
           </section>
 
           <section class="carrier-shell" aria-label="Carrier inbox">
-            <aside class="carrier-folders" aria-label="Carrier folders">
+            <aside class="carrier-folders" id="carrier-folders" aria-label="Carrier folders">
               <div class="mailbox-title"><span>▾</span><strong>Carrier Mailbox</strong></div>
               <?php foreach ([['inbox','Inbox'],['unread','Unread'],['starred','Starred'],['archived','Archived'],['all','All mail']] as $folderItem): ?>
                 <a class="folder-link <?= $folder === $folderItem[0] ? 'is-active' : '' ?>" href="/carrier?folder=<?= e($folderItem[0]) ?>"><span><?= e($folderItem[1]) ?></span><strong><?= e((string) $counts[$folderItem[0]]) ?></strong></a>
@@ -239,7 +244,7 @@ $csrf = csrf_token();
               </div>
             </section>
 
-            <aside class="carrier-preview" aria-label="Carrier email preview">
+            <aside class="carrier-preview" id="carrier-preview" aria-label="Carrier email preview">
               <?php if (!$openedEmail): ?>
                 <div class="preview-empty"><h2>Select an item to read</h2><p>Choose a message from the list to view it in the reading pane.</p></div>
               <?php else: ?>

@@ -26,6 +26,42 @@ function carrier_sync_post_string(string $key, string $default = ''): string
     return trim((string) ($_POST[$key] ?? $default));
 }
 
+function carrier_sync_return_to_carrier(): bool
+{
+    return carrier_sync_post_string('return_to') === 'carrier';
+}
+
+function carrier_sync_context_params(array $extra = []): array
+{
+    $statuses = carrier_statuses();
+    $folder = trim((string) ($_POST['folder'] ?? 'inbox'));
+    $status = trim((string) ($_POST['status'] ?? ''));
+    $search = trim((string) ($_POST['search'] ?? ''));
+    $open = filter_var($_POST['open'] ?? 0, FILTER_VALIDATE_INT) !== false ? (int) ($_POST['open'] ?? 0) : 0;
+    if (!in_array($folder, ['inbox', 'unread', 'starred', 'archived', 'all'], true)) $folder = 'inbox';
+    if (!in_array($status, array_merge([''], $statuses), true)) $status = '';
+    $params = ['folder' => $folder];
+    if ($status !== '') $params['status'] = $status;
+    if ($search !== '') $params['search'] = $search;
+    if ($open > 0) $params['open'] = $open;
+    foreach ($extra as $key => $value) {
+        if ($value === null || $value === '') {
+            unset($params[$key]);
+        } else {
+            $params[$key] = $value;
+        }
+    }
+    return $params;
+}
+
+function carrier_sync_redirect_to_carrier(?string $notice = null, ?string $error = null, array $extra = []): void
+{
+    if ($notice !== null) $_SESSION['carrier_notice'] = $notice;
+    if ($error !== null) $_SESSION['carrier_error'] = $error;
+    $params = carrier_sync_context_params($extra);
+    redirect_to('/carrier' . ($params ? '?' . http_build_query($params) : ''));
+}
+
 function carrier_sync_secret_key(): string
 {
     $material = carrier_sync_env('CARRIER_SETTINGS_KEY');
@@ -224,27 +260,99 @@ function carrier_sync_decode_body(string $body, int $encoding): string
     return $body;
 }
 
+function carrier_sync_imap_parameter_list($value): array
+{
+    if (!$value) return [];
+    if (is_array($value)) return $value;
+    if ($value instanceof Traversable) return iterator_to_array($value);
+    if (is_object($value)) return [$value];
+    return [];
+}
+
+function carrier_sync_part_parameters($part): array
+{
+    return array_merge(
+        carrier_sync_imap_parameter_list($part->dparameters ?? []),
+        carrier_sync_imap_parameter_list($part->parameters ?? [])
+    );
+}
+
+function carrier_sync_part_filename($part): string
+{
+    foreach (carrier_sync_part_parameters($part) as $parameter) {
+        $attribute = strtolower((string) ($parameter->attribute ?? ''));
+        if (!in_array($attribute, ['filename', 'name'], true)) continue;
+        $name = carrier_sync_decode_header((string) ($parameter->value ?? ''));
+        if ($name !== '') return $name;
+    }
+    return '';
+}
+
+function carrier_sync_part_charset($part): string
+{
+    foreach (carrier_sync_part_parameters($part) as $parameter) {
+        if (strtolower((string) ($parameter->attribute ?? '')) !== 'charset') continue;
+        return strtoupper(trim((string) ($parameter->value ?? '')));
+    }
+    return '';
+}
+
+function carrier_sync_body_to_utf8(string $body, string $charset): string
+{
+    $charset = strtoupper($charset);
+    if ($charset !== '' && $charset !== 'DEFAULT' && $charset !== 'UTF-8' && function_exists('iconv')) {
+        $converted = @iconv($charset, 'UTF-8//IGNORE', $body);
+        if ($converted !== false) return $converted;
+    }
+    return $body;
+}
+
+function carrier_sync_collect_text_parts($imap, int $uid, $part, string $partNumber, array &$plainParts, array &$htmlParts): void
+{
+    if (!$part) return;
+    if (isset($part->parts) && is_array($part->parts)) {
+        foreach ($part->parts as $index => $childPart) {
+            $childNumber = $partNumber === '' ? (string) ($index + 1) : $partNumber . '.' . ($index + 1);
+            carrier_sync_collect_text_parts($imap, $uid, $childPart, $childNumber, $plainParts, $htmlParts);
+        }
+        return;
+    }
+
+    if (carrier_sync_part_filename($part) !== '') return;
+    $type = (int) ($part->type ?? 0);
+    $subtype = strtolower((string) ($part->subtype ?? ''));
+    if ($type !== 0 || !in_array($subtype, ['plain', 'html'], true)) return;
+
+    $body = $partNumber !== '' ? imap_fetchbody($imap, $uid, $partNumber, FT_UID | FT_PEEK) : imap_body($imap, $uid, FT_UID | FT_PEEK);
+    if (!is_string($body) || trim($body) === '') return;
+    $decoded = carrier_sync_decode_body($body, (int) ($part->encoding ?? 0));
+    $decoded = carrier_sync_body_to_utf8($decoded, carrier_sync_part_charset($part));
+    if (trim($decoded) === '') return;
+    if ($subtype === 'plain') {
+        $plainParts[] = $decoded;
+    } else {
+        $htmlParts[] = $decoded;
+    }
+}
+
 function carrier_sync_fetch_body($imap, int $uid): string
 {
     $structure = imap_fetchstructure($imap, $uid, FT_UID);
-    $body = '';
-    $encoding = (int) ($structure->encoding ?? 0);
+    $plainParts = [];
+    $htmlParts = [];
 
-    if (isset($structure->parts) && is_array($structure->parts)) {
-        foreach ($structure->parts as $index => $part) {
-            $subtype = strtolower((string) ($part->subtype ?? ''));
-            if ($subtype !== 'plain' && $subtype !== 'html') continue;
-            $partBody = imap_fetchbody($imap, $uid, (string) ($index + 1), FT_UID | FT_PEEK);
-            if (is_string($partBody) && trim($partBody) !== '') {
-                $body = carrier_sync_decode_body($partBody, (int) ($part->encoding ?? 0));
-                break;
-            }
-        }
+    if ($structure) carrier_sync_collect_text_parts($imap, $uid, $structure, '', $plainParts, $htmlParts);
+
+    $body = '';
+    if ($plainParts) {
+        $body = implode("\n\n", array_map('trim', $plainParts));
+    } elseif ($htmlParts) {
+        $body = implode("\n\n", array_map(static fn($part) => html_entity_decode(strip_tags($part), ENT_QUOTES | ENT_HTML5, 'UTF-8'), $htmlParts));
     }
 
     if (trim($body) === '') {
         $raw = imap_body($imap, $uid, FT_UID | FT_PEEK);
-        if (is_string($raw)) $body = carrier_sync_decode_body($raw, $encoding);
+        if (is_string($raw)) $body = carrier_sync_decode_body($raw, (int) ($structure ? ($structure->encoding ?? 0) : 0));
     }
 
     $text = trim(html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
@@ -263,31 +371,21 @@ function carrier_sync_sender($header): array
     return ['name' => substr($name, 0, 190), 'email' => substr($email, 0, 190)];
 }
 
-function carrier_sync_imap_parameter_list($value): array
+function carrier_sync_collect_attachment_names($part, array &$names): void
 {
-    if (!$value) return [];
-    if (is_array($value)) return $value;
-    if ($value instanceof Traversable) return iterator_to_array($value);
-    if (is_object($value)) return [$value];
-    return [];
+    if (!$part) return;
+    $name = carrier_sync_part_filename($part);
+    if ($name !== '') $names[] = $name;
+    foreach (($part->parts ?? []) as $childPart) {
+        carrier_sync_collect_attachment_names($childPart, $names);
+    }
 }
 
 function carrier_sync_attachments($structure): string
 {
     $names = [];
-    foreach (($structure->parts ?? []) as $part) {
-        $parameters = array_merge(
-            carrier_sync_imap_parameter_list($part->dparameters ?? []),
-            carrier_sync_imap_parameter_list($part->parameters ?? [])
-        );
-        foreach ($parameters as $parameter) {
-            $attribute = strtolower((string) ($parameter->attribute ?? ''));
-            if (!in_array($attribute, ['filename', 'name'], true)) continue;
-            $name = carrier_sync_decode_header((string) ($parameter->value ?? ''));
-            if ($name !== '') $names[] = $name;
-        }
-    }
-    $names = array_values(array_unique($names));
+    carrier_sync_collect_attachment_names($structure, $names);
+    $names = array_values(array_unique(array_filter($names, static fn($name) => trim((string) $name) !== '')));
     if (!$names) return '';
     $summary = implode(', ', array_slice($names, 0, 8));
     if (count($names) > 8) $summary .= ', +' . (count($names) - 8) . ' more';
@@ -415,25 +513,44 @@ try {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$pdo instanceof PDO) {
+        if (carrier_sync_return_to_carrier()) {
+            carrier_sync_redirect_to_carrier(null, 'Carrier database tables are not ready.', ['open' => null]);
+        }
         $errors[] = 'Carrier database tables are not ready.';
     } elseif (!csrf_verify($_POST['csrf_token'] ?? null)) {
+        if (carrier_sync_return_to_carrier()) {
+            carrier_sync_redirect_to_carrier(null, 'Your session expired. Refresh the page and try again.', ['open' => null]);
+        }
         $errors[] = 'Your session expired. Refresh the page and try again.';
     } else {
         try {
             $action = carrier_sync_post_string('action');
+            $savedSettings = false;
             if ($action === 'save_settings' || $action === 'save_and_sync') {
                 $config = carrier_sync_save_settings($pdo, (int) $user['id'], $settings);
                 $settings = carrier_sync_saved_settings($pdo);
                 $notice = 'Carrier mail setup saved.';
+                $savedSettings = true;
                 carrier_log_activity($pdo, (int) $user['id'], 'carrier imap setup updated', null, $config['username']);
             }
             if ($action === 'sync_mail' || $action === 'save_and_sync') {
                 $result = carrier_sync_run($pdo, $config, (int) $user['id']);
                 carrier_log_activity($pdo, (int) $user['id'], 'carrier imap synced', null, 'Imported ' . $result['imported'] . ', skipped ' . $result['skipped']);
-                $_SESSION['carrier_notice'] = 'Carrier mail sync complete. Imported ' . $result['imported'] . ' new email' . ((int) $result['imported'] === 1 ? '' : 's') . '.';
+                $message = 'Carrier mail sync complete. Imported ' . $result['imported'] . ' new email' . ((int) $result['imported'] === 1 ? '' : 's') . '.';
+                if ($savedSettings) $message = 'Carrier mail setup saved. ' . $message;
+                if (carrier_sync_return_to_carrier()) {
+                    carrier_sync_redirect_to_carrier($message, null, ['open' => null]);
+                }
+                $_SESSION['carrier_notice'] = $message;
                 redirect_to('/carrier');
             }
+            if ($action === 'save_settings' && carrier_sync_return_to_carrier()) {
+                carrier_sync_redirect_to_carrier('Carrier mail setup saved.', null);
+            }
         } catch (Throwable $error) {
+            if (carrier_sync_return_to_carrier()) {
+                carrier_sync_redirect_to_carrier(null, $error->getMessage(), ['open' => null]);
+            }
             $errors[] = $error->getMessage();
             error_log('Carrier IMAP setup/sync failed: ' . $error->getMessage());
         }

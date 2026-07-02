@@ -4,13 +4,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/includes/installer.php';
 require_once __DIR__ . '/includes/password-change.php';
 require_once __DIR__ . '/includes/access-management.php';
 
 $user = access_admin_user();
 $pdo = db();
-create_or_update_schema($pdo);
 password_change_ensure_schema($pdo);
 access_management_ensure_schema($pdo);
 

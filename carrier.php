@@ -6,6 +6,7 @@ require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/access-management.php';
 require_once __DIR__ . '/includes/carrier.php';
+require_once __DIR__ . '/includes/carrier-compose.php';
 
 $user = require_login();
 $role = strtolower((string) ($user['role'] ?? 'client'));
@@ -38,17 +39,6 @@ function carrier_display_date(?string $value): string
     if (!$value) return '';
     $time = strtotime($value);
     return $time ? date('M j, g:i A', $time) : $value;
-}
-function carrier_mailto_url(array $mail, string $mode): string
-{
-    $email = trim((string) ($mail['carrier_email'] ?? ''));
-    $to = $mode === 'reply' && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
-    $subject = trim((string) ($mail['subject'] ?? ''));
-    $prefix = $mode === 'reply' ? 'Re: ' : 'Fwd: ';
-    if ($subject === '') $subject = 'Carrier email';
-    if (!preg_match('/^(re|fw|fwd):\s*/i', $subject)) $subject = $prefix . $subject;
-    $query = http_build_query(['subject' => $subject], '', '&', PHP_QUERY_RFC3986);
-    return 'mailto:' . rawurlencode($to) . '?' . $query;
 }
 function carrier_context_params(array $extra = []): array
 {
@@ -151,6 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $action = trim((string) ($_POST['action'] ?? ''));
         $id = carrier_post_int('carrier_id');
+        if ($action === 'send_carrier_email') {
+            carrier_handle_compose_send($pdo, $user);
+        }
         if ($action === 'create_carrier_email') {
             $payload = carrier_payload_from_post();
             $newId = carrier_insert($pdo, $payload, (int) $user['id']);
@@ -240,8 +233,11 @@ if ($pdo instanceof PDO && $schemaReady) {
 }
 
 $mailSettings = carrier_mail_settings_for_form($pdo);
-$replyMailto = $openedEmail ? carrier_mailto_url($openedEmail, 'reply') : '';
-$forwardMailto = $openedEmail ? carrier_mailto_url($openedEmail, 'forward') : '';
+$replyTo = $openedEmail ? trim((string) ($openedEmail['carrier_email'] ?? '')) : '';
+$replySubject = $openedEmail ? carrier_compose_subject((string) $openedEmail['subject'], 'reply') : '';
+$forwardSubject = $openedEmail ? carrier_compose_subject((string) $openedEmail['subject'], 'forward') : '';
+$replyBody = $openedEmail ? carrier_compose_quoted_message($openedEmail, 'reply') : '';
+$forwardBody = $openedEmail ? carrier_compose_quoted_message($openedEmail, 'forward') : '';
 $csrf = csrf_token();
 ?>
 <!doctype html>
@@ -255,26 +251,7 @@ $csrf = csrf_token();
     <link rel="stylesheet" href="/assets/dashboard.css?v=20260621-automation">
     <link rel="stylesheet" href="/assets/carrier.css?v=20260630-wide-modal">
     <link rel="stylesheet" href="/assets/carrier-outlook.css?v=20260703-outlook">
-    <link rel="stylesheet" href="/assets/carrier-compose.css?v=20260703-compose">
-    <style>
-      .ribbon-group { display: grid; gap: 4px; align-content: start; padding: 0 4px 2px; }
-      .ribbon-group-title { color: #aeb3bd; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
-      .ribbon-group-actions { display: flex; gap: 6px; align-items: stretch; }
-      .ribbon-group-actions form { display: contents; margin: 0; }
-      .ribbon-settings-menu { position: relative; display: inline-flex; align-items: end; }
-      .ribbon-settings-menu summary { display: inline-flex; align-items: center; min-height: 30px; padding: 0 14px; border: 1px solid transparent; border-bottom: 0; color: #c8cbd2; font-size: .82rem; font-weight: 700; cursor: pointer; list-style: none; }
-      .ribbon-settings-menu summary::-webkit-details-marker { display: none; }
-      .ribbon-settings-menu summary::after { content: "▾"; margin-left: 7px; font-size: .66rem; }
-      .ribbon-settings-menu[open] summary, .ribbon-settings-menu summary:hover, .ribbon-settings-menu summary:focus-visible { border-color: rgba(120, 124, 132, 0.44); background: #232328; color: #fff; }
-      .ribbon-settings-menu summary:focus-visible { outline: 2px solid rgba(255, 107, 115, 0.48); outline-offset: -2px; }
-      .ribbon-settings-menu-panel { position: absolute; z-index: 20; top: 100%; left: 0; display: grid; min-width: 226px; padding: 8px; border: 1px solid rgba(120,124,132,.44); border-radius: 4px; background: #151519; box-shadow: 0 18px 40px rgba(0,0,0,.42); }
-      .ribbon-settings-menu-panel form { display: contents; margin: 0; }
-      .ribbon-menu-action { display: grid; gap: 3px; justify-items: start; width: 100%; border: 0; border-radius: 3px; padding: 9px 10px; background: transparent; color: #f3f4f6; text-align: left; text-decoration: none; cursor: pointer; font: inherit; }
-      .ribbon-menu-action strong { font-size: .86rem; line-height: 1; }
-      .ribbon-menu-action span { color: #aeb3bd; font-size: .72rem; line-height: 1; }
-      .ribbon-menu-action:hover, .ribbon-menu-action:focus-visible { background: rgba(176, 7, 20, 0.18); outline: 0; }
-      @media (max-width: 900px) { .ribbon-group { min-width: max-content; } .ribbon-group-actions { flex-wrap: nowrap; } }
-    </style>
+    <link rel="stylesheet" href="/assets/carrier-compose.css?v=20260703-inline-compose">
     <script defer src="/assets/dashboard.js?v=20260630-carrier"></script>
   </head>
   <body class="dashboard-body carrier-body">
@@ -294,29 +271,20 @@ $csrf = csrf_token();
           <section class="carrier-ribbon" aria-label="Carrier mail actions">
             <div class="ribbon-tabs" aria-label="Carrier shortcuts">
               <a class="is-active" href="<?= e(carrier_context_url(['open' => null])) ?>">Home</a>
+              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button type="submit" name="action" value="sync_mail">Sync IMAP</button></form>
               <a href="#carrier-folders">Folders</a>
               <a href="#carrier-preview">Reading pane</a>
-              <details class="ribbon-settings-menu">
-                <summary>Settings</summary>
-                <div class="ribbon-settings-menu-panel" aria-label="Settings actions">
-                  <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-menu-action" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>
-                  <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-menu-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
-                  <a class="ribbon-menu-action" href="#compose-carrier"><strong>Manual add</strong><span>New record</span></a>
-                  <a class="ribbon-menu-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
-                </div>
-              </details>
+              <a href="#mail-settings">Settings</a>
             </div>
             <div class="ribbon-actions">
-              <div class="ribbon-group" aria-label="Compose actions">
-                <span class="ribbon-group-title">Compose</span>
-                <div class="ribbon-group-actions">
-                  <a class="ribbon-action primary" href="#compose-carrier"><strong>New email</strong><span>Compose</span></a>
-                </div>
-              </div>
+              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action primary" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>
+              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
+              <a class="ribbon-action" href="#compose-carrier"><strong>Manual add</strong><span>New record</span></a>
+              <a class="ribbon-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
               <span class="ribbon-divider"></span>
               <?php if ($openedEmail): ?>
-                <?php if ($replyMailto !== ''): ?><a class="ribbon-action" href="<?= e($replyMailto) ?>"><strong>Reply</strong><span>Open email</span></a><?php else: ?><button class="ribbon-action is-disabled" type="button" disabled><strong>Reply</strong><span>No sender email</span></button><?php endif; ?>
-                <a class="ribbon-action" href="<?= e($forwardMailto) ?>"><strong>Forward</strong><span>Open email</span></a>
+                <?php if ($replyTo !== ''): ?><a class="ribbon-action" href="#reply-carrier"><strong>Reply</strong><span>Compose here</span></a><?php else: ?><button class="ribbon-action is-disabled" type="button" disabled><strong>Reply</strong><span>No sender email</span></button><?php endif; ?>
+                <a class="ribbon-action" href="#forward-carrier"><strong>Forward</strong><span>Compose here</span></a>
                 <form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><button class="ribbon-action" type="submit" name="action" value="<?= (int) $openedEmail['is_read'] === 1 ? 'mark_unread' : 'mark_read' ?>"><strong><?= (int) $openedEmail['is_read'] === 1 ? 'Unread' : 'Read' ?></strong><span>Mark message</span></button></form>
                 <form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><button class="ribbon-action" type="submit" name="action" value="archive_carrier_email"><strong>Archive</strong><span>Move message</span></button></form>
                 <form method="post" data-confirm="Delete this carrier email permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><button class="ribbon-action danger" type="submit" name="action" value="delete_carrier_email"><strong>Delete</strong><span>Remove</span></button></form>
@@ -382,8 +350,8 @@ $csrf = csrf_token();
                   <div class="preview-message"><?= nl2br(e((string) $openedEmail['message'])) ?></div>
                   <?php if (trim((string) $openedEmail['attachments']) !== ''): ?><p class="preview-attachments"><strong>Attachments:</strong> <?= e($openedEmail['attachments']) ?></p><?php endif; ?>
                   <div class="preview-button-row">
-                    <?php if ($replyMailto !== ''): ?><a class="secondary-action" href="<?= e($replyMailto) ?>">Reply</a><?php endif; ?>
-                    <a class="secondary-action" href="<?= e($forwardMailto) ?>">Forward</a>
+                    <?php if ($replyTo !== ''): ?><a class="secondary-action" href="#reply-carrier">Reply</a><?php endif; ?>
+                    <a class="secondary-action" href="#forward-carrier">Forward</a>
                     <form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><input type="hidden" name="action" value="<?= (int) $openedEmail['is_read'] === 1 ? 'mark_unread' : 'mark_read' ?>"><button class="secondary-action" type="submit"><?= (int) $openedEmail['is_read'] === 1 ? 'Mark unread' : 'Mark read' ?></button></form>
                     <form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><input type="hidden" name="action" value="archive_carrier_email"><button class="secondary-action" type="submit">Archive</button></form>
                     <form method="post" data-confirm="Delete this carrier email permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?><input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>"><input type="hidden" name="action" value="delete_carrier_email"><button class="table-action danger" type="submit">Delete</button></form>
@@ -395,8 +363,46 @@ $csrf = csrf_token();
 
           <section class="carrier-modal" id="compose-carrier" aria-labelledby="compose-carrier-title" role="dialog" aria-modal="true" tabindex="-1">
             <a class="modal-close" href="<?= e(carrier_context_url()) ?>" aria-label="Close compose form">×</a>
-            <form class="carrier-form" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs() ?><input type="hidden" name="action" value="create_carrier_email"><h2 id="compose-carrier-title">New Carrier Email</h2><?php $formMail = null; require __DIR__ . '/includes/carrier-form-fields.php'; ?><button class="button primary" type="submit">Save email</button></form>
+            <form class="carrier-form" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs() ?><input type="hidden" name="action" value="create_carrier_email"><h2 id="compose-carrier-title">Add Carrier Email</h2><?php $formMail = null; require __DIR__ . '/includes/carrier-form-fields.php'; ?><button class="button primary" type="submit">Save email</button></form>
           </section>
+
+          <?php if ($openedEmail): ?>
+          <section class="carrier-modal carrier-compose-modal" id="reply-carrier" aria-labelledby="reply-carrier-title" role="dialog" aria-modal="true" tabindex="-1">
+            <a class="modal-close" href="<?= e(carrier_context_url(['open' => (int) $openedEmail['id']], '#carrier-preview')) ?>" aria-label="Close reply composer">×</a>
+            <form class="carrier-form" method="post">
+              <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+              <?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?>
+              <input type="hidden" name="action" value="send_carrier_email">
+              <input type="hidden" name="compose_mode" value="reply">
+              <input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>">
+              <h2 id="reply-carrier-title">Reply to <?= e($openedEmail['carrier_name']) ?></h2>
+              <div class="carrier-form-grid">
+                <label>To<input name="to" type="email" value="<?= e($replyTo) ?>" required></label>
+                <label class="wide-field">Subject<input name="subject" type="text" value="<?= e($replySubject) ?>" required></label>
+                <label class="wide-field">Message<textarea name="body" required><?= e($replyBody) ?></textarea></label>
+              </div>
+              <button class="button primary" type="submit">Send reply</button>
+            </form>
+          </section>
+
+          <section class="carrier-modal carrier-compose-modal" id="forward-carrier" aria-labelledby="forward-carrier-title" role="dialog" aria-modal="true" tabindex="-1">
+            <a class="modal-close" href="<?= e(carrier_context_url(['open' => (int) $openedEmail['id']], '#carrier-preview')) ?>" aria-label="Close forward composer">×</a>
+            <form class="carrier-form" method="post">
+              <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+              <?= carrier_context_hidden_inputs(['open' => (int) $openedEmail['id']]) ?>
+              <input type="hidden" name="action" value="send_carrier_email">
+              <input type="hidden" name="compose_mode" value="forward">
+              <input type="hidden" name="carrier_id" value="<?= e((string) $openedEmail['id']) ?>">
+              <h2 id="forward-carrier-title">Forward message</h2>
+              <div class="carrier-form-grid">
+                <label>To<input name="to" type="email" placeholder="recipient@example.com" required></label>
+                <label class="wide-field">Subject<input name="subject" type="text" value="<?= e($forwardSubject) ?>" required></label>
+                <label class="wide-field">Message<textarea name="body" required><?= e($forwardBody) ?></textarea></label>
+              </div>
+              <button class="button primary" type="submit">Send forward</button>
+            </form>
+          </section>
+          <?php endif; ?>
 
           <section class="carrier-modal" id="mail-settings" aria-labelledby="mail-settings-title" role="dialog" aria-modal="true" tabindex="-1">
             <a class="modal-close" href="<?= e(carrier_context_url()) ?>" aria-label="Close mail settings">×</a>
@@ -437,7 +443,6 @@ $csrf = csrf_token();
     <script>
       (() => {
         const modalSelector = '.carrier-modal';
-        const settingsMenu = document.querySelector('.ribbon-settings-menu');
         let lastFocus = null;
         const activeModal = () => {
           if (!window.location.hash) return null;
@@ -452,27 +457,14 @@ $csrf = csrf_token();
           if (focusTarget instanceof HTMLElement) focusTarget.focus({ preventScroll: true });
         };
         window.addEventListener('hashchange', focusModal);
-        document.addEventListener('click', (event) => {
-          if (!(settingsMenu instanceof HTMLDetailsElement) || !settingsMenu.open) return;
-          if (event.target instanceof Node && settingsMenu.contains(event.target)) return;
-          settingsMenu.open = false;
-        });
         document.addEventListener('keydown', (event) => {
           if (event.key !== 'Escape') return;
           const modal = activeModal();
-          if (modal) {
-            const close = modal.querySelector('.modal-close');
-            if (close instanceof HTMLAnchorElement) {
-              event.preventDefault();
-              window.location.href = close.href;
-            }
-            return;
-          }
-          if (settingsMenu instanceof HTMLDetailsElement && settingsMenu.open) {
+          if (!modal) return;
+          const close = modal.querySelector('.modal-close');
+          if (close instanceof HTMLAnchorElement) {
             event.preventDefault();
-            settingsMenu.open = false;
-            const summary = settingsMenu.querySelector('summary');
-            if (summary instanceof HTMLElement) summary.focus();
+            window.location.href = close.href;
           }
         });
         window.addEventListener('hashchange', () => {

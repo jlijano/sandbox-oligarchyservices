@@ -437,6 +437,192 @@
 
   enhanceCarrierMailbox();
 
+  const enhanceCarrierComposeWindows = () => {
+    if (!document.body.classList.contains("carrier-body")) return;
+    const modals = ["compose-carrier", "reply-carrier", "forward-carrier"]
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+    if (!modals.length) return;
+
+    if (!document.querySelector("style[data-carrier-compose-window]")) {
+      const style = document.createElement("style");
+      style.dataset.carrierComposeWindow = "true";
+      style.textContent = `
+        #compose-carrier.carrier-modal:target,
+        #reply-carrier.carrier-modal:target,
+        #forward-carrier.carrier-modal:target {
+          inset: auto 24px 0 auto;
+          width: min(540px, calc(100vw - 32px));
+          height: min(480px, calc(100dvh - 88px));
+          max-height: min(480px, calc(100dvh - 88px));
+          transform: none;
+          overflow: visible;
+          border-radius: 8px 8px 0 0;
+          box-shadow: 0 0 0 100vmax rgba(0,0,0,.14), 0 18px 48px rgba(0,0,0,.5);
+        }
+        #reply-carrier.carrier-modal:target,
+        #forward-carrier.carrier-modal:target {
+          width: min(600px, calc(100vw - 32px));
+          height: min(520px, calc(100dvh - 88px));
+          max-height: min(520px, calc(100dvh - 88px));
+        }
+        #compose-carrier .carrier-form,
+        #reply-carrier .carrier-form,
+        #forward-carrier .carrier-form {
+          height: 100%;
+          max-height: none;
+        }
+        #compose-carrier .carrier-form h2,
+        #reply-carrier .carrier-form h2,
+        #forward-carrier .carrier-form h2 {
+          padding-right: 106px;
+          cursor: default;
+          user-select: none;
+        }
+        .compose-window-controls {
+          position: absolute;
+          top: 7px;
+          right: 42px;
+          z-index: 6;
+          display: flex;
+          align-items: center;
+          gap: 2px;
+        }
+        .compose-window-control {
+          display: grid;
+          place-items: center;
+          width: 28px;
+          height: 28px;
+          border: 0;
+          border-radius: 3px;
+          background: transparent;
+          color: #d7dbe2;
+          font: 800 1rem/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          cursor: pointer;
+        }
+        .compose-window-control:hover,
+        .compose-window-control:focus-visible {
+          background: rgba(255,255,255,.1);
+          color: #fff;
+          outline: 0;
+        }
+        .carrier-modal.is-minimized:target {
+          width: min(320px, calc(100vw - 20px)) !important;
+          height: 42px !important;
+          max-height: 42px !important;
+          overflow: hidden !important;
+          box-shadow: 0 12px 32px rgba(0,0,0,.44) !important;
+        }
+        .carrier-modal.is-minimized .carrier-form {
+          height: 42px !important;
+          grid-template-rows: 42px !important;
+          overflow: hidden !important;
+        }
+        .carrier-modal.is-minimized .carrier-form-grid,
+        .carrier-modal.is-minimized .button.primary {
+          display: none !important;
+        }
+        .carrier-modal.is-minimized .carrier-form h2 {
+          min-height: 42px !important;
+          border-bottom: 0 !important;
+          cursor: pointer;
+        }
+        .carrier-modal.is-maximized:target {
+          inset: 82px 24px 24px 292px !important;
+          width: auto !important;
+          height: auto !important;
+          max-height: none !important;
+          border-radius: 8px !important;
+          box-shadow: 0 0 0 100vmax rgba(0,0,0,.22), 0 18px 56px rgba(0,0,0,.52) !important;
+        }
+        .carrier-modal.is-maximized .carrier-form {
+          border-radius: 8px !important;
+        }
+        .carrier-modal.is-maximized .carrier-form-grid {
+          overflow: auto;
+        }
+        @media (max-width: 980px) {
+          .carrier-modal.is-maximized:target {
+            inset: 72px 12px 12px 12px !important;
+          }
+        }
+        @media (max-width: 700px) {
+          #compose-carrier.carrier-modal:target,
+          #reply-carrier.carrier-modal:target,
+          #forward-carrier.carrier-modal:target {
+            inset: auto 8px 0 8px;
+            width: auto;
+            height: min(500px, calc(100dvh - 36px));
+            max-height: calc(100dvh - 36px);
+          }
+          .carrier-modal.is-minimized:target {
+            width: auto !important;
+            left: 8px !important;
+            right: 8px !important;
+          }
+          .compose-window-controls {
+            right: 38px;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const syncControls = (modal) => {
+      const maximize = modal.querySelector("[data-compose-maximize]");
+      const isMaximized = modal.classList.contains("is-maximized");
+      if (maximize) {
+        maximize.setAttribute("aria-pressed", String(isMaximized));
+        maximize.setAttribute("aria-label", isMaximized ? "Restore compose window" : "Maximize compose window");
+        maximize.title = isMaximized ? "Restore" : "Maximize";
+      }
+    };
+
+    modals.forEach((modal) => {
+      if (!modal.querySelector(".compose-window-controls")) {
+        const controls = document.createElement("div");
+        controls.className = "compose-window-controls";
+        controls.setAttribute("aria-label", "Compose window controls");
+        controls.innerHTML = `
+          <button class="compose-window-control" type="button" data-compose-minimize aria-label="Minimize compose window" title="Minimize">-</button>
+          <button class="compose-window-control" type="button" data-compose-maximize aria-label="Maximize compose window" aria-pressed="false" title="Maximize">□</button>
+        `;
+        const close = modal.querySelector(".modal-close");
+        if (close) close.insertAdjacentElement("afterend", controls);
+        else modal.insertAdjacentElement("afterbegin", controls);
+      }
+
+      modal.querySelector("[data-compose-minimize]")?.addEventListener("click", () => {
+        modal.classList.add("is-minimized");
+        modal.classList.remove("is-maximized");
+        syncControls(modal);
+      });
+      modal.querySelector("[data-compose-maximize]")?.addEventListener("click", () => {
+        const shouldMaximize = !modal.classList.contains("is-maximized");
+        modal.classList.toggle("is-maximized", shouldMaximize);
+        modal.classList.remove("is-minimized");
+        syncControls(modal);
+      });
+      modal.querySelector(".carrier-form h2")?.addEventListener("click", () => {
+        if (!modal.classList.contains("is-minimized")) return;
+        modal.classList.remove("is-minimized");
+        syncControls(modal);
+      });
+      syncControls(modal);
+    });
+
+    window.addEventListener("hashchange", () => {
+      modals.forEach((modal) => {
+        if (window.location.hash !== `#${modal.id}`) {
+          modal.classList.remove("is-minimized", "is-maximized");
+        }
+        syncControls(modal);
+      });
+    });
+  };
+
+  enhanceCarrierComposeWindows();
+
   const userIdField = document.querySelector("[data-user-id]");
   const userForm = userIdField?.closest("form");
   const userPassword = userForm?.querySelector("input[name='password']");

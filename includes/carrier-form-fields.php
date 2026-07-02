@@ -46,6 +46,15 @@ if (!$carrierForm): ?>
   #compose-carrier .carrier-compose-toolbar .carrier-compose-discard {
     margin-left: auto;
   }
+  #compose-carrier .carrier-compose-attachments {
+    max-width: min(240px, 34vw);
+    overflow: hidden;
+    color: #aeb3bd;
+    font-size: .75rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   #compose-carrier .carrier-form > .button.primary {
     position: absolute;
     left: 14px;
@@ -67,26 +76,88 @@ if (!$carrierForm): ?>
       width: 28px;
       min-width: 28px;
     }
+    #compose-carrier .carrier-compose-attachments {
+      max-width: 140px;
+    }
   }
 </style>
 <input type="hidden" name="action" value="send_carrier_email">
 <input type="hidden" name="compose_mode" value="new">
+<input class="carrier-compose-file-input" name="attachments[]" type="file" multiple hidden>
 <div class="carrier-form-grid carrier-new-mail-grid">
   <label>To<input name="to" type="email" placeholder="recipient@example.com" required></label>
   <label class="wide-field">Subject<input name="subject" type="text" placeholder="Subject" required></label>
   <label class="wide-field">Message<textarea name="body" rows="14" required></textarea></label>
 </div>
 <div class="carrier-compose-toolbar" aria-label="Compose options">
-  <button type="button" title="Formatting options" aria-label="Formatting options">A</button>
-  <button type="button" title="Attach file" aria-label="Attach file">⌕</button>
-  <button type="button" title="Insert link" aria-label="Insert link">🔗</button>
-  <button type="button" title="Insert emoji" aria-label="Insert emoji">☺</button>
-  <button type="button" title="Insert from Drive" aria-label="Insert from Drive">△</button>
-  <button type="button" title="Insert photo" aria-label="Insert photo">▧</button>
-  <button type="button" title="Confidential mode" aria-label="Confidential mode">🔒</button>
-  <button type="button" title="More options" aria-label="More options">⋮</button>
+  <button type="button" title="Bold selected text" aria-label="Bold selected text" data-compose-format>A</button>
+  <button type="button" title="Attach file" aria-label="Attach file" data-compose-attach>⌕</button>
+  <button type="button" title="Insert link" aria-label="Insert link" data-compose-link>🔗</button>
+  <button type="button" title="Insert emoji" aria-label="Insert emoji" data-compose-emoji>☺</button>
+  <button type="button" title="Attach from Drive" aria-label="Attach from Drive" data-compose-drive>△</button>
+  <button type="button" title="Attach photo" aria-label="Attach photo" data-compose-photo>▧</button>
+  <button type="button" title="Add confidential note" aria-label="Add confidential note" data-compose-confidential>🔒</button>
+  <button type="button" title="More options" aria-label="More options" data-compose-more>⋮</button>
+  <span class="carrier-compose-attachments" aria-live="polite"></span>
   <button class="carrier-compose-discard" type="reset" title="Discard draft" aria-label="Discard draft">⌫</button>
 </div>
+<script>
+  (() => {
+    const modal = document.getElementById('compose-carrier');
+    if (!modal || modal.dataset.composeToolbarReady === 'true') return;
+    modal.dataset.composeToolbarReady = 'true';
+    const form = modal.querySelector('form');
+    const body = modal.querySelector('textarea[name="body"]');
+    const fileInput = modal.querySelector('.carrier-compose-file-input');
+    const attachmentLabel = modal.querySelector('.carrier-compose-attachments');
+    if (!form || !body) return;
+    form.enctype = 'multipart/form-data';
+
+    const insertAtCursor = (text, selectStartOffset = text.length, selectEndOffset = text.length) => {
+      const start = body.selectionStart || 0;
+      const end = body.selectionEnd || 0;
+      body.setRangeText(text, start, end, 'end');
+      body.focus();
+      body.setSelectionRange(start + selectStartOffset, start + selectEndOffset);
+    };
+    const selectedText = () => body.value.slice(body.selectionStart || 0, body.selectionEnd || 0);
+
+    modal.querySelector('[data-compose-format]')?.addEventListener('click', () => {
+      const selected = selectedText() || 'bold text';
+      insertAtCursor('**' + selected + '**', 2, 2 + selected.length);
+    });
+    modal.querySelector('[data-compose-link]')?.addEventListener('click', () => {
+      const url = window.prompt('Paste a link');
+      if (!url) return;
+      const selected = selectedText();
+      insertAtCursor(selected ? selected + ' (' + url + ')' : url);
+    });
+    modal.querySelector('[data-compose-emoji]')?.addEventListener('click', () => {
+      const emoji = window.prompt('Emoji to insert', '🙂');
+      if (emoji) insertAtCursor(emoji);
+    });
+    modal.querySelector('[data-compose-confidential]')?.addEventListener('click', () => {
+      insertAtCursor('\n\nConfidential: Please do not forward this message without permission.');
+    });
+    modal.querySelector('[data-compose-more]')?.addEventListener('click', () => {
+      window.alert('Available compose actions: attach files, insert a link, insert an emoji, add a confidential note, minimize, maximize, close, or discard the draft.');
+    });
+    ['[data-compose-attach]', '[data-compose-drive]', '[data-compose-photo]'].forEach((selector) => {
+      modal.querySelector(selector)?.addEventListener('click', () => fileInput?.click());
+    });
+    fileInput?.addEventListener('change', () => {
+      const names = Array.from(fileInput.files || []).map((file) => file.name);
+      if (attachmentLabel) attachmentLabel.textContent = names.length ? names.join(', ') : '';
+    });
+    form.addEventListener('reset', () => {
+      window.setTimeout(() => {
+        if (attachmentLabel) attachmentLabel.textContent = '';
+        if (fileInput) fileInput.value = '';
+        body.focus();
+      }, 0);
+    });
+  })();
+</script>
 <?php return; endif; ?>
 <div class="carrier-form-grid">
   <label>Carrier name<input name="carrier_name" value="<?= e($carrierValue('carrier_name')) ?>" required></label>

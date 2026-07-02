@@ -40,7 +40,7 @@ if ($token !== '' && preg_match('/^[a-f0-9]{64}$/', $token)) {
     <meta name="robots" content="noindex">
     <title>Confirm Account | Oligarchy Services</title>
     <link rel="stylesheet" href="/assets/styles.css?v=20260618-service-icons">
-    <link rel="stylesheet" href="/assets/login.css?v=20260620-php-login">
+    <link rel="stylesheet" href="/assets/login.css?v=20260703-confirmation-flow">
   </head>
   <body>
     <main class="login-page">

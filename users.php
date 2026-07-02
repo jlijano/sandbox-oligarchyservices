@@ -4,10 +4,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/installer.php';
+require_once __DIR__ . '/includes/password-change.php';
 require_once __DIR__ . '/includes/access-management.php';
 
 $user = access_admin_user();
 $pdo = db();
+create_or_update_schema($pdo);
+password_change_ensure_schema($pdo);
 access_management_ensure_schema($pdo);
 
 $role = strtolower((string) ($user['role'] ?? 'client'));
@@ -61,6 +65,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = users_post_string('action');
 
     try {
+        if ($action === 'resend_invite') {
+            $userId = users_post_int('user_id');
+            if ($userId <= 0) {
+                throw new RuntimeException('Choose a valid user account.');
+            }
+
+            $invite = account_confirmation_issue_invite($pdo, $userId);
+            users_log_activity($pdo, (int) $user['id'], 'invite resent', 'user', $userId, (string) $invite['email']);
+
+            if ($invite['sent']) {
+                users_flash_success('Confirmation email and new temporary password sent to ' . $invite['email'] . '.');
+            } else {
+                users_flash_error('Invite was generated, but PHP mail did not accept it. Check Mail Trace for the failed send details.');
+            }
+            users_redirect();
+        }
+
         if ($action === 'save_user') {
             $userId = users_post_int('user_id');
             $name = users_post_string('full_name');
@@ -152,7 +173,7 @@ $totalUsers = (int) $countStmt->fetchColumn();
 $totalUserPages = max(1, (int) ceil($totalUsers / $usersPerPage));
 $userPage = min($userPage, $totalUserPages);
 $userOffset = ($userPage - 1) * $usersPerPage;
-$userSql = 'SELECT u.id, u.email, u.full_name, u.role, u.is_active, u.company_id, u.department_id, u.last_login_at, u.created_at, c.name AS company_name, d.name AS department_name' . $joinSql . $userWhereSql . ' ORDER BY u.created_at DESC, u.id DESC LIMIT ' . $usersPerPage . ' OFFSET ' . $userOffset;
+$userSql = 'SELECT u.id, u.email, u.full_name, u.role, u.is_active, u.company_id, u.department_id, u.last_login_at, u.created_at, u.email_confirmed_at, u.email_confirmation_expires_at, c.name AS company_name, d.name AS department_name' . $joinSql . $userWhereSql . ' ORDER BY u.created_at DESC, u.id DESC LIMIT ' . $usersPerPage . ' OFFSET ' . $userOffset;
 $userStmt = $pdo->prepare($userSql);
 $userStmt->execute($userParams);
 $users = $userStmt->fetchAll();
@@ -211,7 +232,7 @@ $csrf = csrf_token();
             <section class="user-summary-grid" aria-label="User account summary"><article><span>Total users</span><strong><?= e((string) $counts['total_users']) ?></strong></article><article><span>Active</span><strong><?= e((string) $counts['active_users']) ?></strong></article><article><span>Inactive</span><strong><?= e((string) $counts['inactive_users']) ?></strong></article><article><span>Admins</span><strong><?= e((string) $counts['admin_users']) ?></strong></article></section>
             <form class="admin-panel filter-panel" method="get" action="/users.php"><label>Search users<input name="user_search" type="search" value="<?= e($userSearch) ?>" placeholder="Name, email, company, or department"></label><label>Role<select name="user_role"><option value="">All roles</option><?php foreach ($allowedRoles as $r): ?><option value="<?= e($r) ?>" <?= $userRoleFilter === $r ? 'selected' : '' ?>><?= e(ucfirst($r)) ?></option><?php endforeach; ?></select></label><label>Status<select name="user_status"><option value="">All statuses</option><option value="active" <?= $userStatusFilter === 'active' ? 'selected' : '' ?>>Active</option><option value="inactive" <?= $userStatusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option></select></label><div class="filter-actions"><button class="button primary" type="submit">Apply filters</button><a class="secondary-action" href="/users.php">Clear</a></div></form>
             <div class="users-table-wrap">
-              <div class="admin-panel table-panel"><div class="table-heading"><h3>User accounts</h3><span><?= e((string) $totalUsers) ?> result<?= $totalUsers === 1 ? '' : 's' ?></span></div><?php if (!$users): ?><p class="empty-state">No users match the current filters.</p><?php else: ?><div class="table-scroll"><table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Company</th><th>Department</th><th>Status</th><th>Last login</th><th></th></tr></thead><tbody><?php foreach ($users as $row): ?><tr><td><strong><?= e($row['full_name']) ?></strong></td><td><?= e($row['email']) ?></td><td><span class="status-badge"><?= e($row['role']) ?></span></td><td><?= e((string) ($row['company_name'] ?? 'Unassigned')) ?></td><td><?= e((string) ($row['department_name'] ?? 'Unassigned')) ?></td><td><span class="status-badge <?= (int) $row['is_active'] === 1 ? 'is-active' : 'is-muted' ?>"><?= (int) $row['is_active'] === 1 ? 'Active' : 'Inactive' ?></span></td><td class="nowrap"><?= e((string) ($row['last_login_at'] ?? 'Never')) ?></td><td class="row-actions"><button class="table-action" type="button" data-edit-user data-id="<?= e((string) $row['id']) ?>" data-name="<?= e($row['full_name']) ?>" data-email="<?= e($row['email']) ?>" data-role="<?= e($row['role']) ?>" data-company="<?= e((string) ($row['company_id'] ?? '')) ?>" data-department="<?= e((string) ($row['department_id'] ?? '')) ?>" data-active="<?= e((string) $row['is_active']) ?>">Edit</button><?php if ((int) $row['id'] !== (int) $user['id']): ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="deactivate_user"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Deactivate</button></form><form method="post" data-confirm="Delete this user permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form><?php endif; ?></td></tr><?php endforeach; ?></tbody></table></div><?php if ($totalUserPages > 1): ?><nav class="pagination" aria-label="User pages"><a class="secondary-action<?= $userPage <= 1 ? ' is-disabled' : '' ?>" href="<?= e($prevUserUrl) ?>">Previous</a><span>Page <?= e((string) $userPage) ?> of <?= e((string) $totalUserPages) ?></span><a class="secondary-action<?= $userPage >= $totalUserPages ? ' is-disabled' : '' ?>" href="<?= e($nextUserUrl) ?>">Next</a></nav><?php endif; ?><?php endif; ?></div>
+              <div class="admin-panel table-panel"><div class="table-heading"><h3>User accounts</h3><span><?= e((string) $totalUsers) ?> result<?= $totalUsers === 1 ? '' : 's' ?></span></div><?php if (!$users): ?><p class="empty-state">No users match the current filters.</p><?php else: ?><div class="table-scroll"><table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Company</th><th>Department</th><th>Status</th><th>Confirmation</th><th>Last login</th><th></th></tr></thead><tbody><?php foreach ($users as $row): $isConfirmed = !empty($row['email_confirmed_at']); ?><tr><td><strong><?= e($row['full_name']) ?></strong></td><td><?= e($row['email']) ?></td><td><span class="status-badge"><?= e($row['role']) ?></span></td><td><?= e((string) ($row['company_name'] ?? 'Unassigned')) ?></td><td><?= e((string) ($row['department_name'] ?? 'Unassigned')) ?></td><td><span class="status-badge <?= (int) $row['is_active'] === 1 ? 'is-active' : 'is-muted' ?>"><?= (int) $row['is_active'] === 1 ? 'Active' : 'Inactive' ?></span></td><td><span class="status-badge <?= $isConfirmed ? 'is-active' : 'is-muted' ?>"><?= $isConfirmed ? 'Confirmed' : 'Pending confirmation' ?></span></td><td class="nowrap"><?= e((string) ($row['last_login_at'] ?? 'Never')) ?></td><td class="row-actions"><button class="table-action" type="button" data-edit-user data-id="<?= e((string) $row['id']) ?>" data-name="<?= e($row['full_name']) ?>" data-email="<?= e($row['email']) ?>" data-role="<?= e($row['role']) ?>" data-company="<?= e((string) ($row['company_id'] ?? '')) ?>" data-department="<?= e((string) ($row['department_id'] ?? '')) ?>" data-active="<?= e((string) $row['is_active']) ?>">Edit</button><?php if (!$isConfirmed): ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="resend_invite"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Resend invite</button></form><?php endif; ?><?php if ((int) $row['id'] !== (int) $user['id']): ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="deactivate_user"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action" type="submit">Deactivate</button></form><form method="post" data-confirm="Delete this user permanently?"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?= e((string) $row['id']) ?>"><button class="table-action danger" type="submit">Delete</button></form><?php endif; ?></td></tr><?php endforeach; ?></tbody></table></div><?php if ($totalUserPages > 1): ?><nav class="pagination" aria-label="User pages"><a class="secondary-action<?= $userPage <= 1 ? ' is-disabled' : '' ?>" href="<?= e($prevUserUrl) ?>">Previous</a><span>Page <?= e((string) $userPage) ?> of <?= e((string) $totalUserPages) ?></span><a class="secondary-action<?= $userPage >= $totalUserPages ? ' is-disabled' : '' ?>" href="<?= e($nextUserUrl) ?>">Next</a></nav><?php endif; ?><?php endif; ?></div>
             </div>
             <div class="user-modal" id="user-modal" data-user-modal role="dialog" aria-modal="true" aria-labelledby="user-modal-title" hidden>
               <button class="user-modal-backdrop" type="button" data-user-modal-close aria-label="Close user form"></button>

@@ -334,7 +334,137 @@
   }
 }
 
-/* Preview actions are available in the ribbon; keep the reading pane focused on message content. */
 .carrier-preview .preview-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.carrier-preview .preview-button-row form {
+  margin: 0;
+}
+
+.carrier-preview .preview-button-row a,
+.carrier-preview .preview-button-row button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  border: 1px solid rgba(157, 163, 173, 0.35);
+  border-radius: 3px;
+  background: #1b1c21;
+  color: #fff;
+  padding: 0;
+  font-size: 0;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.carrier-preview .preview-button-row a:hover,
+.carrier-preview .preview-button-row a:focus-visible,
+.carrier-preview .preview-button-row button:hover,
+.carrier-preview .preview-button-row button:focus-visible {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: #24252b;
+  outline: 0;
+}
+
+.carrier-preview .preview-button-row a::before,
+.carrier-preview .preview-button-row button::before {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.carrier-preview .preview-button-row a::after,
+.carrier-preview .preview-button-row button::after {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  z-index: 4;
   display: none;
+  width: max-content;
+  max-width: 180px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(157, 163, 173, 0.45);
+  border-radius: 3px;
+  background: #2b2d35;
+  color: #fff;
+  padding: 5px 8px;
+  font-size: .72rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34);
+}
+
+.carrier-preview .preview-button-row a:hover::after,
+.carrier-preview .preview-button-row a:focus-visible::after,
+.carrier-preview .preview-button-row button:hover::after,
+.carrier-preview .preview-button-row button:focus-visible::after {
+  display: block;
+}
+
+.carrier-preview .preview-button-row a[href="#reply-carrier"]::before {
+  content: "↩";
+}
+
+.carrier-preview .preview-button-row a[href="#reply-carrier"]::after {
+  content: "Reply";
+}
+
+.carrier-preview .preview-button-row a[href="#forward-carrier"]::before {
+  content: "→";
+}
+
+.carrier-preview .preview-button-row a[href="#forward-carrier"]::after {
+  content: "Forward";
+}
+
+.carrier-preview .preview-button-row form:has(input[value="mark_read"]) button::before,
+.carrier-preview .preview-button-row form:has(input[value="mark_unread"]) button::before {
+  content: "✓";
+}
+
+.carrier-preview .preview-button-row form:has(input[value="mark_read"]) button::after {
+  content: "Mark read";
+}
+
+.carrier-preview .preview-button-row form:has(input[value="mark_unread"]) button::after {
+  content: "Mark unread";
+}
+
+.carrier-preview .preview-button-row form:has(input[value="archive_carrier_email"]) button::before {
+  content: "□";
+}
+
+.carrier-preview .preview-button-row form:has(input[value="archive_carrier_email"]) button::after {
+  content: "Archive";
+}
+
+.carrier-preview .preview-button-row form:has(input[value="delete_carrier_email"]) button {
+  border-color: rgba(196, 9, 23, 0.68);
+  background: #2a1115;
+  color: #fff;
+}
+
+.carrier-preview .preview-button-row form:has(input[value="delete_carrier_email"]) button::before {
+  content: "×";
+}
+
+.carrier-preview .preview-button-row form:has(input[value="delete_carrier_email"]) button::after {
+  content: "Delete - Remove";
+}
+
+.carrier-preview .preview-button-row form:has(input[value="delete_carrier_email"]) button:hover,
+.carrier-preview .preview-button-row form:has(input[value="delete_carrier_email"]) button:focus-visible {
+  border-color: #c40917;
+  background: #4b1018;
 }

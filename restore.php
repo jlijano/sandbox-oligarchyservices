@@ -110,6 +110,16 @@ function restore_read_config(string $path): array
     return $config;
 }
 
+function restore_current_config(string $configPath): array
+{
+    $sourcePath = installer_existing_config_path($configPath) ?: db_primary_config_path();
+    if ($sourcePath === '') {
+        return load_db_config('');
+    }
+
+    return restore_read_config($sourcePath);
+}
+
 function restore_config_contents(array $config): string
 {
     $payload = [
@@ -216,6 +226,36 @@ function restore_fetch_point(PDO $pdo, int $id): ?array
     return $point ?: null;
 }
 
+function restore_create_point(PDO $pdo, string $configPath, array $user, string $label, string $notes = ''): int
+{
+    restore_prepare_storage_dirs($configPath);
+    $config = restore_current_config($configPath);
+    restore_test_config($config);
+    $content = restore_config_contents($config);
+    $label = trim($label) !== '' ? trim($label) : 'Known-good point ' . date('Y-m-d H:i');
+    if (strlen($label) > 190) {
+        throw new RuntimeException('Restore point label must be 190 characters or fewer.');
+    }
+
+    $stmt = $pdo->prepare('INSERT INTO restore_points (label, created_by, notes, config_fingerprint) VALUES (?, ?, ?, ?)');
+    $stmt->execute([$label, (string) $user['email'], $notes, restore_config_fingerprint($config)]);
+    $pointId = (int) $pdo->lastInsertId();
+    $fileName = restore_point_file_name($pointId);
+    foreach (restore_point_paths($configPath, $fileName) as $path) {
+        restore_write_file($path, $content);
+    }
+    foreach (restore_savepoint_paths($configPath) as $path) {
+        restore_write_file($path, $content);
+    }
+    $pdo->prepare('UPDATE restore_points SET file_name = ? WHERE id = ?')->execute([$fileName, $pointId]);
+    restore_save_setting($pdo, 'restore_savepoint_created_at', gmdate('c'));
+    restore_save_setting($pdo, 'restore_savepoint_created_by', (string) $user['email']);
+    restore_save_setting($pdo, 'restore_savepoint_latest_id', (string) $pointId);
+    restore_log_activity($pdo, (int) $user['id'], 'restore point created', 'Restore point #' . $pointId . ' saved: ' . $label);
+
+    return $pointId;
+}
+
 function restore_savepoint_summary(array $points, string $configPath): string
 {
     if (!$points) {
@@ -229,6 +269,16 @@ function restore_savepoint_summary(array $points, string $configPath): string
 restore_ensure_schema($pdo);
 $savepointPath = restore_first_valid_savepoint($configPath);
 $restorePoints = restore_fetch_points($pdo);
+if (!$restorePoints && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    try {
+        restore_create_point($pdo, $configPath, $user, 'Initial current working config', 'Automatically created the first time restore points were opened.');
+        $notice = 'Initial restore point created from the current working configuration.';
+        $restorePoints = restore_fetch_points($pdo);
+    } catch (Throwable $seedError) {
+        error_log('Initial restore point seed failed: ' . $seedError->getMessage());
+        $error = 'Restore point list is ready, but the initial point could not be created: ' . $seedError->getMessage();
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify($_POST['csrf_token'] ?? null)) {
@@ -237,38 +287,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = trim((string) ($_POST['action'] ?? ''));
         try {
             if ($action === 'create_savepoint') {
-                restore_prepare_storage_dirs($configPath);
-                $sourcePath = installer_existing_config_path($configPath) ?: db_primary_config_path();
-                if ($sourcePath === '') {
-                    $config = load_db_config('');
-                } else {
-                    $config = restore_read_config($sourcePath);
-                }
-                restore_test_config($config);
-                $content = restore_config_contents($config);
                 $label = trim((string) ($_POST['label'] ?? ''));
-                if ($label === '') {
-                    $label = 'Known-good point ' . date('Y-m-d H:i');
-                }
-                if (strlen($label) > 190) {
-                    throw new RuntimeException('Restore point label must be 190 characters or fewer.');
-                }
                 $notes = trim((string) ($_POST['notes'] ?? ''));
-                $stmt = $pdo->prepare('INSERT INTO restore_points (label, created_by, notes, config_fingerprint) VALUES (?, ?, ?, ?)');
-                $stmt->execute([$label, (string) $user['email'], $notes, restore_config_fingerprint($config)]);
-                $pointId = (int) $pdo->lastInsertId();
-                $fileName = restore_point_file_name($pointId);
-                foreach (restore_point_paths($configPath, $fileName) as $path) {
-                    restore_write_file($path, $content);
-                }
-                foreach (restore_savepoint_paths($configPath) as $path) {
-                    restore_write_file($path, $content);
-                }
-                $pdo->prepare('UPDATE restore_points SET file_name = ? WHERE id = ?')->execute([$fileName, $pointId]);
-                restore_save_setting($pdo, 'restore_savepoint_created_at', gmdate('c'));
-                restore_save_setting($pdo, 'restore_savepoint_created_by', (string) $user['email']);
-                restore_save_setting($pdo, 'restore_savepoint_latest_id', (string) $pointId);
-                restore_log_activity($pdo, (int) $user['id'], 'restore point created', 'Restore point #' . $pointId . ' saved: ' . $label);
+                restore_create_point($pdo, $configPath, $user, $label, $notes);
                 $notice = 'Restore point saved.';
                 $savepointPath = restore_first_valid_savepoint($configPath);
             } elseif ($action === 'restore_savepoint') {

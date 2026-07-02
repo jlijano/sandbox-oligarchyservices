@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/installer.php';
+require_once __DIR__ . '/includes/setup-access.php';
+
+setup_send_safety_headers();
 
 $lockPath = db_install_lock_path();
 $configPath = db_local_config_path();
@@ -34,6 +37,10 @@ if ($hasConfig && !$restoredFromBackup) {
 if (!$hasLock && !$hasConfig) {
     header('Location: /install.php', true, 302);
     exit;
+}
+
+if (!$success && !setup_unlock_is_present($configPath, 'repair')) {
+    setup_exit_locked('repair');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

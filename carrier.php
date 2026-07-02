@@ -256,6 +256,25 @@ $csrf = csrf_token();
     <link rel="stylesheet" href="/assets/carrier.css?v=20260630-wide-modal">
     <link rel="stylesheet" href="/assets/carrier-outlook.css?v=20260703-outlook">
     <link rel="stylesheet" href="/assets/carrier-compose.css?v=20260703-compose">
+    <style>
+      .ribbon-group { display: grid; gap: 4px; align-content: start; padding: 0 4px 2px; }
+      .ribbon-group-title { color: #aeb3bd; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+      .ribbon-group-actions { display: flex; gap: 6px; align-items: stretch; }
+      .ribbon-group-actions form { display: contents; margin: 0; }
+      .ribbon-settings-menu { position: relative; display: inline-flex; align-items: end; }
+      .ribbon-settings-menu summary { display: inline-flex; align-items: center; min-height: 30px; padding: 0 14px; border: 1px solid transparent; border-bottom: 0; color: #c8cbd2; font-size: .82rem; font-weight: 700; cursor: pointer; list-style: none; }
+      .ribbon-settings-menu summary::-webkit-details-marker { display: none; }
+      .ribbon-settings-menu summary::after { content: "▾"; margin-left: 7px; font-size: .66rem; }
+      .ribbon-settings-menu[open] summary, .ribbon-settings-menu summary:hover, .ribbon-settings-menu summary:focus-visible { border-color: rgba(120, 124, 132, 0.44); background: #232328; color: #fff; }
+      .ribbon-settings-menu summary:focus-visible { outline: 2px solid rgba(255, 107, 115, 0.48); outline-offset: -2px; }
+      .ribbon-settings-menu-panel { position: absolute; z-index: 20; top: 100%; left: 0; display: grid; min-width: 226px; padding: 8px; border: 1px solid rgba(120,124,132,.44); border-radius: 4px; background: #151519; box-shadow: 0 18px 40px rgba(0,0,0,.42); }
+      .ribbon-settings-menu-panel form { display: contents; margin: 0; }
+      .ribbon-menu-action { display: grid; gap: 3px; justify-items: start; width: 100%; border: 0; border-radius: 3px; padding: 9px 10px; background: transparent; color: #f3f4f6; text-align: left; text-decoration: none; cursor: pointer; font: inherit; }
+      .ribbon-menu-action strong { font-size: .86rem; line-height: 1; }
+      .ribbon-menu-action span { color: #aeb3bd; font-size: .72rem; line-height: 1; }
+      .ribbon-menu-action:hover, .ribbon-menu-action:focus-visible { background: rgba(176, 7, 20, 0.18); outline: 0; }
+      @media (max-width: 900px) { .ribbon-group { min-width: max-content; } .ribbon-group-actions { flex-wrap: nowrap; } }
+    </style>
     <script defer src="/assets/dashboard.js?v=20260630-carrier"></script>
   </head>
   <body class="dashboard-body carrier-body">
@@ -275,16 +294,25 @@ $csrf = csrf_token();
           <section class="carrier-ribbon" aria-label="Carrier mail actions">
             <div class="ribbon-tabs" aria-label="Carrier shortcuts">
               <a class="is-active" href="<?= e(carrier_context_url(['open' => null])) ?>">Home</a>
-              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button type="submit" name="action" value="sync_mail">Sync IMAP</button></form>
               <a href="#carrier-folders">Folders</a>
               <a href="#carrier-preview">Reading pane</a>
-              <a href="#mail-settings">Settings</a>
+              <details class="ribbon-settings-menu">
+                <summary>Settings</summary>
+                <div class="ribbon-settings-menu-panel" aria-label="Settings actions">
+                  <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-menu-action" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>
+                  <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-menu-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
+                  <a class="ribbon-menu-action" href="#compose-carrier"><strong>Manual add</strong><span>New record</span></a>
+                  <a class="ribbon-menu-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
+                </div>
+              </details>
             </div>
             <div class="ribbon-actions">
-              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action primary" type="submit" name="action" value="sync_mail"><strong>Sync</strong><span>Import IMAP</span></button></form>
-              <form method="post" action="/carrier-sync.php"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_sync_form_hidden_inputs() ?><button class="ribbon-action" type="submit" name="action" value="sync_mail"><strong>Send / Receive</strong><span>Sync mailbox</span></button></form>
-              <a class="ribbon-action" href="#compose-carrier"><strong>Manual add</strong><span>New record</span></a>
-              <a class="ribbon-action" href="#mail-settings"><strong>Account</strong><span>Mail settings</span></a>
+              <div class="ribbon-group" aria-label="Compose actions">
+                <span class="ribbon-group-title">Compose</span>
+                <div class="ribbon-group-actions">
+                  <a class="ribbon-action primary" href="#compose-carrier"><strong>New email</strong><span>Compose</span></a>
+                </div>
+              </div>
               <span class="ribbon-divider"></span>
               <?php if ($openedEmail): ?>
                 <?php if ($replyMailto !== ''): ?><a class="ribbon-action" href="<?= e($replyMailto) ?>"><strong>Reply</strong><span>Open email</span></a><?php else: ?><button class="ribbon-action is-disabled" type="button" disabled><strong>Reply</strong><span>No sender email</span></button><?php endif; ?>
@@ -367,7 +395,7 @@ $csrf = csrf_token();
 
           <section class="carrier-modal" id="compose-carrier" aria-labelledby="compose-carrier-title" role="dialog" aria-modal="true" tabindex="-1">
             <a class="modal-close" href="<?= e(carrier_context_url()) ?>" aria-label="Close compose form">×</a>
-            <form class="carrier-form" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs() ?><input type="hidden" name="action" value="create_carrier_email"><h2 id="compose-carrier-title">Add Carrier Email</h2><?php $formMail = null; require __DIR__ . '/includes/carrier-form-fields.php'; ?><button class="button primary" type="submit">Save email</button></form>
+            <form class="carrier-form" method="post"><input type="hidden" name="csrf_token" value="<?= e($csrf) ?>"><?= carrier_context_hidden_inputs() ?><input type="hidden" name="action" value="create_carrier_email"><h2 id="compose-carrier-title">New Carrier Email</h2><?php $formMail = null; require __DIR__ . '/includes/carrier-form-fields.php'; ?><button class="button primary" type="submit">Save email</button></form>
           </section>
 
           <section class="carrier-modal" id="mail-settings" aria-labelledby="mail-settings-title" role="dialog" aria-modal="true" tabindex="-1">
@@ -409,6 +437,7 @@ $csrf = csrf_token();
     <script>
       (() => {
         const modalSelector = '.carrier-modal';
+        const settingsMenu = document.querySelector('.ribbon-settings-menu');
         let lastFocus = null;
         const activeModal = () => {
           if (!window.location.hash) return null;
@@ -423,14 +452,27 @@ $csrf = csrf_token();
           if (focusTarget instanceof HTMLElement) focusTarget.focus({ preventScroll: true });
         };
         window.addEventListener('hashchange', focusModal);
+        document.addEventListener('click', (event) => {
+          if (!(settingsMenu instanceof HTMLDetailsElement) || !settingsMenu.open) return;
+          if (event.target instanceof Node && settingsMenu.contains(event.target)) return;
+          settingsMenu.open = false;
+        });
         document.addEventListener('keydown', (event) => {
           if (event.key !== 'Escape') return;
           const modal = activeModal();
-          if (!modal) return;
-          const close = modal.querySelector('.modal-close');
-          if (close instanceof HTMLAnchorElement) {
+          if (modal) {
+            const close = modal.querySelector('.modal-close');
+            if (close instanceof HTMLAnchorElement) {
+              event.preventDefault();
+              window.location.href = close.href;
+            }
+            return;
+          }
+          if (settingsMenu instanceof HTMLDetailsElement && settingsMenu.open) {
             event.preventDefault();
-            window.location.href = close.href;
+            settingsMenu.open = false;
+            const summary = settingsMenu.querySelector('summary');
+            if (summary instanceof HTMLElement) summary.focus();
           }
         });
         window.addEventListener('hashchange', () => {

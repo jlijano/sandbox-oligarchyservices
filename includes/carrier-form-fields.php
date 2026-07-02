@@ -3,7 +3,15 @@ $carrierForm = is_array($formMail ?? null) ? $formMail : [];
 $carrierValue = static function (string $key, string $default = '') use ($carrierForm): string {
     return (string) ($carrierForm[$key] ?? $default);
 };
-?>
+if (!$carrierForm): ?>
+<input type="hidden" name="action" value="send_carrier_email">
+<input type="hidden" name="compose_mode" value="new">
+<div class="carrier-form-grid carrier-new-mail-grid">
+  <label>To<input name="to" type="email" placeholder="recipient@example.com" required></label>
+  <label class="wide-field">Subject<input name="subject" type="text" placeholder="Subject" required></label>
+  <label class="wide-field">Message<textarea name="body" rows="14" required></textarea></label>
+</div>
+<?php return; endif; ?>
 <div class="carrier-form-grid">
   <label>Carrier name<input name="carrier_name" value="<?= e($carrierValue('carrier_name')) ?>" required></label>
   <label>Carrier email<input name="carrier_email" type="email" value="<?= e($carrierValue('carrier_email')) ?>" placeholder="carrier@example.com"></label>

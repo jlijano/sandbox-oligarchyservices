@@ -512,3 +512,131 @@
   #mail-settings .button,
   #mail-settings .secondary-action { width: 100%; }
 }
+
+/* Icon-only Carrier ribbon controls with hover and keyboard labels. */
+.ribbon-tabs a,
+.ribbon-tabs button,
+.ribbon-action {
+  position: relative;
+  overflow: visible;
+}
+.ribbon-tabs a,
+.ribbon-tabs button {
+  justify-content: center;
+  min-width: 42px;
+  padding: 0 10px;
+  font-size: 0;
+}
+.ribbon-tabs a::before,
+.ribbon-tabs button::before,
+.ribbon-action::before {
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.ribbon-tabs a::after,
+.ribbon-tabs button::after,
+.ribbon-action::after {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  z-index: 20;
+  display: block;
+  width: max-content;
+  max-width: min(220px, calc(100vw - 36px));
+  transform: translateX(-50%) translateY(-3px);
+  border: 1px solid rgba(120, 124, 132, 0.58);
+  border-radius: 3px;
+  padding: 6px 8px;
+  background: #24242a;
+  color: #f4f5f7;
+  font-size: .74rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.ribbon-tabs a:hover::after,
+.ribbon-tabs button:hover::after,
+.ribbon-tabs a:focus-visible::after,
+.ribbon-tabs button:focus-visible::after,
+.ribbon-action:hover::after,
+.ribbon-action:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.ribbon-tabs a:nth-of-type(1)::before { content: "⌂"; }
+.ribbon-tabs form button::before { content: "↻"; }
+.ribbon-tabs a:nth-of-type(2)::before { content: "▣"; }
+.ribbon-tabs a:nth-of-type(3)::before { content: "▤"; }
+.ribbon-tabs a:nth-of-type(4)::before { content: "⚙"; }
+.ribbon-tabs a:nth-of-type(1)::after { content: "Home"; }
+.ribbon-tabs form button::after { content: "Sync IMAP"; }
+.ribbon-tabs a:nth-of-type(2)::after { content: "Folders"; }
+.ribbon-tabs a:nth-of-type(3)::after { content: "Reading pane"; }
+.ribbon-tabs a:nth-of-type(4)::after { content: "Settings"; }
+.ribbon-action {
+  width: 54px;
+  min-width: 54px;
+  max-width: 54px;
+  min-height: 54px;
+  padding: 0;
+  align-content: center;
+  justify-items: center;
+}
+.ribbon-action strong,
+.ribbon-action span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.ribbon-action::before {
+  width: 100%;
+  min-height: 52px;
+  color: currentColor;
+  font-size: 1.24rem;
+}
+.ribbon-action.primary::before,
+button[value="sync_mail"].ribbon-action::before { content: "↻"; }
+.ribbon-actions form:nth-of-type(2) button[value="sync_mail"].ribbon-action::before { content: "⇄"; }
+.ribbon-action[href="#compose-carrier"]::before { content: "+"; }
+.ribbon-action[href="#mail-settings"]::before { content: "⚙"; }
+.ribbon-action[href="#reply-carrier"]::before,
+.ribbon-actions > button.ribbon-action:nth-of-type(1)::before { content: "↩"; }
+.ribbon-action[href="#forward-carrier"]::before,
+.ribbon-actions > button.ribbon-action:nth-of-type(2)::before { content: "→"; }
+button[value="mark_read"].ribbon-action::before,
+button[value="mark_unread"].ribbon-action::before,
+.ribbon-actions > button.ribbon-action:nth-of-type(3)::before { content: "✓"; }
+button[value="archive_carrier_email"].ribbon-action::before,
+.ribbon-actions > button.ribbon-action:nth-of-type(4)::before { content: "▣"; }
+button[value="delete_carrier_email"].ribbon-action::before,
+.ribbon-actions > button.ribbon-action:nth-of-type(5)::before { content: "×"; }
+.ribbon-action.primary::after,
+button[value="sync_mail"].ribbon-action::after { content: "Sync - Import IMAP"; }
+.ribbon-actions form:nth-of-type(2) button[value="sync_mail"].ribbon-action::after { content: "Send / Receive - Sync mailbox"; }
+.ribbon-action[href="#compose-carrier"]::after { content: "Manual add - New record"; }
+.ribbon-action[href="#mail-settings"]::after { content: "Account - Mail settings"; }
+.ribbon-action[href="#reply-carrier"]::after,
+.ribbon-actions > button.ribbon-action:nth-of-type(1)::after { content: "Reply"; }
+.ribbon-action[href="#forward-carrier"]::after,
+.ribbon-actions > button.ribbon-action:nth-of-type(2)::after { content: "Forward"; }
+button[value="mark_read"].ribbon-action::after { content: "Read - Mark message"; }
+button[value="mark_unread"].ribbon-action::after { content: "Unread - Mark message"; }
+.ribbon-actions > button.ribbon-action:nth-of-type(3)::after { content: "Read - Select message"; }
+button[value="archive_carrier_email"].ribbon-action::after { content: "Archive - Move message"; }
+.ribbon-actions > button.ribbon-action:nth-of-type(4)::after { content: "Archive - Select message"; }
+button[value="delete_carrier_email"].ribbon-action::after { content: "Delete - Remove"; }
+.ribbon-actions > button.ribbon-action:nth-of-type(5)::after { content: "Delete - Select message"; }
+@media (max-width: 900px) {
+  .ribbon-action { min-width: 54px; }
+}

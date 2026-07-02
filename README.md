@@ -15,7 +15,7 @@ Static website and optional PHP/MySQL client portal foundation for `jlijano/sand
 - Public blog listing, detail, and dynamic sitemap routes are read-only. They read published blog rows when the database is available, but they do not create or alter blog tables.
 - Authenticated clients can submit and view service requests at `/requests.php`; admin, editor, and support users can manage the full request queue and timeline updates.
 - Admin and editor users can manage prospects, Carrier records, Switchboard conversations, CMS pages, blog posts, automation recipes, access records, and portal settings after the relevant schema updates are run.
-- Admin-created portal users receive a generated temporary password by PHP mail, confirm their email address before signing in, then create their own password before opening the dashboard.
+- Admin-created portal users receive an account confirmation email, then create their own password from the confirmation link before signing in.
 - The installer writes `includes/config.php` and `includes/installed.lock` on the live server; those generated files must not be committed to GitHub.
 - The installer also writes persistent database config backups outside `public_html` when Hostinger file permissions allow it, so full file syncs do not force a database reinstall.
 - The portal can also read `DB_HOST`, `DB_DATABASE`/`DB_NAME`, `DB_USERNAME`/`DB_USER`, `DB_PASSWORD`, and optional `DB_PORT` environment variables.
@@ -84,17 +84,21 @@ The PHP form includes a CSRF token and submits to `api/login.php`, which verifie
 users against the database, records login attempts, regenerates the session ID on
 successful login, and redirects authenticated users to `dashboard.php`.
 
-Newly created users receive a generated temporary password in the account email.
-They must confirm their email address first through the link sent when an admin
-creates the account under `Valley > Users`. After confirmation, their first
-successful login with the temporary password redirects to `/change-password.php`;
-dashboard access remains blocked until they create their own password.
+Newly created users receive an account confirmation link by email. They open the
+link to confirm their email address and create their own password before signing
+in. Confirmation emails intentionally do not include temporary passwords because
+mail relays can classify credential-bearing messages as unsafe.
 
 Confirmation links expire after 48 hours. The portal sends confirmation email
-through PHP `mail()`. The sender defaults to `sentinel@oligarchyservices.com`;
-set `PORTAL_MAIL_FROM` to use a different domain mailbox. Set `PORTAL_BASE_URL`
-when the portal runs behind a proxy or when generated email links must always use
-the production domain.
+through PHP `mail()`. The sender defaults to
+`no-reply@sandbox.oligarchyservices.com`; set `PORTAL_MAIL_FROM` to use a
+different domain mailbox. Set `PORTAL_BASE_URL` when the portal runs behind a
+proxy or when generated email links must always use the production domain.
+
+For reliable Gmail delivery, configure SPF and DKIM for the sender mailbox/domain
+in Hostinger and publish a DMARC record that aligns with the visible From domain.
+The PHP mail call also requests the configured sender as the envelope sender, but
+DNS authentication still needs to be correct at the hosting/domain level.
 
 ## Client requests
 
@@ -203,6 +207,7 @@ generated local `includes/config.php`. Do not commit generated credentials.
 
 ## Change notes
 
+- 2026-07-03: Changed account confirmations to email only a confirmation link; users now create their own password from the confirmation page, and the PHP mail envelope sender uses the configured sender address.
 - 2026-06-30: Aligned README deployment notes with the current prospects, Carrier, Switchboard, automation, and portal update flow documented in `HOSTINGER.md`.
 - 2026-06-28: Made public blog listing, detail, and dynamic sitemap routes read-only and refined CI reference checks plus availability diagnostics.
 - 2026-06-28: Removed the Sentinel mail orchestrator from account confirmations; the portal now uses PHP `mail()` only for account confirmation emails.

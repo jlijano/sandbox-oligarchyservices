@@ -87,30 +87,14 @@ function account_confirmation_message_parts(string $name, string $token, string 
 
 function account_confirmation_send_via_php_mail(string $email, string $subject, array $parts): bool
 {
-    $boundary = 'oligarchy-' . bin2hex(random_bytes(12));
     $headers = [
         'From: ' . account_confirmation_from_header(),
         'Reply-To: ' . account_confirmation_from_header(),
-        'MIME-Version: 1.0',
-        'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+        'Content-Type: text/plain; charset=UTF-8',
         'X-Mailer: Oligarchy Services Portal',
     ];
 
-    $body = "--{$boundary}\r\n"
-        . "Content-Type: text/plain; charset=UTF-8\r\n"
-        . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-        . $parts['text'] . "\r\n"
-        . "--{$boundary}\r\n"
-        . "Content-Type: text/html; charset=UTF-8\r\n"
-        . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-        . '<!doctype html><html><body style="Margin:0; padding:24px; background-color:#f4f7fb; color:#263238; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:23px;">'
-        . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center">'
-        . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background-color:#ffffff; border:1px solid #dfe7f0; border-radius:8px;"><tr><td style="background-color:#101820; color:#ffffff; padding:22px 26px; font-size:20px; font-weight:bold;">Oligarchy Services</td></tr><tr><td style="padding:26px;">'
-        . $parts['html']
-        . '</td></tr></table></td></tr></table></body></html>'
-        . "\r\n--{$boundary}--\r\n";
-
-    return mail($email, $subject, $body, implode("\r\n", $headers));
+    return mail($email, $subject, $parts['text'], implode("\r\n", $headers));
 }
 
 function account_confirmation_mail_trace_column_exists(PDO $pdo, string $column): bool
@@ -186,7 +170,7 @@ function account_confirmation_send_email(string $email, string $name, string $to
     try {
         $parts = account_confirmation_message_parts($name, $token, $temporaryPassword);
         $phpMailResult = account_confirmation_send_via_php_mail($email, $subject, $parts);
-        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by plain PHP mail().' : 'Plain PHP mail() returned false.');
+        account_confirmation_record_mail_trace($email, $subject, 'php-mail', $phpMailResult, $phpMailResult ? 'Accepted by plain text PHP mail().' : 'Plain text PHP mail() returned false.');
         return $phpMailResult;
     } catch (Throwable $error) {
         account_confirmation_record_mail_trace($email, $subject, 'php-mail', false, 'Send failed before completion: ' . $error->getMessage());
